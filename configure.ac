@@ -9,6 +9,12 @@ AC_PROG_CXX
 
 # Checks for libraries.
 AX_GROMACS
+PKG_CHECK_MODULES([GTKMM], [gtkmm-2.4], [
+   CPPFLAGS="$CPPFLAGS $GTKMM_CFLAGS"
+   LDFLAGS="$LDFLAGS $GTKMM_LDFLAGS"
+   AC_SUBST([CPPFLAGS])
+   AC_SUBST([LDFLAGS])
+])
 
 # Checks for header files.
 
