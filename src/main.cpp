@@ -1,8 +1,10 @@
-#include <iostream>
+#include <gtkmm.h>
 
-using namespace std;
+using namespace Gtk;
 
 int main(int argc, char* argv[])
 {
-   return 0;
+  Main kit(argc, argv);
+  Window win;
+  kit.run(win);
 }
