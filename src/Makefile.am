@@ -1,3 +1,3 @@
 bin_PROGRAMS = trapof
 
-trapof_SOURCES = main.cpp MainWindow.cpp
+trapof_SOURCES = main.cpp MainWindow.cpp NewAnalysis.cpp

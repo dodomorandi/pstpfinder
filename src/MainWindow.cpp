@@ -2,6 +2,7 @@
 #include <vector>
 
 #include "MainWindow.h"
+#include "NewAnalysis.h"
 
 using namespace Gtk;
 
@@ -9,6 +10,11 @@ MainWindow::MainWindow()
 {
   init();
   show_all();
+}
+
+MainWindow::~MainWindow()
+{
+  destroyNewAnalysis();
 }
 
 void
@@ -32,6 +38,20 @@ MainWindow::init()
 void
 MainWindow::createNewAnalysis()
 {
-  MessageDialog msg(*this,"prova");
-  msg.run();
+  if(newAnalysis == 0)
+  {
+    newAnalysis = new NewAnalysis();
+    newAnalysis->signal_unmap().
+      connect(sigc::mem_fun(*this, &MainWindow::destroyNewAnalysis));
+  }
+}
+
+void
+MainWindow::destroyNewAnalysis()
+{
+  if(newAnalysis != 0)
+  {
+    delete(newAnalysis);
+    newAnalysis = 0;
+  }
 }
