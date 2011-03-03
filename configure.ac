@@ -18,7 +18,7 @@ PKG_CHECK_MODULES([GTKMM], [gtkmm-2.4], [
 
 # Checks for header files.
 
-CPPFLAGS="$CPPFLAGS -I../include"
+CPPFLAGS=" -I../include/ $CPPFLAGS"
 AC_SUBST([CPPFLAGS])
 
 # Checks for typedefs, structures, and compiler characteristics.
