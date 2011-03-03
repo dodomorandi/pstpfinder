@@ -35,8 +35,8 @@ MainWindow::init()
   
   add(buttonBox);
   
-  signal_delete_event().
-    connect(sigc::mem_fun(*this, &MainWindow::onDeleteEvent));
+  newAnalysis = 0;
+  signal_delete_event().connect(sigc::ptr_fun(&close_app));
 }
 
 void
@@ -57,15 +57,9 @@ MainWindow::destroyNewAnalysis()
 {
   if(newAnalysis != 0)
   {
+    newAnalysis->hide();
     delete(newAnalysis);
     newAnalysis = 0;
     show();
   }
-}
-
-bool
-MainWindow::onDeleteEvent(GdkEventAny* event)
-{
-  close_app();
-  return false;
 }

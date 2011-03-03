@@ -1,5 +1,6 @@
 #include <gtkmm.h>
 
+#include "main.h"
 #include "NewAnalysis.h"
 
 using namespace Gtk;
@@ -45,15 +46,26 @@ NewAnalysis::init()
   hboxTopology.set_homogeneous(false);
   hboxTopology.set_spacing(10);
 
-  vbox1.pack_start(hboxTrajectory, PACK_EXPAND_PADDING);
-  vbox1.pack_start(hboxTopology, PACK_EXPAND_PADDING);
-  vbox1.set_spacing(10);
-  vbox1.set_border_width(10);
+  vboxFrame.pack_start(hboxTrajectory, PACK_EXPAND_PADDING);
+  vboxFrame.pack_start(hboxTopology, PACK_EXPAND_PADDING);
+  vboxFrame.set_spacing(10);
+  vboxFrame.set_border_width(10);
   
   mainFrame.set_label("Main files");
-  mainFrame.set_border_width(10);
-  mainFrame.add(vbox1);
+  mainFrame.add(vboxFrame);
   
-  add(mainFrame);
+  buttonRun.set_label("Run!");
+  buttonBoxRun.set_layout(BUTTONBOX_END);
+  buttonBoxRun.pack_end(buttonRun);
+  
+  vboxMain.set_homogeneous(false);
+  vboxMain.set_spacing(10);
+  vboxMain.set_border_width(10);
+  vboxMain.pack_start(mainFrame);
+  vboxMain.pack_start(buttonBoxRun, PACK_SHRINK);
+  add(vboxMain);
   set_size_request(300);
+  
+  signal_delete_event().
+    connect(sigc::ptr_fun(&close_app));
 }

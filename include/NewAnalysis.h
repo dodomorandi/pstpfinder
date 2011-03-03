@@ -12,10 +12,12 @@ public:
   NewAnalysis(Window& parent);
 private:
   Frame mainFrame;
-  VBox vbox1;
+  VBox vboxFrame, vboxMain;
   FileChooserButton trjChooser, tprChooser;
   Label labelTrajectory, labelTopology;
   HBox hboxTrajectory, hboxTopology;
+  HButtonBox buttonBoxRun;
+  Button  buttonRun;
   
   void init();
 };
