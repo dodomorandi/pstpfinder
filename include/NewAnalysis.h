@@ -20,6 +20,7 @@ private:
   Button  buttonRun;
   
   void init();
+  void runAnalysis();
 };
 
 #endif

@@ -2,6 +2,7 @@
 
 #include "main.h"
 #include "NewAnalysis.h"
+#include "Gromacs.h"
 
 using namespace Gtk;
 
@@ -55,6 +56,8 @@ NewAnalysis::init()
   mainFrame.add(vboxFrame);
   
   buttonRun.set_label("Run!");
+  buttonRun.signal_clicked().
+    connect(sigc::mem_fun(*this, &NewAnalysis::runAnalysis));
   buttonBoxRun.set_layout(BUTTONBOX_END);
   buttonBoxRun.pack_end(buttonRun);
   
@@ -67,4 +70,10 @@ NewAnalysis::init()
   set_size_request(300);
   
   signal_delete_event().connect(sigc::ptr_fun(&closeApplication));
+}
+
+void
+NewAnalysis::runAnalysis()
+{
+  Gromacs::Gromacs gromacs;
 }
