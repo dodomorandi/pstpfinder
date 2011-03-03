@@ -66,6 +66,5 @@ NewAnalysis::init()
   add(vboxMain);
   set_size_request(300);
   
-  signal_delete_event().
-    connect(sigc::ptr_fun(&close_app));
+  signal_delete_event().connect(sigc::ptr_fun(&closeApplication));
 }

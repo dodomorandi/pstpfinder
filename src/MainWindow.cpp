@@ -36,7 +36,7 @@ MainWindow::init()
   add(buttonBox);
   
   newAnalysis = 0;
-  signal_delete_event().connect(sigc::ptr_fun(&close_app));
+  signal_delete_event().connect(sigc::ptr_fun(&closeApplication));
 }
 
 void

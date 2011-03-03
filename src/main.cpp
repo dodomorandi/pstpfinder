@@ -19,7 +19,7 @@ int main(int argc, char* argv[])
   return 0;
 }
 
-bool close_app(GdkEventAny* event)
+bool closeApplication(GdkEventAny* event)
 {
   kit->quit();
   return false;
