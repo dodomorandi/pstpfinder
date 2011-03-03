@@ -9,10 +9,15 @@ class NewAnalysis: public Window
 {
 public:
   NewAnalysis();
+  NewAnalysis(Window& parent);
 private:
   Frame mainFrame;
   VBox vbox1;
-  FileChooserButton trjChooser;
+  FileChooserButton trjChooser, tprChooser;
+  Label labelTrajectory, labelTopology;
+  HBox hboxTrajectory, hboxTopology;
+  
+  void init();
 };
 
 #endif

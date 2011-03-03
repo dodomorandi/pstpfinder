@@ -14,6 +14,7 @@ public:
   ~MainWindow();
   void createNewAnalysis();
   void destroyNewAnalysis();
+  bool onDeleteEvent(GdkEventAny* event);
 protected:
   HButtonBox buttonBox;
   Button buttonNew, buttonOpen;

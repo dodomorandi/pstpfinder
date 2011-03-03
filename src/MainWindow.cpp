@@ -1,6 +1,7 @@
 #include <gtkmm.h>
 #include <vector>
 
+#include "main.h"
 #include "MainWindow.h"
 #include "NewAnalysis.h"
 
@@ -33,6 +34,9 @@ MainWindow::init()
   buttonBox.set_child_min_height(40);
   
   add(buttonBox);
+  
+  signal_delete_event().
+    connect(sigc::mem_fun(*this, &MainWindow::onDeleteEvent));
 }
 
 void
@@ -40,9 +44,11 @@ MainWindow::createNewAnalysis()
 {
   if(newAnalysis == 0)
   {
-    newAnalysis = new NewAnalysis();
+    newAnalysis = new NewAnalysis(*this);
+    newAnalysis->set_position(WIN_POS_CENTER_ON_PARENT);
     newAnalysis->signal_unmap().
       connect(sigc::mem_fun(*this, &MainWindow::destroyNewAnalysis));
+    hide();
   }
 }
 
@@ -53,5 +59,13 @@ MainWindow::destroyNewAnalysis()
   {
     delete(newAnalysis);
     newAnalysis = 0;
+    show();
   }
+}
+
+bool
+MainWindow::onDeleteEvent(GdkEventAny* event)
+{
+  close_app();
+  return false;
 }
