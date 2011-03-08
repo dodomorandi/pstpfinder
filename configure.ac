@@ -1,7 +1,7 @@
 AC_INIT([trapof], [0.1], [enki@dodomorandi.no-ip.biz])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 AC_CONFIG_MACRO_DIR([m4])
-AC_CONFIG_SRCDIR([src/main.cpp])
+AC_CONFIG_SRCDIR([src/trapof.cpp])
 AC_CONFIG_HEADERS([config.h])
 
 # Checks for programs.
