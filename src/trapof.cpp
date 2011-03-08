@@ -1,6 +1,6 @@
 #include <gtkmm.h>
 
-#include "main.h"
+#include "trapof.h"
 #include "MainWindow.h"
 
 using namespace Gtk;

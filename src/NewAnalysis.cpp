@@ -1,6 +1,6 @@
 #include <gtkmm.h>
 
-#include "main.h"
+#include "trapof.h"
 #include "NewAnalysis.h"
 #include "Gromacs.h"
 
@@ -75,5 +75,8 @@ NewAnalysis::init()
 void
 NewAnalysis::runAnalysis()
 {
-  Gromacs::Gromacs gromacs;
+  Gromacs::Gromacs gromacs( trjChooser.get_filename(),
+                            tprChooser.get_filename());
+  
+  gromacs.calculateSas();
 }

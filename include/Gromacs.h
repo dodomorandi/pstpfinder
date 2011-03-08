@@ -5,10 +5,17 @@
 #include "config.h"
 #endif
 
+#include <string>
+
 extern "C" {
 #include <atomprop.h>
 #include <statutil.h>
-}
+#include <tpxio.h>
+#include <mtop_util.h>
+#include <main.h>
+};
+
+using namespace std;
 
 namespace Gromacs
 {
@@ -17,17 +24,16 @@ namespace Gromacs
   public:
     Gromacs();
     ~Gromacs();
+    Gromacs(const string& trajectoryFileName, const string& topologyFileName);
+    // FIXME: It will have to return an object Molecular Dynamics with SAS
+    // FIXME: additional informations
+    bool calculateSas() const;
+
   private:
-    #ifdef GMX45
-    output_env_t oenv;
-    t_trxstatus *status;
-    #else
-    t_commrec *cr;
-    int status, step;
-    real t, lambda;
-    #endif
-    
     gmx_atomprop_t aps;
+    string trjName, tprName;
+    
+    void init();
   };
 };
 

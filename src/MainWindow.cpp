@@ -1,7 +1,7 @@
 #include <gtkmm.h>
 #include <vector>
 
-#include "main.h"
+#include "trapof.h"
 #include "MainWindow.h"
 #include "NewAnalysis.h"
 
