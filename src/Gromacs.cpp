@@ -148,7 +148,7 @@ namespace Gromacs
     for(int i = 0; i < nx[0]; i++)
     {
       int ii = index[0][i];
-      if( !gmx_atomprop_query( aps, epropVDW,
+      if( !gmx_atomprop_query( aps, epropDGsol,
                           *(top.atoms.resinfo[top.atoms.atom[ii].resind].name),
                           *(top.atoms.atomname[ii]), dgs_factor + i))
         dgs_factor[i] = 0;
