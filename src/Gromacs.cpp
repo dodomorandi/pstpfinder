@@ -67,11 +67,10 @@ namespace Gromacs
     real *dgs_factor, *radius, *area, *surfacedots, dgsolv;
     atom_id* index[2];
     gmx_rmpbc_t gpbc;
-    char* grpname[2];
     int nx[2];
     
 #ifdef GMX45
-    oenv = new output_env;
+    oenv = new output_env();
     output_env_init_default(oenv);
     read_tpx(tprName.c_str(), &ir, box, &natoms, 0, 0, 0, &mtop);
 #else
@@ -95,7 +94,40 @@ namespace Gromacs
       gmx_fatal(FARGS, "Could not read coordinates from statusfile.\n");
     
     // TODO: index file handling and integration
-    get_index(&top.atoms, 0, 2, nx, index, grpname);
+    
+    // The original code was simply:
+    // get_index(&top.atoms, 0, 2, nx, index, grpname);
+    // but now I need an automatic selection or a GUI.
+    // For this purpose it's necessary to partially use index.c code in GROMACS
+    
+    // I have no idea if these object are reallocated. In these case they
+    // have to be on the heap, not on the stack
+    t_blocka* grps;
+    grps = new t_blocka();
+    grps->index = new atom_id();
+    char*** gnames;
+    gnames = new char**();
+    int proteinIndex = -1;
+    
+    analyse(&top.atoms, grps, gnames, FALSE, FALSE);
+    
+    for(char** i = *gnames; i < *gnames + grps->nr; i++)
+    {
+      if(string(*i).compare("Protein") == 0)
+      {
+        proteinIndex = (int)(i - *gnames);
+        break;
+      }
+    }
+    // TODO: Return in case of missing 'Protein' index
+
+    nx[0] = nx[1] = grps->index[proteinIndex + 1] - grps->index[proteinIndex];
+    index[0] = new atom_id[nx[0]]();
+    index[1] = new atom_id[nx[1]]();
+    
+    for(int i = 0; i < nx[0]; i++)
+      index[0][i] = index[1][i] = grps->a[grps->index[proteinIndex] + i];
+    
     bOut = new bool[natoms];
     for(int* i = index[1]; i < index[1] + nx[1]; i++)
       bOut[*i] = TRUE;
