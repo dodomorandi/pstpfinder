@@ -1,4 +1,6 @@
 #include "Gromacs.h"
+#include "SasAtom.h"
+
 #include <string>
 #include <iostream>
 #include <cstring>
