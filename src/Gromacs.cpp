@@ -1,5 +1,6 @@
 #include "Gromacs.h"
 #include "SasAtom.h"
+#include "SasAnalysis.h"
 
 #include <string>
 #include <iostream>
@@ -62,7 +63,7 @@ namespace Gromacs
     gmx_mtop_t mtop;
     matrix topbox;
     rvec *xtop, *x;
-    real t, totarea, totvolume, tarea;
+    real t, totarea, totvolume;
     int natoms, ePBC, nsurfacedots;
     t_topology top;
     char title[1024];
@@ -158,6 +159,7 @@ namespace Gromacs
     }
     
     gpbc = gmx_rmpbc_init(&top.idef, ePBC, natoms, box);
+    SasAnalysis sasAnalysis(nx);
     
     do
     {
@@ -167,24 +169,20 @@ namespace Gromacs
                             index, ePBC, box) != 0)
         gmx_fatal(FARGS, "Something wrong in nsc_dclm_pbc");
         
-        SasAtom atoms[nx];
-        tarea = 0;
-        dgsolv = 0;
-        for(int i = 0; i < nx; i++)
-        {
-          atoms[i].x = x[index[i]][0];
-          atoms[i].y = x[index[i]][1];
-          atoms[i].z = x[index[i]][2];
-          atoms[i].sas = area[i];
-          
-          tarea += area[i];
-          if(bDGsol)
-            dgsolv += area[i]*dgs_factor[i];
-            
-          cout  << "Atom (" << atoms[i].x << "," << atoms[i].y << "," << atoms[i].z
-                << ") has sas equal to " << atoms[i].sas << endl;
-        }
-      cout << "At " << t << " ps area is " << tarea << endl;
+      SasAtom atoms[nx];
+      dgsolv = 0;
+      for(int i = 0; i < nx; i++)
+      {
+        atoms[i].x = x[index[i]][0];
+        atoms[i].y = x[index[i]][1];
+        atoms[i].z = x[index[i]][2];
+        atoms[i].sas = area[i];
+        
+        if(bDGsol)
+          dgsolv += area[i]*dgs_factor[i];
+      }
+      
+      sasAnalysis << atoms;
       
       delete[] area;
       if(nsurfacedots > 0)
