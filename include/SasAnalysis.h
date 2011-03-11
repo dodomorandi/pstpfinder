@@ -1,9 +1,14 @@
 #ifndef _SASANALYSIS_H
 #define _SASANALYSIS_H
 
-class SasAnalysis
+#include "SasAtom.h"
+
+namespace Gromacs
 {
-  // TODO
+  class SasAnalysis
+  {
+    // TODO
+  };
 };
 
 #endif

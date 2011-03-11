@@ -6,9 +6,12 @@ extern "C" {
    #include <typedefs.h>
 }
 
-struct SasAtom: public Atom
+namespace Gromacs
 {
-   real sas;
+  struct SasAtom: public Atom
+  {
+     real sas;
+  };
 };
 
 #endif

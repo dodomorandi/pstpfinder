@@ -5,9 +5,12 @@ extern "C" {
   #include <typedefs.h>
 }
 
-struct Atom
+namespace Gromacs
 {
-  real x, y, z;
+  struct Atom
+  {
+    real x, y, z;
+  };
 };
 
 #endif
