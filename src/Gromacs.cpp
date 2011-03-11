@@ -32,6 +32,7 @@ namespace Gromacs
 #endif
     
     solSize = solventSize;
+    sasTarget = "Protein";
     aps = gmx_atomprop_init();
   }
 
@@ -100,33 +101,35 @@ namespace Gromacs
     // but now I need an automatic selection or a GUI.
     // For this purpose it's necessary to partially use index.c code in GROMACS
     
-    // I have no idea if these object are reallocated. In these case they
-    // have to be on the heap, not on the stack
+    // These will be reallocated by Gromacs libraries.
+    // They must be allocated on the heap.
+    // I think it'g good to allocate them as arrays, because they will probably
+    // be reallocated. It would be easier to debug later.
     t_blocka* grps;
-    grps = new t_blocka();
-    grps->index = new atom_id();
+    grps = new t_blocka[1]();
+    grps->index = new atom_id[1]();
     char*** gnames;
-    gnames = new char**();
-    int proteinIndex = -1;
+    gnames = new char**[1]();
+    int targetIndex = -1;
     
     analyse(&top.atoms, grps, gnames, FALSE, FALSE);
     
     for(char** i = *gnames; i < *gnames + grps->nr; i++)
     {
-      if(string(*i).compare("Protein") == 0)
+      if(*i == sasTarget)
       {
-        proteinIndex = (int)(i - *gnames);
+        targetIndex = (int)(i - *gnames);
         break;
       }
     }
-    // TODO: Return in case of missing 'Protein' index
+    // TODO: Return in case of missing target index
 
-    nx[0] = nx[1] = grps->index[proteinIndex + 1] - grps->index[proteinIndex];
-    index[0] = new atom_id[nx[0]]();
-    index[1] = new atom_id[nx[1]]();
+    nx[0] = nx[1] = grps->index[targetIndex + 1] - grps->index[targetIndex];
+    index[0] = new atom_id[nx[0]];
+    index[1] = new atom_id[nx[1]];
     
     for(int i = 0; i < nx[0]; i++)
-      index[0][i] = index[1][i] = grps->a[grps->index[proteinIndex] + i];
+      index[0][i] = index[1][i] = grps->a[grps->index[targetIndex] + i];
     
     bOut = new bool[natoms];
     for(int* i = index[1]; i < index[1] + nx[1]; i++)
@@ -194,7 +197,10 @@ namespace Gromacs
     delete[] bOut;
     delete[] dgs_factor;
     delete[] radius;
-
+    delete[] gnames;
+    delete[] grps->index;
+    delete[] grps;
+    
     return true;
   }
 };

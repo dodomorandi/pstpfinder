@@ -45,6 +45,7 @@ namespace Gromacs
     gmx_atomprop_t aps;
     string trjName, tprName;
     float solSize;
+    string sasTarget;
     
     void init(float solventSize);
   };
