@@ -57,7 +57,6 @@ namespace Gromacs
 #endif
 
     bool bTop, bDGsol;
-    bool *bOut;
     t_inputrec ir;
     matrix box;
     gmx_mtop_t mtop;
@@ -68,9 +67,9 @@ namespace Gromacs
     t_topology top;
     char title[1024];
     real *dgs_factor, *radius, *area, *surfacedots, dgsolv;
-    atom_id* index[2];
+    atom_id* index;
     gmx_rmpbc_t gpbc;
-    int nx[2];
+    int nx;
     
 #ifdef GMX45
     oenv = new output_env();
@@ -84,8 +83,10 @@ namespace Gromacs
     bTop = read_tps_conf( tprName.c_str(), title, &top, &ePBC, &xtop, 
                           NULL, topbox, FALSE);
     
-    bDGsol = (strcmp(*(top.atoms.atomtype[0]),"?") != 0);
+    //bDGsol = (strcmp(*(top.atoms.atomtype[0]),"?") != 0);
     // TODO: warnings about bDGsol
+    // For now I really don't want anything related to DG solvatation!
+    bDGsol = false;
     
 #ifdef GMX45
     if((natoms = 
@@ -126,18 +127,14 @@ namespace Gromacs
     }
     // TODO: Return in case of missing target index
 
-    nx[0] = nx[1] = grps->index[targetIndex + 1] - grps->index[targetIndex];
-    index[0] = new atom_id[nx[0]];
-    index[1] = new atom_id[nx[1]];
+    nx = grps->index[targetIndex + 1] - grps->index[targetIndex];
+    index = new atom_id[nx];
     
-    for(int i = 0; i < nx[0]; i++)
-      index[0][i] = index[1][i] = grps->a[grps->index[targetIndex] + i];
+    for(int i = 0; i < nx; i++)
+      index[i] = grps->a[grps->index[targetIndex] + i];
     
-    bOut = new bool[natoms];
-    for(int* i = index[1]; i < index[1] + nx[1]; i++)
-      bOut[*i] = TRUE;
-    
-    dgs_factor = new real[nx[0]];
+    if(bDGsol)
+      dgs_factor = new real[nx];
     radius = new real[natoms];
     
     for(int i = 0; i < natoms; i++)
@@ -147,13 +144,17 @@ namespace Gromacs
                           *(top.atoms.atomname[i]), radius + i);
       radius[i] += solSize;
     }
-    for(int i = 0; i < nx[0]; i++)
+    
+    if(bDGsol)
     {
-      int ii = index[0][i];
-      if( !gmx_atomprop_query( aps, epropDGsol,
-                          *(top.atoms.resinfo[top.atoms.atom[ii].resind].name),
-                          *(top.atoms.atomname[ii]), dgs_factor + i))
-        dgs_factor[i] = 0;
+      for(int i = 0; i < nx; i++)
+      {
+        int ii = index[i];
+        if( !gmx_atomprop_query( aps, epropDGsol,
+                            *(top.atoms.resinfo[top.atoms.atom[ii].resind].name),
+                            *(top.atoms.atomname[ii]), dgs_factor + i))
+          dgs_factor[i] = 0;
+      }
     }
     
     gpbc = gmx_rmpbc_init(&top.idef, ePBC, natoms, box);
@@ -161,21 +162,27 @@ namespace Gromacs
     do
     {
       gmx_rmpbc(gpbc, natoms, box, x);
-      if(nsc_dclm_pbc(x, radius, nx[0], 24, FLAG_ATOM_AREA, &totarea,
+      if(nsc_dclm_pbc(x, radius, nx, 24, FLAG_ATOM_AREA, &totarea,
                             &area, &totvolume, &surfacedots, &nsurfacedots,
-                            index[0], ePBC, box) != 0)
+                            index, ePBC, box) != 0)
         gmx_fatal(FARGS, "Something wrong in nsc_dclm_pbc");
         
+        SasAtom atoms[nx];
         tarea = 0;
         dgsolv = 0;
-        for(int i = 0; i < nx[0]; i++)
+        for(int i = 0; i < nx; i++)
         {
-          if(bOut[index[0][i]])
-          {
-            tarea += area[i];
-            if(bDGsol)
-              dgsolv += area[i]*dgs_factor[i];
-          }
+          atoms[i].x = x[index[i]][0];
+          atoms[i].y = x[index[i]][1];
+          atoms[i].z = x[index[i]][2];
+          atoms[i].sas = area[i];
+          
+          tarea += area[i];
+          if(bDGsol)
+            dgsolv += area[i]*dgs_factor[i];
+            
+          cout  << "Atom (" << atoms[i].x << "," << atoms[i].y << "," << atoms[i].z
+                << ") has sas equal to " << atoms[i].sas << endl;
         }
       cout << "At " << t << " ps area is " << tarea << endl;
       
@@ -196,8 +203,8 @@ namespace Gromacs
     output_env_done(oenv);
 #endif
 
-    delete[] bOut;
-    delete[] dgs_factor;
+    if(bDGsol)
+      delete[] dgs_factor;
     delete[] radius;
     delete[] gnames;
     delete[] grps->index;
