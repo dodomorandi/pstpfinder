@@ -49,7 +49,7 @@ AC_CHECK_LIB([gmx], [read_tpx],, [
       else
          LDFLAGS="$OLD_LDFLAGS"
       fi
-      AC_CHECK_LIB([gmx], [read_tpx], [ax_cv_gromacs_library=$directory; found=1; break])
+      AC_CHECK_LIB([gmx], [read_tpx], [ax_cv_gromacs_library=$directory; LIBS="$LIBS -lgmx"; found=1; break])
       unset ac_cv_lib_gmx_read_tpx
    done
    if test $found -eq 0 ; then
