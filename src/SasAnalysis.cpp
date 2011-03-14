@@ -27,4 +27,5 @@ SasAnalysis::operator <<(SasAtom* sasAtoms)
   std::copy(sasAtoms, sasAtoms + nAtoms, tmpAtoms);
   
   atoms.push_back(tmpAtoms);
+  return *this;
 }
