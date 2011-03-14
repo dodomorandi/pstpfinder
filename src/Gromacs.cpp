@@ -36,6 +36,9 @@ namespace Gromacs
     
     solSize = solventSize;
     sasTarget = "Protein";
+    // Damn it! I can't handle errors raised inside this f*****g function,
+    // because it simply crashes on a ERROR HANDLING FUNCTION, overriding
+    // my SIGSEGV handler. Grrrr...
     aps = gmx_atomprop_init();
   }
 
