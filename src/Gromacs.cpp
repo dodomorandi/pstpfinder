@@ -211,6 +211,8 @@ namespace Gromacs
     delete[] grps->index;
     delete[] grps;
     
+    sasAnalysis.save();
+    
     return true;
   }
 };
