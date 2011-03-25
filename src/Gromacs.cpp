@@ -36,69 +36,44 @@ namespace Gromacs
     
     solSize = solventSize;
     sasTarget = "Protein";
+    gotTopology = false;
+    gotTrajectory = false;
+
     // Damn it! I can't handle errors raised inside this f*****g function,
     // because it simply crashes on a ERROR HANDLING FUNCTION, overriding
-    // my SIGSEGV handler. Grrrr...
+    // my SIGSEGV handler. Grrrr...    
     aps = gmx_atomprop_init();
   }
 
   Gromacs::~Gromacs()
   {
+#ifdef GMX45
+    if(gotTrajectory)
+      output_env_done(oenv);
+#endif
     gmx_atomprop_destroy(aps);
   }
   
   bool
-  Gromacs::calculateSas() const
+  Gromacs::calculateSas()
   {
-
-#ifdef GMX45
-    output_env_t oenv;
-    t_trxstatus *status;
-#else
-    t_commrec *cr;
-    int status, step;
-    real t, lambda;
-#endif
-
     bool bTop, bDGsol;
-    t_inputrec ir;
-    matrix box;
-    gmx_mtop_t mtop;
-    matrix topbox;
-    rvec *xtop, *x;
-    real t, totarea, totvolume;
-    int natoms, ePBC, nsurfacedots;
-    t_topology top;
-    char title[1024];
+    real totarea, totvolume;
+    int nsurfacedots;
     real *dgs_factor, *radius, *area, *surfacedots, dgsolv;
     atom_id* index;
     gmx_rmpbc_t gpbc;
     int nx;
     
-#ifdef GMX45
-    oenv = new output_env();
-    output_env_init_default(oenv);
-    read_tpx(tprName.c_str(), &ir, box, &natoms, 0, 0, 0, &mtop);
-#else
-    read_tpx( tprName.c_str(), &step, &t, &lambda, &ir, box, &natoms,
-              0, 0, 0, &mtop);
-#endif
-    
-    bTop = read_tps_conf( tprName.c_str(), title, &top, &ePBC, &xtop, 
-                          NULL, topbox, FALSE);
-    
+    if(not (bTop = getTopology()))
+      gmx_fatal(FARGS, "Could not read topology file.\n");
+      
     //bDGsol = (strcmp(*(top.atoms.atomtype[0]),"?") != 0);
     // TODO: warnings about bDGsol
     // For now I really don't want anything related to DG solvatation!
     bDGsol = false;
     
-#ifdef GMX45
-    if((natoms = 
-          read_first_x(oenv, &status, trjName.c_str(), &t, &x, box)) == 0)
-#else
-    if((natoms = 
-          read_first_x(&status, trjName.c_str(), &t, &x, box)) == 0)
-#endif
+    if(not getTrajectory())
       gmx_fatal(FARGS, "Could not read coordinates from statusfile.\n");
     
     // TODO: index file handling and integration
@@ -200,9 +175,6 @@ namespace Gromacs
     gmx_rmpbc_done(gpbc);
 
     close_trx(status);
-#ifdef GMX45    
-    output_env_done(oenv);
-#endif
 
     if(bDGsol)
       delete[] dgs_factor;
@@ -214,5 +186,57 @@ namespace Gromacs
     sasAnalysis.save();
     
     return true;
+  }
+  
+  unsigned long
+  Gromacs::getAtomsCount() const
+  {
+    if(gotTopology)
+      return natoms;
+    else
+      return 0;
+  }
+  
+  bool Gromacs::getTopology()
+  {
+    t_inputrec ir;
+    matrix topbox;
+    rvec *xtop;
+    char title[1024];
+
+#ifdef GMX45    
+    read_tpx(tprName.c_str(), &ir, box, &natoms, 0, 0, 0, &mtop);
+#else
+    read_tpx( tprName.c_str(), &step, &t, &lambda, &ir, box, &natoms,
+              0, 0, 0, &mtop);
+#endif
+
+    gotTopology = read_tps_conf( tprName.c_str(), title, &top, &ePBC, &xtop, 
+                          NULL, topbox, FALSE);
+    return gotTopology;
+  }
+  
+  bool
+  Gromacs::getTrajectory()
+  {
+#ifdef GMX45
+    if(not gotTrajectory)
+    {
+      oenv = new output_env();
+      output_env_init_default(oenv);
+    }
+    
+    if((natoms = 
+          read_first_x(oenv, &status, trjName.c_str(), &t, &x, box)) == 0)
+#else
+    if((natoms = 
+          read_first_x(&status, trjName.c_str(), &t, &x, box)) == 0)
+#endif
+    {
+      output_env_done(oenv);
+      return gotTrajectory = false;
+    }
+    else
+      return gotTrajectory = true;
   }
 };

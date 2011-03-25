@@ -39,15 +39,37 @@ namespace Gromacs
             float solventSize = 0.14);
     // FIXME: It will have to return an object Molecular Dynamics with SAS
     // FIXME: additional informations
-    bool calculateSas() const;
+    bool calculateSas();
+    
+    string getTrajectoryFile() const;
+    string getTopologyFile() const;
+    unsigned long getAtomsCount() const;
 
   private:
+#ifdef GMX45
+    output_env_t oenv;
+    t_trxstatus *status;
+#else
+    t_commrec *cr;
+    int status, step;
+    real lambda;
+#endif
+    real t;
+    rvec* x;
+    matrix box;
+    int natoms, ePBC;
+    t_topology top;
+
     gmx_atomprop_t aps;
     string trjName, tprName;
+    bool gotTrajectory, gotTopology;
     float solSize;
     string sasTarget;
+    gmx_mtop_t mtop;
     
     void init(float solventSize);
+    bool getTopology();
+    bool getTrajectory();
   };
 };
 

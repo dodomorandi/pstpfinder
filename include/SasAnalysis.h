@@ -2,6 +2,7 @@
 #define _SASANALYSIS_H
 
 #include "SasAtom.h"
+#include "Gromacs.h"
 
 #include <boost/iostreams/filtering_stream.hpp>
 #include <boost/iostreams/device/file_descriptor.hpp>
@@ -21,6 +22,7 @@ namespace Gromacs
   {
   public:
     SasAnalysis(unsigned int nAtoms);
+    SasAnalysis(const Gromacs& gromacs);
     ~SasAnalysis();
     const SasAnalysis& operator <<(SasAtom* sasAtoms);
     bool save(const std::string& filename);
@@ -29,6 +31,7 @@ namespace Gromacs
     std::vector<SasAtom*> atoms;
     unsigned int nAtoms;
     std::string filename;
+    const Gromacs* gromacs;
   };
 };
 

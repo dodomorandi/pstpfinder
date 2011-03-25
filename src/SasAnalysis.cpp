@@ -7,6 +7,13 @@ namespace io = boost::iostreams;
 SasAnalysis::SasAnalysis(unsigned int nAtoms)
 {
   this->nAtoms = nAtoms;
+  gromacs = 0;
+}
+
+SasAnalysis::SasAnalysis(const Gromacs& gromacs)
+{
+  nAtoms = gromacs.getAtomsCount();
+  this->gromacs = &gromacs;
 }
 
 SasAnalysis::~SasAnalysis()
@@ -57,6 +64,11 @@ SasAnalysis::save() const
   outFilter.strict_sync();
   outFilter.push(io::zlib_compressor());
   outFilter.push(fileOut);
+  
+  // Let's fill header.
+  // We need information about analysis selected options.
+  // This means trajectory file, topology file and everything related
+  // 
   
   archive::binary_oarchive out(outFilter);
   
