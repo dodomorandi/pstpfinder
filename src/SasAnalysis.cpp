@@ -4,24 +4,30 @@ using namespace Gromacs;
 namespace archive = boost::archive;
 namespace io = boost::iostreams;
 
-SasAnalysis::SasAnalysis(unsigned int nAtoms)
+SasAnalysis::SasAnalysis(unsigned int nAtoms,
+                         unsigned int maxBytes,
+                         unsigned int maxChunk)
 {
   this->nAtoms = nAtoms;
   gromacs = 0;
+  maxFrames = maxBytes / sizeof(SasAtom);
 }
 
-SasAnalysis::SasAnalysis(const Gromacs& gromacs)
+SasAnalysis::SasAnalysis(const Gromacs& gromacs,
+                         unsigned int maxBytes,
+                         unsigned int maxChunk)
 {
   nAtoms = gromacs.getAtomsCount();
   this->gromacs = &gromacs;
+  maxFrames = maxBytes / sizeof(SasAtom);
 }
 
 SasAnalysis::~SasAnalysis()
 {
   for
   (
-    std::vector<SasAtom*>::iterator i = atoms.begin();
-    i < atoms.end();
+    std::vector<SasAtom*>::iterator i = frames.begin();
+    i < frames.end();
     i++
   )
     delete[] *i;
@@ -30,10 +36,10 @@ SasAnalysis::~SasAnalysis()
 const SasAnalysis&
 SasAnalysis::operator <<(SasAtom* sasAtoms)
 {
-  SasAtom* tmpAtoms = new SasAtom[nAtoms];
-  std::copy(sasAtoms, sasAtoms + nAtoms, tmpAtoms);
+  SasAtom* tmpFrame = new SasAtom[nAtoms];
+  std::copy(sasAtoms, sasAtoms + nAtoms, tmpFrame);
   
-  atoms.push_back(tmpAtoms);
+  frames.push_back(tmpFrame);
   return *this;
 }
 
@@ -71,11 +77,19 @@ SasAnalysis::save() const
   // 
   
   archive::binary_oarchive out(outFilter);
+  dumpChunk(frames, out);
   
+  return true;
+}
+
+void
+SasAnalysis::dumpChunk(const vector<SasAtom*>& chunk, 
+                       archive::binary_oarchive& out) const
+{
   for
   (
-    vector<SasAtom*>::const_iterator i = atoms.begin();
-    i < atoms.end();
+    vector<SasAtom*>::const_iterator i = chunk.begin();
+    i < chunk.end();
     i++
   )
   {
@@ -91,6 +105,4 @@ SasAnalysis::save() const
       out << atom;
     }
   }
-  
-  return true;
 }
