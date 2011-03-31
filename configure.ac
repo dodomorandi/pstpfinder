@@ -5,8 +5,21 @@ AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_SRCDIR([src/trapof.cpp])
 AC_CONFIG_HEADERS([config.h])
 
+# We don't want default AC_PROG_* behaviour
+OLD_CXXFLAGS="$CXXFLAGS"
+OLD_CPPFLAGS="$CPPFLAGS"
+OLD_CFLAGS="$CFLAGS"
+
 # Checks for programs.
 AC_PROG_CXX
+
+# Restoring output variables
+CXXFLAGS="$OLD_CXXFLAGS"
+CPPFLAGS="$OLD_CPPFLAGS"
+CFLAGS="$OLD_CFLAGS"
+AC_SUBST([CPPFLAGS])
+AC_SUBST([CXXFLAGS])
+AC_SUBST([CFLAGS])
 
 # Checks for libraries.
 AX_GROMACS
@@ -32,6 +45,8 @@ CPPFLAGS=" -I../include/ $CPPFLAGS $BOOST_CPPFLAGS"
 AC_SUBST([CPPFLAGS])
 
 # Checks for typedefs, structures, and compiler characteristics.
+AX_CONF_ARGS
+AX_ENABLE_WARNINGS
 
 # Checks for library functions.
 
