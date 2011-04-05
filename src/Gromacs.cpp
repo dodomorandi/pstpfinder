@@ -47,6 +47,7 @@ namespace Gromacs
 
   Gromacs::~Gromacs()
   {
+    operationThread.join();
 #ifdef GMX45
     if(gotTrajectory)
       output_env_done(oenv);
@@ -54,8 +55,14 @@ namespace Gromacs
     gmx_atomprop_destroy(aps);
   }
   
-  bool
+  void
   Gromacs::calculateSas()
+  {
+    operationThread = boost::thread(boost::ref(*this));
+  }
+  
+  void
+  Gromacs::operator ()()
   {
     bool bTop, bDGsol;
     real totarea, totvolume;
@@ -183,9 +190,7 @@ namespace Gromacs
     delete[] grps->index;
     delete[] grps;
     
-    //sasAnalysis.save();
-    
-    return true;
+    //return true;
   }
   
   unsigned long

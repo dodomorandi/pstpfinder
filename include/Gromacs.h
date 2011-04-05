@@ -7,6 +7,8 @@
 
 #include <string>
 
+#include <boost/thread/thread.hpp>
+
 extern "C" {
 #include <atomprop.h>
 #include <statutil.h>
@@ -39,12 +41,13 @@ namespace Gromacs
             float solventSize = 0.14);
     // FIXME: It will have to return an object Molecular Dynamics with SAS
     // FIXME: additional informations
-    bool calculateSas();
+    void calculateSas();
     
     string getTrajectoryFile() const;
     string getTopologyFile() const;
     unsigned long getAtomsCount() const;
 
+    void operator ()();
   private:
 #ifdef GMX45
     output_env_t oenv;
@@ -66,6 +69,8 @@ namespace Gromacs
     float solSize;
     string sasTarget;
     gmx_mtop_t mtop;
+    
+    boost::thread operationThread;
     
     void init(float solventSize);
     bool getTopology();
