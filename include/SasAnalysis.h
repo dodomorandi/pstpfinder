@@ -68,6 +68,7 @@ namespace Gromacs
       bool isStopped;
       boost::thread thread;
       boost::interprocess::interprocess_condition wakeCondition;
+      boost::interprocess::interprocess_mutex wakeMutex;
     };
 
     SaveThread* saveThread;

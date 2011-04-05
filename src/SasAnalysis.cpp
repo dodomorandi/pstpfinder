@@ -70,6 +70,8 @@ SasAnalysis::flush()
   bufferMutex.lock();
   bufferSemaphoreCount--;
   chunks.push_back(frames);
+  if(curChunk == chunks.end())
+    curChunk--;
   bufferMutex.unlock();
   
   saveThread->wakeUp();
@@ -113,6 +115,9 @@ SasAnalysis::save()
   // 
   
   archive::binary_oarchive out(outFilter);
+  
+  if(chunks.empty())
+    return false;
   
   if(curChunk == chunks.end())
     return false;
@@ -163,19 +168,24 @@ SasAnalysis::SaveThread::~SaveThread()
 void
 SasAnalysis::SaveThread::operator ()()
 {
+  bool cond;
+  
   while(not isStopped)
   {
-    ip::scoped_lock<ip::interprocess_mutex> lock(parent->bufferMutex);
     parent->bufferMutex.lock();
-    if(parent->bufferSemaphoreCount == parent->bufferSemaphoreMax and
-       not isStopped)
-      wakeCondition.wait(lock);
-      
-    else if(isStopped)
+    cond = (parent->bufferSemaphoreCount == parent->bufferSemaphoreMax and
+       not isStopped);
+    parent->bufferMutex.unlock();
+    
+    if(cond)
     {
-      parent->bufferMutex.unlock();
+      ip::scoped_lock<ip::interprocess_mutex> lock(wakeMutex);      
+      wakeCondition.wait(lock);
+    } 
+    else if(isStopped)
       break;
-    }
+    
+    parent->bufferMutex.lock();
     
     parent->save();
 
@@ -216,7 +226,7 @@ void
 SasAnalysis::SaveThread::stop()
 {
   if(isStopped)
-    return
+    return;
   
   parent->bufferMutex.lock();
   isStopped = true;
