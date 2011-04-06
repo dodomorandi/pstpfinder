@@ -72,6 +72,7 @@ namespace Gromacs
     gmx_mtop_t mtop;
     
     boost::thread operationThread;
+    mutable unsigned int cachedNFrames;
     
     void init(float solventSize);
     bool getTopology();

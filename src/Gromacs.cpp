@@ -40,6 +40,7 @@ namespace Gromacs
     sasTarget = "Protein";
     gotTopology = false;
     gotTrajectory = false;
+    cachedNFrames = 0;
 
     // Damn it! I can't handle errors raised inside this f*****g function,
     // because it simply crashes on a ERROR HANDLING FUNCTION, overriding
@@ -250,6 +251,9 @@ namespace Gromacs
   unsigned int
   Gromacs::getFramesCount() const
   {
+    if(cachedNFrames > 0)
+      return cachedNFrames;
+    
     namespace file = boost::filesystem;
     if(not file::exists(file::path(trjName)))
       return 0;
@@ -278,6 +282,6 @@ namespace Gromacs
     
     output_env_done(_oenv);
     
-    return nFrames;
+    return cachedNFrames = nFrames;
   }
 };
