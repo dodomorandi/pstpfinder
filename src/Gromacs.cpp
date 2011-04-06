@@ -6,6 +6,8 @@
 #include <iostream>
 #include <cstring>
 
+#include <boost/filesystem.hpp>
+
 using namespace std;
 
 namespace Gromacs
@@ -243,5 +245,39 @@ namespace Gromacs
     }
     else
       return gotTrajectory = true;
+  }
+  
+  unsigned int
+  Gromacs::getFramesCount() const
+  {
+    namespace file = boost::filesystem;
+    if(not file::exists(file::path(trjName)))
+      return 0;
+    
+    unsigned int nFrames;
+    output_env_t _oenv;
+    t_trxstatus *_status;
+    real _t;
+    rvec* _x;
+    matrix _box;
+    int _natoms;
+    
+    _oenv = new output_env();
+    output_env_init_default(_oenv);
+    
+    if((_natoms = read_first_x(_oenv,&_status, trjName.c_str(), &_t, &_x, 
+                               _box)) == 0)
+    {
+      output_env_done(_oenv);
+      return 0;
+    }
+    nFrames = 1;
+    
+    while(read_next_x(_oenv, _status, &_t, _natoms, _x, _box))
+      nFrames++;
+    
+    output_env_done(_oenv);
+    
+    return nFrames;
   }
 };

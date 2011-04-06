@@ -46,6 +46,7 @@ namespace Gromacs
     string getTrajectoryFile() const;
     string getTopologyFile() const;
     unsigned long getAtomsCount() const;
+    unsigned int getFramesCount() const;
 
     void operator ()();
   private:
