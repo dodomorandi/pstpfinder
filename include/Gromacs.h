@@ -8,6 +8,7 @@
 #include <string>
 
 #include <boost/thread/thread.hpp>
+#include <boost/interprocess/sync/interprocess_mutex.hpp>
 
 extern "C" {
 #include <atomprop.h>
@@ -47,6 +48,11 @@ namespace Gromacs
     string getTopologyFile() const;
     unsigned long getAtomsCount() const;
     unsigned int getFramesCount() const;
+    
+    /**
+     * @brief Returns the number of the current frame starting from 1
+     */
+    unsigned int getCurrentFrame() const;
 
     void operator ()();
   private:
@@ -72,7 +78,9 @@ namespace Gromacs
     gmx_mtop_t mtop;
     
     boost::thread operationThread;
+    mutable boost::interprocess::interprocess_mutex operationMutex;
     mutable unsigned int cachedNFrames;
+    unsigned int currentFrame; // index-0 based -- like always
     
     void init(float solventSize);
     bool getTopology();

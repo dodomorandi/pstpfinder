@@ -170,7 +170,10 @@ namespace Gromacs
           dgsolv += area[i]*dgs_factor[i];
       }
       
+      operationMutex.lock();
       sasAnalysis << atoms;
+      currentFrame++;
+      operationMutex.unlock();
       
       delete[] area;
       if(nsurfacedots > 0)
@@ -234,6 +237,9 @@ namespace Gromacs
       output_env_init_default(oenv);
     }
     
+    cachedNFrames = 0;
+    currentFrame = 0;
+    
     if((natoms = 
           read_first_x(oenv, &status, trjName.c_str(), &t, &x, box)) == 0)
 #else
@@ -283,5 +289,17 @@ namespace Gromacs
     output_env_done(_oenv);
     
     return cachedNFrames = nFrames;
+  }
+  
+  unsigned int
+  Gromacs::getCurrentFrame() const
+  {
+    unsigned int nFrame;
+    
+    operationMutex.lock();
+    nFrame = currentFrame + 1;
+    operationMutex.unlock();
+    
+    return nFrame;
   }
 };
