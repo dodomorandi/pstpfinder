@@ -18,6 +18,7 @@ private:
   HBox hboxTrajectory, hboxTopology;
   HButtonBox buttonBoxRun;
   Button  buttonRun;
+  ProgressBar progress;
   
   void init();
   void runAnalysis();

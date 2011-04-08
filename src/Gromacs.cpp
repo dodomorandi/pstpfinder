@@ -7,6 +7,7 @@
 #include <cstring>
 
 #include <boost/filesystem.hpp>
+#include <boost/interprocess/sync/scoped_lock.hpp>
 
 using namespace std;
 
@@ -173,6 +174,7 @@ namespace Gromacs
       operationMutex.lock();
       sasAnalysis << atoms;
       currentFrame++;
+      wakeCondition.notify_all();
       operationMutex.unlock();
       
       delete[] area;
@@ -301,5 +303,25 @@ namespace Gromacs
     operationMutex.unlock();
     
     return nFrame;
+  }
+
+  void
+  Gromacs::waitNextFrame() const
+  {
+    namespace ip = boost::interprocess;
+    ip::scoped_lock<ip::interprocess_mutex> slock(wakeMutex);
+    wakeCondition.wait(slock);
+  }
+
+  void
+  Gromacs::waitNextFrame(unsigned int refFrame) const
+  {
+    namespace ip = boost::interprocess;
+
+    while(getCurrentFrame() < refFrame + 1)
+    {
+      ip::scoped_lock<ip::interprocess_mutex> slock(wakeMutex);
+      wakeCondition.wait(slock);
+    }
   }
 };

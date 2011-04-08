@@ -9,6 +9,7 @@
 
 #include <boost/thread/thread.hpp>
 #include <boost/interprocess/sync/interprocess_mutex.hpp>
+#include <boost/interprocess/sync/interprocess_condition.hpp>
 
 extern "C" {
 #include <atomprop.h>
@@ -53,6 +54,15 @@ namespace Gromacs
      * @brief Returns the number of the current frame starting from 1
      */
     unsigned int getCurrentFrame() const;
+    void waitNextFrame() const;
+
+    /**
+     * @brief Waits for next frame
+     * @param refFrame Index-1 based of the hypotetical current frame.
+     *                 The method will return when the current frame is
+     *                 refFrame + 1
+     */
+    void waitNextFrame(unsigned int refFrame) const;
 
     void operator ()();
   private:
@@ -78,7 +88,8 @@ namespace Gromacs
     gmx_mtop_t mtop;
     
     boost::thread operationThread;
-    mutable boost::interprocess::interprocess_mutex operationMutex;
+    mutable boost::interprocess::interprocess_mutex operationMutex, wakeMutex;
+    mutable boost::interprocess::interprocess_condition wakeCondition;
     mutable unsigned int cachedNFrames;
     unsigned int currentFrame; // index-0 based -- like always
     

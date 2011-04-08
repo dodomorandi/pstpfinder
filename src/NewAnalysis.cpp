@@ -66,9 +66,10 @@ NewAnalysis::init()
   vboxMain.set_border_width(10);
   vboxMain.pack_start(mainFrame);
   vboxMain.pack_start(buttonBoxRun, PACK_SHRINK);
+
   add(vboxMain);
   set_size_request(300);
-  
+
   signal_delete_event().connect(sigc::ptr_fun(&closeApplication));
 }
 
@@ -77,6 +78,30 @@ NewAnalysis::runAnalysis()
 {
   Gromacs::Gromacs gromacs( trjChooser.get_filename(),
                             tprChooser.get_filename());
-  
+
+  if(not progress.is_ancestor(vboxMain))
+    vboxMain.pack_end(progress, PACK_EXPAND_WIDGET, 10);
+
+  set_sensitive(false);
+
+  progress.set_fraction(0);
+  progress.show();
+  while(Main::iteration(false));
+
+  unsigned int currentFrame;
+  unsigned int count = gromacs.getFramesCount();
+
   gromacs.calculateSas();
+
+  while((currentFrame = gromacs.getCurrentFrame()) < count)
+  {
+    progress.set_fraction(static_cast<float>(currentFrame) / count);
+    while(Main::iteration(false));
+    gromacs.waitNextFrame();
+  }
+  progress.set_fraction(1);
+  while(Main::iteration(false));
+
+  progress.hide();
+  set_sensitive(true);
 }
