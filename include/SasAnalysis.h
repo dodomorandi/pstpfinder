@@ -30,16 +30,16 @@ namespace Gromacs
   {
   public:
     SasAnalysis(unsigned int nAtoms,
+                std::string filename = "/tmp/trapof.csf",
+                bool savingMode = true,
                 unsigned int maxBytes = 134217728,
-                unsigned int maxChunk = 16777216,
-                std::string saveFile = "/tmp/trapof.csf",
-                bool savingMode = true);
+                unsigned int maxChunk = 16777216);
                 
     SasAnalysis(const Gromacs& gromacs,
+                std::string filename = "/tmp/trapof.csf",
+                bool savingMode = true,
                 unsigned int maxBytes = 134217728,
-                unsigned int maxChunk = 16777216,
-                std::string saveFile = "/tmp/trapof.csf",
-                bool savingMode = true);
+                unsigned int maxChunk = 16777216);
     
     ~SasAnalysis();
     const SasAnalysis& operator <<(SasAtom* sasAtoms);

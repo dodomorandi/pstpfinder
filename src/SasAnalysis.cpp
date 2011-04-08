@@ -7,10 +7,10 @@ namespace ip = boost::interprocess;
 namespace fs = boost::filesystem;
 
 SasAnalysis::SasAnalysis(unsigned int nAtoms,
-                         unsigned int maxBytes,
-                         unsigned int maxChunk,
                          std::string filename,
-                         bool savingMode)
+                         bool savingMode,
+                         unsigned int maxBytes,
+                         unsigned int maxChunk)
 {
   this->nAtoms = nAtoms;
   gromacs = 0;
@@ -18,10 +18,10 @@ SasAnalysis::SasAnalysis(unsigned int nAtoms,
 }
 
 SasAnalysis::SasAnalysis(const Gromacs& gromacs,
-                         unsigned int maxBytes,
-                         unsigned int maxChunk,
                          std::string filename,
-                         bool savingMode)
+                         bool savingMode,
+                         unsigned int maxBytes,
+                         unsigned int maxChunk)
 {
   nAtoms = gromacs.getAtomsCount();
   this->gromacs = &gromacs;
