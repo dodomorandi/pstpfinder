@@ -43,7 +43,6 @@ namespace Gromacs
     
     ~SasAnalysis();
     const SasAnalysis& operator <<(SasAtom* sasAtoms);
-    static SasAnalysis open(const std::string& filename);
   private:
     boost::circular_buffer<std::vector<SasAtom*> > chunks;
     std::vector<SasAtom*> frames;
