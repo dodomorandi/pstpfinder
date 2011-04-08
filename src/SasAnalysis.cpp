@@ -4,32 +4,45 @@ using namespace Gromacs;
 namespace archive = boost::archive;
 namespace io = boost::iostreams;
 namespace ip = boost::interprocess;
+namespace fs = boost::filesystem;
 
 SasAnalysis::SasAnalysis(unsigned int nAtoms,
                          unsigned int maxBytes,
                          unsigned int maxChunk,
-                         std::string saveFile)
+                         std::string filename,
+                         bool savingMode)
 {
   this->nAtoms = nAtoms;
   gromacs = 0;
-  init(maxBytes, maxChunk, saveFile);
+  init(maxBytes, maxChunk, filename, savingMode);
 }
 
 SasAnalysis::SasAnalysis(const Gromacs& gromacs,
                          unsigned int maxBytes,
                          unsigned int maxChunk,
-                         std::string saveFile)
+                         std::string filename,
+                         bool savingMode)
 {
   nAtoms = gromacs.getAtomsCount();
   this->gromacs = &gromacs;
-  init(maxBytes, maxChunk, saveFile);
+  init(maxBytes, maxChunk, filename, savingMode);
 }
 
 void
-SasAnalysis::init(unsigned int maxBytes, unsigned int maxChunk, string saveFile)
+SasAnalysis::init(unsigned int maxBytes, unsigned int maxChunk, string filename,
+                  bool savingMode)
 {
-  fileOut = io::file_descriptor_sink("/tmp/trapof.csf",
-                                     ios_base::trunc | ios_base::out);
+  this->filename = filename;
+  if(savingMode)
+  {
+    fileIO = io::file_descriptor(filename, BOOST_IOS::trunc | BOOST_IOS::out);
+    mode = MODE_SAVE;
+  }
+  else
+  {
+    fileIO = io::file_descriptor(filename, BOOST_IOS::in);
+    mode = MODE_OPEN;
+  }
   maxFrames = maxBytes / sizeof(SasAtom) / nAtoms;
   
   bufferSemaphoreMax = maxFrames * nAtoms * sizeof(SasAtom) / maxChunk;
@@ -37,16 +50,19 @@ SasAnalysis::init(unsigned int maxBytes, unsigned int maxChunk, string saveFile)
   chunks = boost::circular_buffer<std::vector<SasAtom*> >(bufferSemaphoreMax);
   curChunk = chunks.begin();
   bufferSemaphore = new ip::interprocess_semaphore(bufferSemaphoreMax);
-  saveThread = new SaveThread(*this);
+  if(mode == MODE_SAVE)
+    saveThread = new SaveThread(*this);
 }
 
 SasAnalysis::~SasAnalysis()
-{
-  if(frames.size() != 0)
-    flush();
-  
-  saveThread->stop();
-  delete saveThread;
+{  
+  if(mode == MODE_SAVE)
+  {
+    if(frames.size() != 0)
+      flush();
+    saveThread->stop();
+    delete saveThread;
+  }
     
   delete bufferSemaphore;
 }
@@ -66,6 +82,9 @@ SasAnalysis::operator <<(SasAtom* sasAtoms)
 void
 SasAnalysis::flush()
 {
+  if(mode != MODE_SAVE)
+    return;
+
   bufferSemaphore->wait();
   bufferMutex.lock();
   bufferSemaphoreCount--;
@@ -80,20 +99,26 @@ SasAnalysis::flush()
 bool
 SasAnalysis::save(const std::string& filename)
 {
+  if(mode != MODE_SAVE)
+    return false;
+
   if (this->filename == filename)
     return true;
   
   std::string old_filename = this->filename;
+  fs::copy_file(old_filename, filename);
+  if(not fs::exists(filename))
+    return false;
+
   this->filename = filename;
-  fileOut = io::file_descriptor_sink(filename, ios_base::trunc | ios_base::out);
+  fileIO = io::file_descriptor(filename, BOOST_IOS::app | BOOST_IOS::out);
   
   if(not save())
   {
-    fileOut.close();
+    fileIO.close();
     boost::filesystem::remove(filename);
     this->filename = old_filename;
-    fileOut = io::file_descriptor_sink(old_filename,
-                                       std::ios_base::app | std::ios_base::out);
+    fileIO = io::file_descriptor(old_filename, BOOST_IOS::app | BOOST_IOS::out);
     return false;
   }
   
@@ -103,11 +128,14 @@ SasAnalysis::save(const std::string& filename)
 bool
 SasAnalysis::save()
 {
+  if(mode != MODE_SAVE)
+  return false;
+
   io::filtering_ostream outFilter;
   
   outFilter.strict_sync();
   outFilter.push(io::zlib_compressor());
-  outFilter.push(fileOut);
+  outFilter.push(fileIO);
   
   // Let's fill header.
   // We need information about analysis selected options.

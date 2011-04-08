@@ -91,8 +91,6 @@ NewAnalysis::runAnalysis()
   unsigned int currentFrame;
   unsigned int count = gromacs.getFramesCount();
 
-  gromacs.calculateSas();
-
   while((currentFrame = gromacs.getCurrentFrame()) < count)
   {
     progress.set_fraction(static_cast<float>(currentFrame) / count);
