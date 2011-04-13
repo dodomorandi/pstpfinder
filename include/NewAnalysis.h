@@ -14,14 +14,18 @@ private:
   Frame mainFrame;
   VBox vboxFrame, vboxMain;
   FileChooserButton trjChooser, tprChooser;
-  Label labelTrajectory, labelTopology;
-  HBox hboxTrajectory, hboxTopology;
+  Label labelTrajectory, labelTopology, labelBegin, labelEnd;
+  HBox hboxTrajectory, hboxTopology, hboxBegin, hboxEnd;
   HButtonBox buttonBoxRun;
   Button  buttonRun;
   ProgressBar progress;
+  SpinButton spinBegin, spinEnd;
+  HScale hScaleBegin, hScaleEnd;
+  Spinner spinnerWait;
   
   void init();
   void runAnalysis();
+  void chooserTrajectoryClicked();
 };
 
 #endif
