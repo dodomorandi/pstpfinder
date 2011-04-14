@@ -18,6 +18,7 @@ extern "C" {
 #include <mtop_util.h>
 #include <main.h>
 #include <rmpbc.h>
+#include <xtcio.h>
 };
 
 /* Taken from src/tools/nsc.h, Gromacs 4.5.2 */
@@ -49,6 +50,10 @@ namespace Gromacs
     string getTopologyFile() const;
     unsigned long getAtomsCount() const;
     unsigned int getFramesCount() const;
+    float getTimeStep() const; // In nsec
+    unsigned int getFrameStep() const;
+    void setBegin(float beginTime);
+    void setEnd(float endTime);
     
     /**
      * @brief Returns the number of the current frame starting from 1

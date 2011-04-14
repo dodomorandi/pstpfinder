@@ -261,7 +261,7 @@ namespace Gromacs
   {
     if(cachedNFrames > 0)
       return cachedNFrames;
-    
+
     namespace file = boost::filesystem;
     if(not file::exists(file::path(trjName)))
       return 0;
@@ -309,8 +309,12 @@ namespace Gromacs
   Gromacs::waitNextFrame() const
   {
     namespace ip = boost::interprocess;
-    ip::scoped_lock<ip::interprocess_mutex> slock(wakeMutex);
-    wakeCondition.wait(slock);
+
+    if(getCurrentFrame() < getFramesCount())
+    {
+      ip::scoped_lock<ip::interprocess_mutex> slock(wakeMutex);
+      wakeCondition.wait(slock);
+    }
   }
 
   void
@@ -323,5 +327,79 @@ namespace Gromacs
       ip::scoped_lock<ip::interprocess_mutex> slock(wakeMutex);
       wakeCondition.wait(slock);
     }
+  }
+
+  float
+  Gromacs::getTimeStep() const
+  {
+    t_fileio* xtc;
+    int natoms;
+    int step;
+    real time;
+    matrix box;
+    rvec *x;
+    real prec;
+    gmx_bool bOK;
+
+    if(not boost::filesystem::exists(trjName))
+      return 0;
+
+    xtc = open_xtc(trjName.c_str(), "r");
+    if(read_first_xtc(xtc, &natoms, &step, &time, box, &x, &prec, &bOK) == 0)
+    {
+      close_xtc(xtc);
+      return 0;
+    }
+    if(read_next_xtc(xtc, natoms, &step, &time, box, x, &prec, &bOK) == 0)
+    {
+      close_xtc(xtc);
+      return 0;
+    }
+    close_xtc(xtc);
+
+    return time;
+  }
+
+  unsigned int
+  Gromacs::getFrameStep() const
+  {
+    t_fileio* xtc;
+    int natoms;
+    int step;
+    real time;
+    matrix box;
+    rvec *x;
+    real prec;
+    gmx_bool bOK;
+
+    if(not boost::filesystem::exists(trjName))
+      return 0;
+
+    xtc = open_xtc(trjName.c_str(), "r");
+    if(read_first_xtc(xtc, &natoms, &step, &time, box, &x, &prec, &bOK) == 0)
+    {
+      close_xtc(xtc);
+      return 0;
+    }
+    if(read_next_xtc(xtc, natoms, &step, &time, box, x, &prec, &bOK) == 0)
+    {
+      close_xtc(xtc);
+      return 0;
+    }
+    close_xtc(xtc);
+
+    return step;
+  }
+
+  void
+  Gromacs::setBegin(float beginTime)
+  {
+    setTimeValue(TBEGIN, beginTime);
+  }
+
+  void
+  Gromacs::setEnd(float endTime)
+  {
+    setTimeValue(TEND, endTime);
   }
 };

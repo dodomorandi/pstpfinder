@@ -59,6 +59,7 @@ NewAnalysis::init()
   hScaleBegin.set_draw_value(false);
   hScaleBegin.set_sensitive(false);
   spinBegin.set_sensitive(false);
+  spinBegin.set_digits(3);
   hboxBegin.pack_start(labelBegin, PACK_SHRINK);
   hboxBegin.pack_start(hScaleBegin);
   hboxBegin.pack_start(spinBegin, PACK_SHRINK);
@@ -70,6 +71,7 @@ NewAnalysis::init()
   hScaleEnd.set_draw_value(false);
   hScaleEnd.set_sensitive(false);
   spinEnd.set_sensitive(false);
+  spinEnd.set_digits(3);
   hboxEnd.pack_start(labelEnd, PACK_SHRINK);
   hboxEnd.pack_start(hScaleEnd);
   hboxEnd.pack_start(spinEnd, PACK_SHRINK);
@@ -110,6 +112,9 @@ NewAnalysis::runAnalysis()
   Gromacs::Gromacs gromacs( trjChooser.get_filename(),
                             tprChooser.get_filename());
 
+  gromacs.setBegin(spinBegin.get_value());
+  gromacs.setEnd(spinEnd.get_value());
+
   if(not progress.is_ancestor(vboxMain))
     vboxMain.pack_end(progress, PACK_EXPAND_WIDGET, 10);
 
@@ -121,6 +126,8 @@ NewAnalysis::runAnalysis()
 
   unsigned int currentFrame;
   unsigned int count = gromacs.getFramesCount();
+
+  gromacs.calculateSas();
 
   while((currentFrame = gromacs.getCurrentFrame()) < count)
   {
@@ -150,11 +157,13 @@ NewAnalysis::chooserTrajectoryClicked()
     Gromacs::Gromacs gromacs(trjChooser.get_filename(),"");
     int frames = gromacs.getFramesCount();
 
-    spinBegin.set_range(1, frames);
-    spinBegin.set_value(1);
+    spinBegin.set_range(0, (frames - 1) * gromacs.getTimeStep());
+    spinBegin.set_value(0);
+    spinBegin.set_increments(gromacs.getTimeStep(), (frames - 1) / 100);
 
-    spinEnd.set_range(1, frames);
-    spinEnd.set_value(frames);
+    spinEnd.set_range(0, (frames - 1) * gromacs.getTimeStep());
+    spinEnd.set_value((frames - 1) * gromacs.getTimeStep());
+    spinEnd.set_increments(gromacs.getTimeStep(), (frames - 1) / 100);
 
     spinBegin.set_sensitive();
     spinEnd.set_sensitive();
