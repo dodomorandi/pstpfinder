@@ -209,26 +209,27 @@ SasAnalysis::SaveThread::operator ()()
     {
       ip::scoped_lock<ip::interprocess_mutex> lock(wakeMutex);      
       wakeCondition.wait(lock);
-    } 
+    }
     else if(isStopped)
       break;
     
     parent->bufferMutex.lock();
     
-    parent->save();
+    if(parent->save())
+    {
+      for
+      (
+        std::vector<SasAtom*>::iterator i = parent->curChunk->begin();
+        i < parent->curChunk->end();
+        i++
+      )
+        delete[] *i;
+      parent->curChunk->clear();
 
-    for
-    (
-      std::vector<SasAtom*>::iterator i = parent->curChunk->begin();
-      i < parent->curChunk->end();
-      i++
-    )
-      delete[] *i;
-    parent->curChunk->clear();
-    
-    parent->curChunk++;
-    parent->bufferSemaphore->post();
-    parent->bufferSemaphoreCount++;
+      parent->curChunk++;
+      parent->bufferSemaphore->post();
+      parent->bufferSemaphoreCount++;
+    }
     
     parent->bufferMutex.unlock();
   }

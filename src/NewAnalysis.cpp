@@ -126,6 +126,7 @@ NewAnalysis::runAnalysis()
 
   unsigned int currentFrame;
   unsigned int count = gromacs.getFramesCount();
+  while(Main::iteration(false));
 
   gromacs.calculateSas();
 
