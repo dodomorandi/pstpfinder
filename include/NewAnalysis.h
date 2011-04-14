@@ -8,8 +8,14 @@ using namespace Gtk;
 class NewAnalysis: public Window
 {
 public:
+  enum parallelOperation
+  {
+    OPERATION_WAIT
+  };
+
   NewAnalysis();
   NewAnalysis(Window& parent);
+  void operator ()(parallelOperation operation);
 private:
   Frame mainFrame;
   VBox vboxFrame, vboxMain;
@@ -22,7 +28,7 @@ private:
   SpinButton spinBegin, spinEnd;
   HScale hScaleBegin, hScaleEnd;
   Spinner spinnerWait;
-  
+
   void init();
   void runAnalysis();
   void chooserTrajectoryClicked();

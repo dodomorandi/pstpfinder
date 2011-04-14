@@ -93,7 +93,7 @@ NewAnalysis::init()
     connect(sigc::mem_fun(*this, &NewAnalysis::runAnalysis));
   buttonBoxRun.set_layout(BUTTONBOX_END);
   buttonBoxRun.pack_end(buttonRun);
-  
+
   vboxMain.set_homogeneous(false);
   vboxMain.set_spacing(10);
   vboxMain.set_border_width(10);
@@ -155,6 +155,22 @@ NewAnalysis::chooserTrajectoryClicked()
   }
   else
   {
+    static boost::thread th;
+    th.join();
+    th = boost::thread(boost::ref(*this), OPERATION_WAIT);
+  }
+}
+
+void
+NewAnalysis::operator ()(parallelOperation operation)
+{
+  if(operation == OPERATION_WAIT)
+  {
+    mainFrame.remove();
+    buttonRun.set_sensitive(false);
+    mainFrame.add(spinnerWait);
+    spinnerWait.show();
+    spinnerWait.start();
     Gromacs::Gromacs gromacs(trjChooser.get_filename(),"");
     int frames = gromacs.getFramesCount();
 
@@ -170,5 +186,10 @@ NewAnalysis::chooserTrajectoryClicked()
     spinEnd.set_sensitive();
     hScaleBegin.set_sensitive();
     hScaleEnd.set_sensitive();
+    spinnerWait.stop();
+    mainFrame.remove();
+    mainFrame.add(vboxFrame);
+    mainFrame.show_all();
+    buttonRun.set_sensitive();
   }
 }
