@@ -15,7 +15,6 @@ public:
 
   NewAnalysis();
   NewAnalysis(Window& parent);
-  void operator ()(parallelOperation operation);
 private:
   Frame mainFrame;
   VBox vboxFrame, vboxMain;
@@ -32,6 +31,7 @@ private:
   void init();
   void runAnalysis();
   void chooserTrajectoryClicked();
+  void threadTrajectoryClicked();
 };
 
 #endif

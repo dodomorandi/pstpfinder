@@ -19,6 +19,7 @@ extern "C" {
 #include <main.h>
 #include <rmpbc.h>
 #include <xtcio.h>
+#include <typedefs.h>
 };
 
 /* Taken from src/tools/nsc.h, Gromacs 4.5.2 */

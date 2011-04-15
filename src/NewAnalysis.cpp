@@ -25,13 +25,14 @@ NewAnalysis::NewAnalysis()
 void
 NewAnalysis::init()
 {
+  if(Glib::thread_supported())
+    Glib::thread_init();
+
   FileFilter trjFilter;
   trjFilter.set_name("Trajectory files");
   trjFilter.add_pattern("*.xtc");
   trjFilter.add_pattern("*.trj");
   trjChooser.add_filter(trjFilter);
-  trjChooser.signal_file_activated().connect(
-    sigc::mem_fun(*this, &NewAnalysis::chooserTrajectoryClicked));
   trjChooser.signal_file_set().connect(
     sigc::mem_fun(*this, &NewAnalysis::chooserTrajectoryClicked));
   
@@ -122,22 +123,26 @@ NewAnalysis::runAnalysis()
 
   progress.set_fraction(0);
   progress.show();
-  while(Main::iteration(false));
+  while(Main::events_pending())
+    Main::iteration();
 
   unsigned int currentFrame;
   unsigned int count = gromacs.getFramesCount();
-  while(Main::iteration(false));
+  while(Main::events_pending())
+    Main::iteration();
 
   gromacs.calculateSas();
 
   while((currentFrame = gromacs.getCurrentFrame()) < count)
   {
     progress.set_fraction(static_cast<float>(currentFrame) / count);
-    while(Main::iteration(false));
+    while(Main::events_pending())
+      Main::iteration();
     gromacs.waitNextFrame();
   }
   progress.set_fraction(1);
-  while(Main::iteration(false));
+  while(Main::events_pending())
+    Main::iteration();
 
   progress.hide();
   set_sensitive(true);
@@ -154,42 +159,38 @@ NewAnalysis::chooserTrajectoryClicked()
     hScaleEnd.set_sensitive(false);
   }
   else
-  {
-    static boost::thread th;
-    th.join();
-    th = boost::thread(boost::ref(*this), OPERATION_WAIT);
-  }
+    Glib::Thread::create(
+      sigc::mem_fun(*this, &NewAnalysis::threadTrajectoryClicked), false);
 }
 
 void
-NewAnalysis::operator ()(parallelOperation operation)
+NewAnalysis::threadTrajectoryClicked()
 {
-  if(operation == OPERATION_WAIT)
-  {
-    mainFrame.remove();
-    buttonRun.set_sensitive(false);
-    mainFrame.add(spinnerWait);
-    spinnerWait.show();
-    spinnerWait.start();
-    Gromacs::Gromacs gromacs(trjChooser.get_filename(),"");
-    int frames = gromacs.getFramesCount();
+  if(spinnerWait.get_parent() == 0)
+    vboxMain.pack_start(spinnerWait);
+  mainFrame.hide();
+  buttonBoxRun.hide();
+  spinnerWait.show();
+  spinnerWait.start();
 
-    spinBegin.set_range(0, (frames - 1) * gromacs.getTimeStep());
-    spinBegin.set_value(0);
-    spinBegin.set_increments(gromacs.getTimeStep(), (frames - 1) / 100);
+  Gromacs::Gromacs gromacs(trjChooser.get_filename(),"");
+  int frames = gromacs.getFramesCount();
 
-    spinEnd.set_range(0, (frames - 1) * gromacs.getTimeStep());
-    spinEnd.set_value((frames - 1) * gromacs.getTimeStep());
-    spinEnd.set_increments(gromacs.getTimeStep(), (frames - 1) / 100);
+  spinnerWait.stop();
+  spinnerWait.hide();
+  mainFrame.show();
+  buttonBoxRun.show();
 
-    spinBegin.set_sensitive();
-    spinEnd.set_sensitive();
-    hScaleBegin.set_sensitive();
-    hScaleEnd.set_sensitive();
-    spinnerWait.stop();
-    mainFrame.remove();
-    mainFrame.add(vboxFrame);
-    mainFrame.show_all();
-    buttonRun.set_sensitive();
-  }
+  spinBegin.set_sensitive();
+  spinEnd.set_sensitive();
+  hScaleBegin.set_sensitive();
+  hScaleEnd.set_sensitive();
+
+  spinBegin.set_range(0, (frames - 1) * gromacs.getTimeStep());
+  spinBegin.set_value(0);
+  spinBegin.set_increments(gromacs.getTimeStep(), (frames - 1) / 100);
+
+  spinEnd.set_range(0, (frames - 1) * gromacs.getTimeStep());
+  spinEnd.set_value((frames - 1) * gromacs.getTimeStep());
+  spinEnd.set_increments(gromacs.getTimeStep(), (frames - 1) / 100);
 }

@@ -332,63 +332,59 @@ namespace Gromacs
   float
   Gromacs::getTimeStep() const
   {
-    t_fileio* xtc;
-    int natoms;
-    int step;
-    real time;
-    matrix box;
-    rvec *x;
-    real prec;
-    gmx_bool bOK;
-
-    if(not boost::filesystem::exists(trjName))
+    namespace file = boost::filesystem;
+    if(not file::exists(file::path(trjName)))
       return 0;
 
-    xtc = open_xtc(trjName.c_str(), "r");
-    if(read_first_xtc(xtc, &natoms, &step, &time, box, &x, &prec, &bOK) == 0)
+    output_env_t _oenv;
+    t_trxstatus *_status;
+    int _natoms;
+    t_trxframe _fr;
+
+    _oenv = new output_env();
+    output_env_init_default(_oenv);
+
+    if((_natoms = read_first_frame(_oenv,&_status, trjName.c_str(), &_fr, 0)
+       ) == 0)
     {
-      close_xtc(xtc);
+      output_env_done(_oenv);
       return 0;
     }
-    if(read_next_xtc(xtc, natoms, &step, &time, box, x, &prec, &bOK) == 0)
-    {
-      close_xtc(xtc);
-      return 0;
-    }
-    close_xtc(xtc);
 
-    return time;
+    read_next_frame(_oenv, _status, &_fr);
+
+    output_env_done(_oenv);
+
+    return _fr.time;
   }
 
   unsigned int
   Gromacs::getFrameStep() const
   {
-    t_fileio* xtc;
-    int natoms;
-    int step;
-    real time;
-    matrix box;
-    rvec *x;
-    real prec;
-    gmx_bool bOK;
-
-    if(not boost::filesystem::exists(trjName))
+    namespace file = boost::filesystem;
+    if(not file::exists(file::path(trjName)))
       return 0;
 
-    xtc = open_xtc(trjName.c_str(), "r");
-    if(read_first_xtc(xtc, &natoms, &step, &time, box, &x, &prec, &bOK) == 0)
+    output_env_t _oenv;
+    t_trxstatus *_status;
+    int _natoms;
+    t_trxframe _fr;
+
+    _oenv = new output_env();
+    output_env_init_default(_oenv);
+
+    if((_natoms = read_first_frame(_oenv,&_status, trjName.c_str(), &_fr, 0)
+       ) == 0)
     {
-      close_xtc(xtc);
+      output_env_done(_oenv);
       return 0;
     }
-    if(read_next_xtc(xtc, natoms, &step, &time, box, x, &prec, &bOK) == 0)
-    {
-      close_xtc(xtc);
-      return 0;
-    }
-    close_xtc(xtc);
 
-    return step;
+    read_next_frame(_oenv, _status, &_fr);
+
+    output_env_done(_oenv);
+
+    return _fr.step;
   }
 
   void
