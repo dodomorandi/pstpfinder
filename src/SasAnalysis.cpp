@@ -8,30 +8,26 @@ namespace fs = boost::filesystem;
 
 SasAnalysis::SasAnalysis(unsigned int nAtoms,
                          std::string filename,
-                         bool savingMode,
-                         unsigned int maxBytes,
-                         unsigned int maxChunk)
+                         bool savingMode)
 {
   this->nAtoms = nAtoms;
   gromacs = 0;
-  init(maxBytes, maxChunk, filename, savingMode);
+  init(filename, savingMode);
 }
 
 SasAnalysis::SasAnalysis(const Gromacs& gromacs,
                          std::string filename,
-                         bool savingMode,
-                         unsigned int maxBytes,
-                         unsigned int maxChunk)
+                         bool savingMode)
 {
   nAtoms = gromacs.getAtomsCount();
   this->gromacs = &gromacs;
-  init(maxBytes, maxChunk, filename, savingMode);
+  init(filename, savingMode);
 }
 
 void
-SasAnalysis::init(unsigned int maxBytes, unsigned int maxChunk, string filename,
-                  bool savingMode)
+SasAnalysis::init(string filename, bool savingMode)
 {
+  changeable = true;
   this->filename = filename;
   if(savingMode)
   {
@@ -43,19 +39,16 @@ SasAnalysis::init(unsigned int maxBytes, unsigned int maxChunk, string filename,
     fileIO = io::file_descriptor(filename, BOOST_IOS::in);
     mode = MODE_OPEN;
   }
-  maxFrames = maxBytes / sizeof(SasAtom) / nAtoms;
-  
-  bufferSemaphoreMax = maxFrames * nAtoms * sizeof(SasAtom) / maxChunk;
-  bufferSemaphoreCount = bufferSemaphoreMax;
-  chunks = boost::circular_buffer<std::vector<SasAtom*> >(bufferSemaphoreMax);
-  curChunk = chunks.begin();
-  bufferSemaphore = new ip::interprocess_semaphore(bufferSemaphoreMax);
-  if(mode == MODE_SAVE)
-    saveThread = new SaveThread(*this);
+
+  maxBytes = 134217728;
+  maxChunk = 16777216;
 }
 
 SasAnalysis::~SasAnalysis()
-{  
+{
+  if(changeable)
+    return;
+
   if(mode == MODE_SAVE)
   {
     if(frames.size() != 0)
@@ -71,6 +64,15 @@ const SasAnalysis&
 SasAnalysis::operator <<(SasAtom* sasAtoms)
 {
   SasAtom* tmpFrame = new SasAtom[nAtoms];
+  if(changeable)
+  {
+    changeable = false;
+    bufferSemaphore = new ip::interprocess_semaphore(bufferSemaphoreMax);
+
+    if(mode == MODE_SAVE)
+      saveThread = new SaveThread(*this);
+  }
+
   std::copy(sasAtoms, sasAtoms + nAtoms, tmpFrame);
   
   frames.push_back(tmpFrame);
@@ -84,6 +86,15 @@ SasAnalysis::flush()
 {
   if(mode != MODE_SAVE)
     return;
+
+  if(changeable)
+  {
+    changeable = false;
+    bufferSemaphore = new ip::interprocess_semaphore(bufferSemaphoreMax);
+
+    if(mode == MODE_SAVE)
+      saveThread = new SaveThread(*this);
+  }
 
   bufferSemaphore->wait();
   bufferMutex.lock();
@@ -263,4 +274,54 @@ SasAnalysis::SaveThread::stop()
   parent->bufferMutex.unlock();
   
   thread.join();
+}
+
+bool
+SasAnalysis::setMaxBytes(unsigned long bytes)
+{
+  if(not changeable)
+    return false;
+
+  maxBytes = bytes;
+  updateChunks();
+
+  return true;
+}
+
+unsigned long
+SasAnalysis::getMaxBytes()
+{
+  return maxBytes;
+}
+
+bool
+SasAnalysis::setMaxChunkSize(unsigned long bytes)
+{
+  if(not changeable)
+    return false;
+
+  maxChunk = bytes;
+  updateChunks();
+
+  return true;
+}
+
+unsigned long
+SasAnalysis::getMaxChunkSize()
+{
+  return maxChunk;
+}
+
+void
+SasAnalysis::updateChunks()
+{
+  if(not changeable)
+    return;
+
+  maxFrames = maxBytes / sizeof(SasAtom) / nAtoms;
+
+  bufferSemaphoreMax = maxFrames * nAtoms * sizeof(SasAtom) / maxChunk;
+  bufferSemaphoreCount = bufferSemaphoreMax;
+  chunks = boost::circular_buffer<std::vector<SasAtom*> >(bufferSemaphoreMax);
+  curChunk = chunks.begin();
 }

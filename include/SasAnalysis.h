@@ -31,18 +31,19 @@ namespace Gromacs
   public:
     SasAnalysis(unsigned int nAtoms,
                 std::string filename = "/tmp/sas.csf",
-                bool savingMode = true,
-                unsigned int maxBytes = 134217728,
-                unsigned int maxChunk = 16777216);
+                bool savingMode = true);
                 
     SasAnalysis(const Gromacs& gromacs,
                 std::string filename = "/tmp/sas.csf",
-                bool savingMode = true,
-                unsigned int maxBytes = 134217728,
-                unsigned int maxChunk = 16777216);
+                bool savingMode = true);
     
     ~SasAnalysis();
     const SasAnalysis& operator <<(SasAtom* sasAtoms);
+    bool setMaxBytes(unsigned long bytes);
+    unsigned long getMaxBytes();
+    bool setMaxChunkSize(unsigned long bytes);
+    unsigned long getMaxChunkSize();
+
   private:
     boost::circular_buffer<std::vector<SasAtom*> > chunks;
     std::vector<SasAtom*> frames;
@@ -50,12 +51,13 @@ namespace Gromacs
     std::string filename;
     boost::iostreams::file_descriptor fileIO;
     const Gromacs* gromacs;
-    unsigned long maxFrames;
+    unsigned long maxFrames, maxBytes, maxChunk;
     boost::circular_buffer<std::vector<SasAtom* > >::iterator curChunk;
     mutable boost::interprocess::interprocess_semaphore* bufferSemaphore;
     unsigned int bufferSemaphoreCount;
     unsigned int bufferSemaphoreMax;
     mutable boost::interprocess::interprocess_mutex bufferMutex;
+    bool changeable;
 
     enum
     {
@@ -81,13 +83,14 @@ namespace Gromacs
 
     SaveThread* saveThread;
 
-    void init(unsigned int maxBytes, unsigned int maxChunk, string saveFile,
-              bool savingMode = true);
+    void init(string saveFile, bool savingMode = true);
     void dumpChunk(const std::vector<SasAtom*>& chunk,
                    boost::archive::binary_oarchive& out) const;
     void flush();
     bool save(const std::string& filename);
     bool save();
+
+    void updateChunks();
   };
 };
 
