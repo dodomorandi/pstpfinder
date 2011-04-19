@@ -72,7 +72,7 @@ namespace Gromacs
       ~SaveThread();
       void wakeUp();
       void stop();
-      void operator ()();
+      void threadSave();
     private:
       SasAnalysis* parent;
       bool isStopped;

@@ -198,7 +198,8 @@ SasAnalysis::SaveThread::SaveThread(SasAnalysis& parent)
 {
   this->parent = &parent;
   isStopped = false;
-  thread = boost::thread(boost::ref(*this));
+  thread = boost::thread(boost::bind(&SasAnalysis::SaveThread::threadSave,
+                                     boost::ref(*this)));
 }
 
 SasAnalysis::SaveThread::~SaveThread()
@@ -207,7 +208,7 @@ SasAnalysis::SaveThread::~SaveThread()
 }
 
 void
-SasAnalysis::SaveThread::operator ()()
+SasAnalysis::SaveThread::threadSave()
 {
   bool cond;
   
