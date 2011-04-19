@@ -16,9 +16,10 @@ namespace Gromacs
     real sas;
   };
   
-  class SasAtomSerializable: SasAtom
+  class SasAtomSerializable: public SasAtom
   {
   public:
+    SasAtomSerializable() {};
     SasAtomSerializable(SasAtom& sasAtom)
     {
       x = sasAtom.x;
@@ -26,6 +27,7 @@ namespace Gromacs
       z = sasAtom.z;
       sas = sasAtom.sas;
     }
+
   private:
     friend class boost::serialization::access;
     

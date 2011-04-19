@@ -141,7 +141,7 @@ bool
 SasAnalysis::save()
 {
   if(mode != MODE_SAVE)
-  return false;
+    return false;
 
   io::filtering_ostream outFilter;
   
@@ -168,13 +168,31 @@ SasAnalysis::save()
   return true;
 }
 
+bool
+SasAnalysis::open()
+{
+  if(mode != MODE_OPEN)
+    return false;
+
+  io::filtering_istream inFilter;
+
+  inFilter.strict_sync();
+  inFilter.push(io::zlib_decompressor());
+  inFilter.push(fileIO);
+
+  archive::binary_iarchive in(inFilter);
+  *curChunk = loadChunk(in);
+
+  return true;
+}
+
 void
-SasAnalysis::dumpChunk(const vector<SasAtom*>& chunk, 
+SasAnalysis::dumpChunk(const std::vector<SasAtom*>& chunk,
                        archive::binary_oarchive& out) const
 {
   for
   (
-    vector<SasAtom*>::const_iterator i = chunk.begin();
+    std::vector<SasAtom*>::const_iterator i = chunk.begin();
     i < chunk.end();
     i++
   )
@@ -191,6 +209,36 @@ SasAnalysis::dumpChunk(const vector<SasAtom*>& chunk,
       out << atom;
     }
   }
+}
+
+std::vector<SasAtom*>
+SasAnalysis::loadChunk(archive::binary_iarchive& in)
+{
+  unsigned long size;
+  std::vector<SasAtom*> chunk;
+  SasAtom* atoms;
+  SasAtom* atom;
+
+  in >> size;
+  chunk.reserve(size);
+
+  for(unsigned long i = 0; i < size; i++)
+  {
+    atoms = new SasAtom[size];
+    atom = atoms;
+
+    for(unsigned long k = 0; k < nAtoms; k++, atom++)
+    {
+      SasAtomSerializable satom;
+      in >> satom;
+
+      *atom = satom;
+    }
+
+    chunk.push_back(atoms);
+  }
+
+  return chunk;
 }
 
 SasAnalysis::OperationThread::OperationThread(SasAnalysis& parent)

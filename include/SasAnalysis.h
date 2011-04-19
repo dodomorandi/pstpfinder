@@ -88,9 +88,11 @@ namespace Gromacs
     void init(string saveFile, bool savingMode = true);
     void dumpChunk(const std::vector<SasAtom*>& chunk,
                    boost::archive::binary_oarchive& out) const;
+    std::vector<SasAtom*> loadChunk(boost::archive::binary_iarchive& in);
     void flush();
     bool save(const std::string& filename);
     bool save();
+    bool open();
 
     void updateChunks();
   };
