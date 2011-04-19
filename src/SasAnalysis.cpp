@@ -55,8 +55,8 @@ SasAnalysis::~SasAnalysis()
   {
     if(frames.size() != 0)
       flush();
-    saveThread->stop();
-    delete saveThread;
+    operationThread->stop();
+    delete operationThread;
   }
     
   delete bufferSemaphore;
@@ -71,8 +71,7 @@ SasAnalysis::operator <<(SasAtom* sasAtoms)
     changeable = false;
     bufferSemaphore = new ip::interprocess_semaphore(bufferSemaphoreMax);
 
-    if(mode == MODE_SAVE)
-      saveThread = new SaveThread(*this);
+    operationThread = new OperationThread(*this);
   }
 
   std::copy(sasAtoms, sasAtoms + nAtoms, tmpFrame);
@@ -95,7 +94,7 @@ SasAnalysis::flush()
     bufferSemaphore = new ip::interprocess_semaphore(bufferSemaphoreMax);
 
     if(mode == MODE_SAVE)
-      saveThread = new SaveThread(*this);
+      operationThread = new OperationThread(*this);
   }
 
   bufferSemaphore->wait();
@@ -106,7 +105,7 @@ SasAnalysis::flush()
     curChunk--;
   bufferMutex.unlock();
   
-  saveThread->wakeUp();
+  operationThread->wakeUp();
 }
 
 bool
@@ -194,21 +193,25 @@ SasAnalysis::dumpChunk(const vector<SasAtom*>& chunk,
   }
 }
 
-SasAnalysis::SaveThread::SaveThread(SasAnalysis& parent)
+SasAnalysis::OperationThread::OperationThread(SasAnalysis& parent)
 {
   this->parent = &parent;
   isStopped = false;
-  thread = boost::thread(boost::bind(&SasAnalysis::SaveThread::threadSave,
-                                     boost::ref(*this)));
+  if(parent.mode == SasAnalysis::MODE_SAVE)
+    thread = boost::thread(boost::bind(
+                &SasAnalysis::OperationThread::threadSave, boost::ref(*this)));
+  else
+    thread = boost::thread(boost::bind(
+                &SasAnalysis::OperationThread::threadOpen, boost::ref(*this)));
 }
 
-SasAnalysis::SaveThread::~SaveThread()
+SasAnalysis::OperationThread::~OperationThread()
 {
   stop();
 }
 
 void
-SasAnalysis::SaveThread::threadSave()
+SasAnalysis::OperationThread::threadSave()
 {
   bool cond;
   
@@ -260,13 +263,19 @@ SasAnalysis::SaveThread::threadSave()
 }
 
 void
-SasAnalysis::SaveThread::wakeUp()
+SasAnalysis::OperationThread::threadOpen()
+{
+  // TODO
+}
+
+void
+SasAnalysis::OperationThread::wakeUp()
 {
   wakeCondition.notify_one();
 }
 
 void
-SasAnalysis::SaveThread::stop()
+SasAnalysis::OperationThread::stop()
 {
   if(isStopped)
     return;

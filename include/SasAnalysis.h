@@ -65,14 +65,15 @@ namespace Gromacs
       MODE_SAVE
     } mode;
 
-    class SaveThread
+    class OperationThread
     {
     public:
-      SaveThread(SasAnalysis& parent);
-      ~SaveThread();
+      OperationThread(SasAnalysis& parent);
+      ~OperationThread();
       void wakeUp();
       void stop();
       void threadSave();
+      void threadOpen();
     private:
       SasAnalysis* parent;
       bool isStopped;
@@ -81,7 +82,8 @@ namespace Gromacs
       boost::interprocess::interprocess_mutex wakeMutex;
     };
 
-    SaveThread* saveThread;
+    friend class OperationThread;
+    OperationThread* operationThread;
 
     void init(string saveFile, bool savingMode = true);
     void dumpChunk(const std::vector<SasAtom*>& chunk,
