@@ -42,6 +42,8 @@ SasAnalysis::init(string filename, bool savingMode)
 
   maxBytes = 134217728;
   maxChunk = 16777216;
+
+  updateChunks();
 }
 
 SasAnalysis::~SasAnalysis()
