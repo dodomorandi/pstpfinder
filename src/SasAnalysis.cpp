@@ -82,6 +82,46 @@ SasAnalysis::operator <<(SasAtom* sasAtoms)
   return *this;
 }
 
+SasAtom*
+SasAnalysis::operator >>(SasAtom* sasAtom)
+{
+  static std::vector<SasAtom*>::const_iterator i = frames.begin();
+  if(changeable)
+  {
+    changeable = false;
+    bufferSemaphore = new ip::interprocess_semaphore(bufferSemaphoreMax);
+
+    operationThread = new OperationThread(*this);
+  }
+
+  // TODO: Mutex waiting and control
+  if(i == frames.end())
+  {
+    // TODO: Control for EOF
+    bufferMutex.lock();
+
+    if(bufferSemaphoreCount == bufferSemaphoreMax)
+    {
+      bufferMutex.unlock();
+      bufferSemaphore->wait();
+      bufferMutex.lock();
+    }
+    for(i = frames.begin(); i < frames.end(); i++)
+      delete[] *i;
+
+    frames = chunks.front();
+    chunks.pop_front();
+    i = frames.begin();
+    bufferSemaphoreCount++;
+
+    bufferMutex.unlock();
+  }
+
+  sasAtom = *(i++);
+
+  return sasAtom;
+}
+
 void
 SasAnalysis::flush()
 {
@@ -93,8 +133,7 @@ SasAnalysis::flush()
     changeable = false;
     bufferSemaphore = new ip::interprocess_semaphore(bufferSemaphoreMax);
 
-    if(mode == MODE_SAVE)
-      operationThread = new OperationThread(*this);
+    operationThread = new OperationThread(*this);
   }
 
   bufferSemaphore->wait();
@@ -268,17 +307,19 @@ SasAnalysis::OperationThread::threadSave()
     parent->bufferMutex.lock();
     cond = (parent->bufferSemaphoreCount == parent->bufferSemaphoreMax and
        not isStopped);
-    parent->bufferMutex.unlock();
     
     if(cond)
     {
+      parent->bufferMutex.unlock();
       ip::scoped_lock<ip::interprocess_mutex> lock(wakeMutex);      
       wakeCondition.wait(lock);
+      parent->bufferMutex.lock();
     }
     else if(isStopped)
+    {
+      parent->bufferMutex.unlock();
       break;
-    
-    parent->bufferMutex.lock();
+    }
     
     if(parent->save())
     {
@@ -313,7 +354,32 @@ SasAnalysis::OperationThread::threadSave()
 void
 SasAnalysis::OperationThread::threadOpen()
 {
-  // TODO
+  bool cond;
+
+  while(not isStopped)
+  {
+    parent->bufferMutex.lock();
+    cond = (parent->bufferSemaphoreCount > 0 and not isStopped);
+
+    if(cond)
+    {
+      parent->bufferMutex.unlock();
+      ip::scoped_lock<ip::interprocess_mutex> lock(wakeMutex);
+      wakeCondition.wait(lock);
+      parent->bufferMutex.lock();
+    }
+    else if(isStopped)
+    {
+      parent->bufferMutex.unlock();
+      break;
+    }
+
+    if(parent->open())
+    {
+
+    }
+    parent->bufferMutex.unlock();
+  }
 }
 
 void

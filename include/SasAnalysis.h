@@ -39,6 +39,7 @@ namespace Gromacs
     
     ~SasAnalysis();
     const SasAnalysis& operator <<(SasAtom* sasAtoms);
+    SasAtom* operator >>(SasAtom* sasAtom);
     bool setMaxBytes(unsigned long bytes);
     unsigned long getMaxBytes();
     bool setMaxChunkSize(unsigned long bytes);
