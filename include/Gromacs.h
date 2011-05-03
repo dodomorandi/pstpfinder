@@ -21,6 +21,7 @@ extern "C" {
 #include <xtcio.h>
 #include <typedefs.h>
 };
+#include <smalloc.h>
 
 /* Taken from src/tools/nsc.h, Gromacs 4.5.2 */
 #define FLAG_ATOM_AREA  04
@@ -70,7 +71,7 @@ namespace Gromacs
      */
     void waitNextFrame(unsigned int refFrame) const;
 
-    void operator ()();
+    void __calculateSas();
   private:
 #ifdef GMX45
     output_env_t oenv;

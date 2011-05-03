@@ -62,11 +62,12 @@ namespace Gromacs
   void
   Gromacs::calculateSas()
   {
-    operationThread = boost::thread(boost::ref(*this));
+    operationThread = boost::thread(boost::bind(&Gromacs::__calculateSas,
+                                                boost::ref(*this)));
   }
   
   void
-  Gromacs::operator ()()
+  Gromacs::__calculateSas()
   {
     bool bTop, bDGsol;
     real totarea, totvolume;
@@ -176,10 +177,17 @@ namespace Gromacs
       currentFrame++;
       wakeCondition.notify_all();
       operationMutex.unlock();
-      
-      delete[] area;
-      if(nsurfacedots > 0)
-        delete[] surfacedots;
+
+      if(area)
+      {
+        sfree(area);
+        area = NULL;
+      }
+      if(surfacedots)
+      {
+        sfree(surfacedots);
+        surfacedots = NULL;
+      }
     }  
 #ifdef GMX45
     while(read_next_x(oenv, status, &t, natoms, x, box));
