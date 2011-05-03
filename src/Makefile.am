@@ -1,3 +1,3 @@
-bin_PROGRAMS = trapof
+bin_PROGRAMS = pstpfinder
 
-trapof_SOURCES = trapof.cpp MainWindow.cpp NewAnalysis.cpp Gromacs.cpp SasAnalysis.cpp CExceptionHandler.cpp
+pstpfinder_SOURCES = pstpfinder.cpp MainWindow.cpp NewAnalysis.cpp Gromacs.cpp SasAnalysis.cpp CExceptionHandler.cpp

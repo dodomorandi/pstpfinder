@@ -1,6 +1,6 @@
 #include <gtkmm.h>
 
-#include "trapof.h"
+#include "pstpfinder.h"
 #include "MainWindow.h"
 
 using namespace Gtk;

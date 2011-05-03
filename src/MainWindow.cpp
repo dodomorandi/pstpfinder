@@ -1,7 +1,7 @@
 #include <gtkmm.h>
 #include <vector>
 
-#include "trapof.h"
+#include "pstpfinder.h"
 #include "MainWindow.h"
 #include "NewAnalysis.h"
 
