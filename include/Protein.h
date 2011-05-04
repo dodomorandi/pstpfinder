@@ -50,16 +50,27 @@ namespace Gromacs
   struct Residue
   {
     unsigned int index;
-    unsigned int atoms;
-    PdbAtom* atom;
+    vector<PdbAtom> atoms;
   };
 
-  struct Protein
+  class Protein
   {
+  public:
     string name;
     vector<Residue> residue;
-    unsigned int atoms;
-    PdbAtom* atom;
+    vector<PdbAtom*> atoms;
+
+    void appendResidue(Residue& res)
+    {
+      residue.push_back(res);
+      for
+      (
+        vector<PdbAtom>::iterator i = res.atoms.begin();
+        i < res.atoms.end();
+        i++
+      )
+        atoms.push_back(&(*i));
+    }
   };
 }
 
