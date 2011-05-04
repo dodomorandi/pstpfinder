@@ -1,8 +1,9 @@
-#ifndef __PSTPPROTEIN_H
-#define __PSTPPROTEIN_H
+#ifndef _PROTEIN_H
+#define _PROTEIN_H
 
 #include "Atom.h"
-#include "string"
+#include <string>
+#include <vector>
 
 using namespace std;
 
@@ -32,13 +33,14 @@ namespace Gromacs
     AA_ASN
   };
 
-  string aminoacidLetter[] = { "A", "V", "G", "L", "I", "T", "S", "M", "C", "P",
-                               "Y", "W", "F", "H", "R", "K", "E", "D", "Q",
-  "N" };
+  const string aminoacidLetter[] = { "A", "V", "G", "L", "I", "T", "S", "M",
+                                     "C", "P", "Y", "W", "F", "H", "R", "K",
+                                     "E", "D", "Q", "N" };
 
-  string aminoacidTriplet[] = { "ALA", "VAL", "GLY", "LEU", "ILE", "THR", "SER",
-                                "MET", "CYS", "PRO", "TYR", "TRP", "PHE", "HIS",
-                                "ARG", "LYS", "GLU", "ASP", "GLN", "ASN" };
+  const string aminoacidTriplet[] = { "ALA", "VAL", "GLY", "LEU", "ILE", "THR",
+                                      "SER", "MET", "CYS", "PRO", "TYR", "TRP",
+                                      "PHE", "HIS", "ARG", "LYS", "GLU", "ASP",
+                                      "GLN", "ASN" };
 
   struct PdbAtom: public Atom
   {

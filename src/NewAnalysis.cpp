@@ -131,6 +131,7 @@ NewAnalysis::runAnalysis()
   while(Main::events_pending())
     Main::iteration();
 
+  gromacs.__getAverageStructure();
   gromacs.calculateSas();
 
   while((currentFrame = gromacs.getCurrentFrame()) < count)

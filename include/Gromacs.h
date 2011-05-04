@@ -5,23 +5,16 @@
 #include "config.h"
 #endif
 
+#include "Protein.h"
+
 #include <string>
 
 #include <boost/thread/thread.hpp>
 #include <boost/interprocess/sync/interprocess_mutex.hpp>
 #include <boost/interprocess/sync/interprocess_condition.hpp>
 
-extern "C" {
 #include <atomprop.h>
 #include <statutil.h>
-#include <tpxio.h>
-#include <mtop_util.h>
-#include <main.h>
-#include <rmpbc.h>
-#include <xtcio.h>
-#include <typedefs.h>
-};
-#include <smalloc.h>
 
 /* Taken from src/tools/nsc.h, Gromacs 4.5.2 */
 #define FLAG_ATOM_AREA  04
@@ -72,6 +65,7 @@ namespace Gromacs
     void waitNextFrame(unsigned int refFrame) const;
 
     void __calculateSas();
+    Protein __getAverageStructure();
   private:
 #ifdef GMX45
     output_env_t oenv;
@@ -82,7 +76,7 @@ namespace Gromacs
     real lambda;
 #endif
     real t;
-    rvec* x;
+    rvec *x, *xtop;
     matrix box;
     int natoms, ePBC;
     t_topology top;
@@ -103,6 +97,7 @@ namespace Gromacs
     void init(float solventSize);
     bool getTopology();
     bool getTrajectory();
+    bool readNextX();
   };
 };
 

@@ -6,6 +6,17 @@
 #include <iostream>
 #include <cstring>
 
+#include <tpxio.h>
+#include <mtop_util.h>
+#include <main.h>
+#include <rmpbc.h>
+#include <xtcio.h>
+#include <typedefs.h>
+#include <princ.h>
+#include <do_fit.h>
+#include <smalloc.h>
+#include <vec.h>
+
 #include <boost/filesystem.hpp>
 #include <boost/interprocess/sync/scoped_lock.hpp>
 
@@ -72,7 +83,7 @@ namespace Gromacs
     bool bTop, bDGsol;
     real totarea, totvolume;
     int nsurfacedots;
-    real *dgs_factor, *radius, *area, *surfacedots, dgsolv;
+    real *dgs_factor, *radius, *area = 0, *surfacedots = 0, dgsolv;
     atom_id* index;
     gmx_rmpbc_t gpbc;
     int nx;
@@ -189,15 +200,9 @@ namespace Gromacs
         surfacedots = NULL;
       }
     }  
-#ifdef GMX45
-    while(read_next_x(oenv, status, &t, natoms, x, box));
-#else
-    while(read_next_x(status, &t, natoms, x, box));
-#endif
+    while(readNextX());
 
     gmx_rmpbc_done(gpbc);
-
-    close_trx(status);
 
     if(bDGsol)
       delete[] dgs_factor;
@@ -208,7 +213,134 @@ namespace Gromacs
     
     //return true;
   }
-  
+
+  Protein
+  Gromacs::__getAverageStructure()
+  {
+    Protein protein;
+
+    atom_id* index;
+    int npdbatoms, isize, count;
+    rvec xcm;
+    matrix pdbbox;
+    real *w_rls;
+    real invcount;
+    double *xav, *rmsf;
+    double** U;
+
+    if(not getTopology())
+      gmx_fatal(FARGS, "Could not read topology file.\n");
+
+    if(not getTrajectory())
+      gmx_fatal(FARGS, "Could not read coordinates from statusfile.\n");
+
+    /*
+     * Stolen from __calculateSas(). I should create a private method for this.
+     */
+    t_blocka* grps;
+    grps = new t_blocka[1]();
+    grps->index = new atom_id[1]();
+    char*** gnames;
+    gnames = new char**[1]();
+    int targetIndex = -1;
+    gmx_rmpbc_t gpbc = NULL;
+
+    analyse(&top.atoms, grps, gnames, FALSE, FALSE);
+
+    for(char** i = *gnames; i < *gnames + grps->nr; i++)
+    {
+      if(string(*i) == "Protein")
+      {
+        targetIndex = (int)(i - *gnames);
+        break;
+      }
+    }
+    // TODO: Return in case of missing target index
+
+    isize = grps->index[targetIndex + 1] - grps->index[targetIndex];
+    index = new atom_id[isize];
+
+    for(int i = 0; i < isize; i++)
+      index[i] = grps->a[grps->index[targetIndex] + i];
+
+    w_rls = new real[top.atoms.nr];
+    for(atom_id* i = index; i < index + isize; i++)
+      w_rls[*i] = top.atoms.atom[*i].m;
+
+    xav = new double[isize*DIM];
+    U = new double*[isize];
+    for(double** i = U; i < U + isize; i++)
+      *i = new double[DIM*DIM];
+    rmsf = new double[isize];
+
+    npdbatoms = top.atoms.nr;
+    snew(top.atoms.pdbinfo, npdbatoms);
+    copy_mat(box, pdbbox);
+
+    sub_xcm(xtop, isize, index, top.atoms.atom, xcm, FALSE);
+    gpbc = gmx_rmpbc_init(&top.idef, ePBC, natoms, box);
+
+    count = 0;
+    do
+    {
+      gmx_rmpbc(gpbc, natoms, box, x);
+      sub_xcm(x, isize, index, top.atoms.atom, xcm, FALSE);
+      do_fit(natoms, w_rls, xtop, x);
+
+      for(int i =0; i < isize; i++)
+      {
+        atom_id aid = index[i];
+        for(int d = 0; d < DIM; d++)
+        {
+          xav[i * DIM + d] += x[aid][d];
+          for(int m = 0; m < DIM; m++)
+            U[i][d * DIM + m] += x[aid][d] * x[aid][m];
+        }
+      }
+
+      count++;
+    } while(readNextX());
+
+    gmx_rmpbc_done(gpbc);
+    invcount = 1.0/count;
+    for(int i = 0; i < isize; i++)
+    {
+      for(int d = 0; d < DIM; d++)
+        xav[i*DIM + d] *= invcount;
+
+      for(int d = 0; d < DIM; d++)
+        for(int m = 0; m < DIM; m++)
+          U[i][d * DIM + m] = U[i][d * DIM + m] * invcount -
+                              xav[i * DIM + d] * xav[i * DIM + m];
+    }
+
+    for(int i = 0; i < isize; i++)
+      rmsf[i] = U[i][XX * DIM + XX] + U[i][YY * DIM + YY] +
+                U[i][ZZ * DIM + ZZ];
+
+    for(double** i = U; i < U + isize; i++)
+      delete[] *i;
+    delete[] U;
+
+    for(int i = 0; i < isize; i++)
+      top.atoms.pdbinfo[index[i]].bfac = 800*M_PI*M_PI/3.0*rmsf[i];
+
+    for(int i = 0; i < isize; i++)
+      for(int d = 0; d < DIM; d++)
+        xtop[index[i]][d] = xcm[d] + xav[i * DIM + d];
+
+    // TODO: THE PROTEIN OUT!!!
+
+    delete[] w_rls;
+
+    delete[] index;
+    delete[] gnames;
+    delete[] grps->index;
+    delete[] grps;
+
+    return protein;
+  }
+
   unsigned long
   Gromacs::getAtomsCount() const
   {
@@ -222,7 +354,6 @@ namespace Gromacs
   {
     t_inputrec ir;
     matrix topbox;
-    rvec *xtop;
     char title[1024];
 
 #ifdef GMX45    
@@ -263,6 +394,26 @@ namespace Gromacs
     else
       return gotTrajectory = true;
   }
+
+  bool
+  Gromacs::readNextX()
+  {
+    bool out;
+
+#ifdef GMX45
+    out = read_next_x(oenv, status, &t, natoms, x, box);
+#else
+    out = read_next_x(status, &t, natoms, x, box);
+#endif
+
+    if(not out)
+    {
+      close_trx(status);
+      getTrajectory();
+    }
+
+    return out;
+  }
   
   unsigned int
   Gromacs::getFramesCount() const
@@ -295,7 +446,8 @@ namespace Gromacs
     
     while(read_next_x(_oenv, _status, &_t, _natoms, _x, _box))
       nFrames++;
-    
+
+    close_trx(_status);
     output_env_done(_oenv);
     
     return cachedNFrames = nFrames;
@@ -384,11 +536,13 @@ namespace Gromacs
     if((_natoms = read_first_frame(_oenv,&_status, trjName.c_str(), &_fr, 0)
        ) == 0)
     {
+      close_trx(_status);
       output_env_done(_oenv);
       return 0;
     }
 
     read_next_frame(_oenv, _status, &_fr);
+    close_trx(_status);
 
     output_env_done(_oenv);
 
