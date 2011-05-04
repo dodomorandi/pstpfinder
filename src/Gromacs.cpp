@@ -331,6 +331,8 @@ namespace Gromacs
 
     // TODO: THE PROTEIN OUT!!!
 
+    delete[] rmsf;
+    delete[] xav;
     delete[] w_rls;
 
     delete[] index;
