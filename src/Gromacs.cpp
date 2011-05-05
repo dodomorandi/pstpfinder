@@ -325,11 +325,52 @@ namespace Gromacs
     for(int i = 0; i < isize; i++)
       top.atoms.pdbinfo[index[i]].bfac = 800*M_PI*M_PI/3.0*rmsf[i];
 
+    Residue res;
     for(int i = 0; i < isize; i++)
-      for(int d = 0; d < DIM; d++)
-        xtop[index[i]][d] = xcm[d] + xav[i * DIM + d];
+    {
+      PdbAtom atom;
+      atom.index = i+1;
+      strncpy(atom.type, *top.atoms.atomname[index[i]], 4);
 
-    // TODO: THE PROTEIN OUT!!!
+      atom.x = xcm[0] + xav[i * DIM];
+      atom.y = xcm[1] + xav[i * DIM + 1];
+      atom.z = xcm[2] + xav[i * DIM + 2];
+
+      if(top.atoms.pdbinfo)
+      {
+        atom.bFactor = top.atoms.pdbinfo[index[i]].bfac;
+        atom.occupancy = top.atoms.pdbinfo[index[i]].occup;
+      }
+      else
+      {
+        atom.bFactor = 0.0;
+        atom.occupancy = 1.0;
+      }
+
+      int resind = top.atoms.atom[index[i]].resind;
+      string resname(*top.atoms.resinfo[resind].name);
+      if(res.atoms.size() == 0 or
+         resname.find(aminoacidTriplet[res.type]) == string::npos)
+      {
+        if(res.atoms.size() != 0)
+        {
+          protein.appendResidue(res);
+          res = Residue();
+        }
+
+        transform(resname.begin(), resname.end(), resname.begin(), ::toupper);
+        res.index = top.atoms.resinfo[resind].nr;
+
+        for(int aa = 0; aa < 20; aa++)
+          if(resname.find(aminoacidTriplet[aa]) != string::npos)
+          {
+            res.type = static_cast<Aminoacids>(aa);
+            break;
+          }
+      }
+      res.atoms.push_back(atom);
+    }
+    protein.appendResidue(res);
 
     delete[] rmsf;
     delete[] xav;

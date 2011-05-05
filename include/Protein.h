@@ -44,7 +44,7 @@ namespace Gromacs
 
   struct PdbAtom: public Atom
   {
-    unsigned char type[5];
+    char type[5];
     unsigned int index;
     float bFactor;
     float occupancy;
@@ -52,6 +52,7 @@ namespace Gromacs
 
   struct Residue
   {
+    Aminoacids type;
     unsigned int index;
     vector<PdbAtom> atoms;
   };
@@ -60,16 +61,17 @@ namespace Gromacs
   {
   public:
     string name;
-    vector<Residue> residue;
+    vector<Residue> residues;
     vector<PdbAtom*> atoms;
 
-    void appendResidue(Residue& res)
+    void appendResidue(const Residue& res)
     {
-      residue.push_back(res);
+      residues.push_back(res);
+      Residue& last = *(residues.end() - 1);
       for
       (
-        vector<PdbAtom>::iterator i = res.atoms.begin();
-        i < res.atoms.end();
+        vector<PdbAtom>::iterator i = last.atoms.begin();
+        i < last.atoms.end();
         i++
       )
         atoms.push_back(&(*i));
