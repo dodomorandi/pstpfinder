@@ -44,6 +44,7 @@ namespace Gromacs
 
   struct PdbAtom: public Atom
   {
+    unsigned char type[5];
     unsigned int index;
     float bFactor;
     float occupancy;
