@@ -349,8 +349,23 @@ namespace Gromacs
 
       int resind = top.atoms.atom[index[i]].resind;
       string resname(*top.atoms.resinfo[resind].name);
+      for
+      (
+        const string* j = aminoacidUncommonTranslator;
+        j < aminoacidUncommonTranslator + aminoacidUncommonTranslatorSize;
+        j += 2
+      )
+      {
+        size_t found = resname.find(*j);
+        if(found != string::npos)
+        {
+          resname.replace(found, 3, j[1]);
+          break;
+        }
+      }
+
       if(res.atoms.size() == 0 or
-         resname.find(aminoacidTriplet[res.type]) == string::npos)
+         top.atoms.resinfo[resind].nr != res.index)
       {
         if(res.atoms.size() != 0)
         {
@@ -361,7 +376,7 @@ namespace Gromacs
         transform(resname.begin(), resname.end(), resname.begin(), ::toupper);
         res.index = top.atoms.resinfo[resind].nr;
 
-        for(int aa = 0; aa < 20; aa++)
+        for(int aa = 1; aa < 21; aa++) // 20 + unknown
           if(resname.find(aminoacidTriplet[aa]) != string::npos)
           {
             res.type = static_cast<Aminoacids>(aa);

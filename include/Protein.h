@@ -11,6 +11,7 @@ namespace Gromacs
 {
   enum Aminoacids
   {
+    AA_UNK,
     AA_ALA,
     AA_VAL,
     AA_GLY,
@@ -33,14 +34,19 @@ namespace Gromacs
     AA_ASN
   };
 
-  const string aminoacidLetter[] = { "A", "V", "G", "L", "I", "T", "S", "M",
-                                     "C", "P", "Y", "W", "F", "H", "R", "K",
-                                     "E", "D", "Q", "N" };
+  const string aminoacidLetter[] = { "X", "A", "V", "G", "L", "I", "T", "S",
+                                     "M", "C", "P", "Y", "W", "F", "H", "R",
+                                     "K", "E", "D", "Q", "N" };
 
-  const string aminoacidTriplet[] = { "ALA", "VAL", "GLY", "LEU", "ILE", "THR",
-                                      "SER", "MET", "CYS", "PRO", "TYR", "TRP",
-                                      "PHE", "HIS", "ARG", "LYS", "GLU", "ASP",
-                                      "GLN", "ASN" };
+  const string aminoacidTriplet[] = { "UNK", "ALA", "VAL", "GLY", "LEU", "ILE",
+                                      "THR", "SER", "MET", "CYS", "PRO", "TYR",
+                                      "TRP", "PHE", "HIS", "ARG", "LYS", "GLU",
+                                      "ASP", "GLN", "ASN" };
+  const string aminoacidUncommonTranslator[] =
+               { "CYP", "CYS", "CYD", "CYS", "HID", "HIS", "HIE", "HIS", "LYP",
+                 "LYS", "LYD", "LYS" };
+  const unsigned int aminoacidUncommonTranslatorSize =
+    sizeof(aminoacidUncommonTranslator) / sizeof(*aminoacidUncommonTranslator);
 
   struct PdbAtom: public Atom
   {
@@ -61,21 +67,60 @@ namespace Gromacs
   {
   public:
     string name;
-    vector<Residue> residues;
-    vector<PdbAtom*> atoms;
 
-    void appendResidue(const Residue& res)
+    Protein()
     {
-      residues.push_back(res);
-      Residue& last = *(residues.end() - 1);
-      for
-      (
-        vector<PdbAtom>::iterator i = last.atoms.begin();
-        i < last.atoms.end();
-        i++
-      )
-        atoms.push_back(&(*i));
+      locked = false;
     }
+
+    const vector<Residue>& residues() const
+    {
+      return pResidues;
+    }
+
+    vector<Residue>& residuesRW()
+    {
+      locked = false;
+      return pResidues;
+    }
+
+    vector<PdbAtom*>& atoms()
+    {
+      if(not locked)
+      {
+        locked = true;
+        pAtoms.clear();
+        for
+        (
+          vector<Residue>::iterator i = pResidues.begin();
+          i < pResidues.end();
+          i++
+        )
+          for
+          (
+            vector<PdbAtom>::iterator j = i->atoms.begin();
+            j < i->atoms.end();
+            j++
+          )
+            pAtoms.push_back(&(*j));
+      }
+
+      return pAtoms;
+    }
+
+
+    bool appendResidue(Residue& residue)
+    {
+      if(locked)
+        return false;
+
+      pResidues.push_back(residue);
+      return true;
+    }
+  private:
+    vector<Residue> pResidues;
+    vector<PdbAtom*> pAtoms;
+    bool locked;
   };
 }
 
