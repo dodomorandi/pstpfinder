@@ -35,6 +35,7 @@ NewAnalysis::init()
   trjChooser.add_filter(trjFilter);
   trjChooser.signal_file_set().connect(
     sigc::mem_fun(*this, &NewAnalysis::chooserTrajectoryClicked));
+  trjChooser.set_size_request(150, -1);
   
   labelTrajectory.set_label("Trajectory file:");
   
@@ -47,6 +48,7 @@ NewAnalysis::init()
   tprFilter.set_name("Topology files");
   tprFilter.add_pattern("*.tpr");
   tprChooser.add_filter(tprFilter);
+  tprChooser.set_size_request(150, -1);
   
   labelTopology.set_label("Topology file:");
   
@@ -79,15 +81,41 @@ NewAnalysis::init()
   hboxEnd.set_homogeneous(false);
   hboxEnd.set_spacing(10);
 
-  vboxFrame.pack_start(hboxTrajectory, PACK_EXPAND_PADDING);
-  vboxFrame.pack_start(hboxTopology, PACK_EXPAND_PADDING);
-  vboxFrame.pack_start(hboxBegin, PACK_EXPAND_PADDING);
-  vboxFrame.pack_start(hboxEnd, PACK_EXPAND_PADDING);
-  vboxFrame.set_spacing(10);
-  vboxFrame.set_border_width(10);
-  
+  vboxFrame1.set_spacing(10);
+  vboxFrame1.pack_start(hboxTrajectory, PACK_EXPAND_PADDING);
+  vboxFrame1.pack_start(hboxTopology, PACK_EXPAND_PADDING);
+  vboxFrame1.pack_start(hboxBegin, PACK_EXPAND_PADDING);
+  vboxFrame1.pack_start(hboxEnd, PACK_EXPAND_PADDING);
+
+  labelRadius.set_label("Pocket radius:");
+  spinRadius.set_digits(1);
+  spinRadius.set_range(0.0, 20.0);
+  spinRadius.set_value(7.0);
+  spinRadius.set_increments(0.1, 1.0);
+  hboxRadius.set_spacing(10);
+  hboxRadius.pack_start(labelRadius, PACK_SHRINK);
+  hboxRadius.pack_start(spinRadius);
+
+  labelPocketTreshold.set_label("Pocket treshold:");
+  spinPocketTreshold.set_digits(0);
+  spinPocketTreshold.set_increments(1, 10);
+  spinPocketTreshold.set_range(0, 2000000000);
+  hboxPocketTreshold.set_spacing(10);
+  hboxPocketTreshold.pack_start(labelPocketTreshold, PACK_SHRINK);
+  hboxPocketTreshold.pack_start(spinPocketTreshold);
+
+  vboxFrame2.set_spacing(10);
+  vboxFrame2.pack_start(hboxRadius);
+  vboxFrame2.pack_start(hboxPocketTreshold);
+
+  hboxFrame.set_spacing(10);
+  hboxFrame.set_border_width(10);
+  hboxFrame.pack_start(vboxFrame1);
+  hboxFrame.pack_start(vSeparator, PACK_SHRINK);
+  hboxFrame.pack_start(vboxFrame2);
+
   mainFrame.set_label("Main files");
-  mainFrame.add(vboxFrame);
+  mainFrame.add(hboxFrame);
   
   buttonRun.set_label("Run!");
   buttonRun.signal_clicked().
@@ -102,7 +130,6 @@ NewAnalysis::init()
   vboxMain.pack_start(buttonBoxRun, PACK_SHRINK);
 
   add(vboxMain);
-  set_size_request(300);
 
   signal_delete_event().connect(sigc::ptr_fun(&closeApplication));
 }

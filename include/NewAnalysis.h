@@ -17,16 +17,19 @@ public:
   NewAnalysis(Window& parent);
 private:
   Frame mainFrame;
-  VBox vboxFrame, vboxMain;
+  VBox vboxFrame1, vboxFrame2, vboxMain;
   FileChooserButton trjChooser, tprChooser;
-  Label labelTrajectory, labelTopology, labelBegin, labelEnd;
-  HBox hboxTrajectory, hboxTopology, hboxBegin, hboxEnd;
+  Label labelTrajectory, labelTopology, labelBegin, labelEnd, labelRadius,
+        labelPocketTreshold;
+  HBox hboxTrajectory, hboxTopology, hboxBegin, hboxEnd, hboxFrame, hboxRadius,
+       hboxPocketTreshold;
   HButtonBox buttonBoxRun;
   Button  buttonRun;
   ProgressBar progress;
-  SpinButton spinBegin, spinEnd;
+  SpinButton spinBegin, spinEnd, spinRadius, spinPocketTreshold;
   HScale hScaleBegin, hScaleEnd;
   Spinner spinnerWait;
+  VSeparator vSeparator;
 
   void init();
   void runAnalysis();
