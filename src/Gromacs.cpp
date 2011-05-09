@@ -215,7 +215,7 @@ namespace Gromacs
   }
 
   const Protein&
-  Gromacs::__getAverageStructure()
+  Gromacs::__calculateAverageStructure()
   {
     atom_id* index;
     int npdbatoms, isize, count;
@@ -395,6 +395,12 @@ namespace Gromacs
     delete[] grps->index;
     delete[] grps;
 
+    return averageStructure;
+  }
+
+  const Protein&
+  Gromacs::getAverageStructure()
+  {
     return averageStructure;
   }
 

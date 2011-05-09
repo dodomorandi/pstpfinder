@@ -65,7 +65,9 @@ namespace Gromacs
     void waitNextFrame(unsigned int refFrame) const;
 
     void __calculateSas();
-    const Protein& __getAverageStructure();
+    const Protein& __calculateAverageStructure();
+    const Protein& getAverageStructure();
+    // TODO: calculateAverageStructureDetach()
   private:
 #ifdef GMX45
     output_env_t oenv;
