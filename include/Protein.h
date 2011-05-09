@@ -59,7 +59,7 @@ namespace Gromacs
   struct Residue
   {
     Aminoacids type;
-    unsigned int index;
+    int index;
     vector<PdbAtom> atoms;
   };
 
