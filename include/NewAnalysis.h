@@ -20,13 +20,13 @@ private:
   VBox vboxFrame1, vboxFrame2, vboxMain;
   FileChooserButton trjChooser, tprChooser;
   Label labelTrajectory, labelTopology, labelBegin, labelEnd, labelRadius,
-        labelPocketTreshold;
+        labelPocketThreshold, labelPs;
   HBox hboxTrajectory, hboxTopology, hboxBegin, hboxEnd, hboxFrame, hboxRadius,
-       hboxPocketTreshold;
+       hboxPocketThreshold;
   HButtonBox buttonBoxRun;
   Button  buttonRun;
   ProgressBar progress;
-  SpinButton spinBegin, spinEnd, spinRadius, spinPocketTreshold;
+  SpinButton spinBegin, spinEnd, spinRadius, spinPocketThreshold;
   HScale hScaleBegin, hScaleEnd;
   Spinner spinnerWait;
   VSeparator vSeparator;

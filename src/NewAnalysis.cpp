@@ -96,17 +96,19 @@ NewAnalysis::init()
   hboxRadius.pack_start(labelRadius, PACK_SHRINK);
   hboxRadius.pack_start(spinRadius);
 
-  labelPocketTreshold.set_label("Pocket treshold:");
-  spinPocketTreshold.set_digits(0);
-  spinPocketTreshold.set_increments(1, 10);
-  spinPocketTreshold.set_range(0, 2000000000);
-  hboxPocketTreshold.set_spacing(10);
-  hboxPocketTreshold.pack_start(labelPocketTreshold, PACK_SHRINK);
-  hboxPocketTreshold.pack_start(spinPocketTreshold);
+  labelPocketThreshold.set_label("Pocket threshold:");
+  spinPocketThreshold.set_digits(0);
+  spinPocketThreshold.set_increments(1, 10);
+  spinPocketThreshold.set_range(0, 20000);
+  labelPocketThreshold.set_label("ps");
+  hboxPocketThreshold.set_spacing(10);
+  hboxPocketThreshold.pack_start(labelPocketThreshold, PACK_SHRINK);
+  hboxPocketThreshold.pack_start(spinPocketThreshold);
+  hboxPocketThreshold.pack_start(hboxPocketThreshold, PACK_SHRINK);
 
   vboxFrame2.set_spacing(10);
   vboxFrame2.pack_start(hboxRadius);
-  vboxFrame2.pack_start(hboxPocketTreshold);
+  vboxFrame2.pack_start(hboxPocketThreshold);
 
   hboxFrame.set_spacing(10);
   hboxFrame.set_border_width(10);
