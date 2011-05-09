@@ -65,7 +65,7 @@ namespace Gromacs
     void waitNextFrame(unsigned int refFrame) const;
 
     void __calculateSas();
-    Protein __getAverageStructure();
+    const Protein& __getAverageStructure();
   private:
 #ifdef GMX45
     output_env_t oenv;
@@ -93,6 +93,7 @@ namespace Gromacs
     mutable boost::interprocess::interprocess_condition wakeCondition;
     mutable unsigned int cachedNFrames;
     unsigned int currentFrame; // index-0 based -- like always
+    Protein averageStructure;
     
     void init(float solventSize);
     bool getTopology();

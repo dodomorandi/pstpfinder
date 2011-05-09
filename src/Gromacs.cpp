@@ -214,11 +214,9 @@ namespace Gromacs
     //return true;
   }
 
-  Protein
+  const Protein&
   Gromacs::__getAverageStructure()
   {
-    Protein protein;
-
     atom_id* index;
     int npdbatoms, isize, count;
     rvec xcm;
@@ -325,6 +323,7 @@ namespace Gromacs
     for(int i = 0; i < isize; i++)
       top.atoms.pdbinfo[index[i]].bfac = 800*M_PI*M_PI/3.0*rmsf[i];
 
+    averageStructure = Protein();
     Residue res;
     for(int i = 0; i < isize; i++)
     {
@@ -369,7 +368,7 @@ namespace Gromacs
       {
         if(res.atoms.size() != 0)
         {
-          protein.appendResidue(res);
+          averageStructure.appendResidue(res);
           res = Residue();
         }
 
@@ -385,7 +384,7 @@ namespace Gromacs
       }
       res.atoms.push_back(atom);
     }
-    protein.appendResidue(res);
+    averageStructure.appendResidue(res);
 
     delete[] rmsf;
     delete[] xav;
@@ -396,7 +395,7 @@ namespace Gromacs
     delete[] grps->index;
     delete[] grps;
 
-    return protein;
+    return averageStructure;
   }
 
   unsigned long
