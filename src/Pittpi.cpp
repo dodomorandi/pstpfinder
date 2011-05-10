@@ -4,17 +4,36 @@
 using namespace Gromacs;
 using namespace std;
 
+Group::Group(const Residue& refResidue)
+{
+  reference = &refResidue;
+}
+
+Group&
+Group::operator <<(const Residue& reference)
+{
+  residues.push_back(&reference);
+
+  return *this;
+}
+
+const vector<const Residue*>&
+Group::getResidues() const
+{
+  return residues;
+}
+
 Pittpi::Pittpi(const Gromacs& gromacs, float radius, unsigned long threshold)
 {
   averageStructure = gromacs.getAverageStructure();
 
-  vector<const Residue*> groups = makeGroups(threshold);
+  std::vector<Group> groups = makeGroups(radius);
 }
 
-vector<const Residue*>
-Pittpi::makeGroups(unsigned long threshold)
+std::vector<Group>
+Pittpi::makeGroups(float radius)
 {
-  vector<const Residue*> groups;
+  std::vector<Group> groups;
   vector<Atom> centers;
   const vector<Residue>& residues = averageStructure.residues();
 
@@ -30,6 +49,9 @@ Pittpi::makeGroups(unsigned long threshold)
     Atom center(0);
     const vector<PdbAtom>& atoms = i->atoms;
 
+    if(strcmp(i->getAtomByType("H1").type, "UNK") != 0)
+      continue;
+
     if(i->type == AA_PRO)
     {
       centers.push_back(center);
@@ -37,33 +59,21 @@ Pittpi::makeGroups(unsigned long threshold)
     }
     else if(i->type == AA_GLY)
     {
-      for
-      (
-        vector<PdbAtom>::const_iterator j = atoms.begin();
-        j < atoms.end();
-        j++
-      )
-        if(strcmp(j->type, "CA"))
-        {
-          center.x = j->x;
-          center.y = j->y;
-          center.z = j->z;
-        }
-      centers.push_back(center);
+      centers.push_back(i->getAtomByType("CA"));
       continue;
     }
-    unsigned int size = atoms.size();
+    unsigned int count = 0;
     for(vector<PdbAtom>::const_iterator j = atoms.begin(); j < atoms.end(); j++)
     {
       if(strcmp(j->type, "N") != 0 and strcmp(j->type, "CA") != 0 and
          strcmp(j->type, "H") != 0 and strcmp(j->type, "C") != 0 and
-         strcmp(j->type, "C") != 0 and strcmp(j->type, "O") != 0 and
-         strcmp(j->type, "HA") != 0)
+         strcmp(j->type, "O") != 0 and strcmp(j->type, "HA") != 0)
       {
         center += *j;
-        center /= size;
+        count++;
       }
     }
+    center /= (float)count;
 
     centers.push_back(center);
   }
@@ -77,6 +87,7 @@ Pittpi::makeGroups(unsigned long threshold)
     i++
   )
   {
+    Group group(*i);
     const PdbAtom& hAtom = i->getAtomByType("H");
     if(strcmp(hAtom.type, "UNK") == 0)
       continue;
@@ -92,9 +103,11 @@ Pittpi::makeGroups(unsigned long threshold)
          distance(vector<Residue>::const_iterator(residues.begin()), i))
         continue;
 
-      if(hAtom.distance(*j) <= threshold)
-        groups.push_back(residues.data() + distance(centersBegin, j));
+      if(hAtom.distance(*j) <= radius)
+        group << residues[distance(centersBegin, j)];
     }
+
+    groups.push_back(group);
   }
 
 //  FIXME: NEVER TESTED!!

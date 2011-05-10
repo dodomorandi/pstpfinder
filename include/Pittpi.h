@@ -6,8 +6,21 @@
 
 namespace Gromacs
 {
+
+  class Group
+  {
+  public:
+    Group(const Residue& refResidue);
+    Group& operator <<(const Residue& value);
+    const vector<const Residue*>& getResidues() const;
+  private:
+    const Residue* reference;
+    vector<const Residue*> residues;
+  };
+
   /**
-   * @brief Related to the method developed by Matteo De Chiara
+   * @brief Related to the method developed by Matteo De Chiara and Silvia
+   * Bottini
    *
    * The original code have been developed in Perl. A code refactory have been
    * done to obtain a more usable and stable program.
@@ -22,7 +35,7 @@ namespace Gromacs
   public:
     Pittpi(const Gromacs& gromacs, float radius, unsigned long threshold);
   private:
-    std::vector<const Residue*> makeGroups(unsigned long threshold);
+    std::vector<Group> makeGroups(float radius);
 
     Protein averageStructure;
   };
