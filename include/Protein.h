@@ -2,6 +2,7 @@
 #define _PROTEIN_H
 
 #include "Atom.h"
+#include <cstring>
 #include <string>
 #include <vector>
 
@@ -61,6 +62,23 @@ namespace Gromacs
     Aminoacids type;
     int index;
     vector<PdbAtom> atoms;
+
+    const PdbAtom& getAtomByType(string atomType) const
+    {
+      for
+      (
+        vector<PdbAtom>::const_iterator i = atoms.begin();
+        i < atoms.end();
+        i++
+      )
+        if(i->type == atomType)
+          return *i;
+
+      static PdbAtom unk;
+      strcpy(unk.type, "UNK");
+
+      return unk;
+    }
   };
 
   class Protein

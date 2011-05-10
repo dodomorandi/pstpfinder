@@ -66,7 +66,7 @@ namespace Gromacs
 
     void __calculateSas();
     const Protein& __calculateAverageStructure();
-    const Protein& getAverageStructure();
+    const Protein& getAverageStructure() const;
     // TODO: calculateAverageStructureDetach()
   private:
 #ifdef GMX45

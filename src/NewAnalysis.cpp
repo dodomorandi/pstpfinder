@@ -100,11 +100,11 @@ NewAnalysis::init()
   spinPocketThreshold.set_digits(0);
   spinPocketThreshold.set_increments(1, 10);
   spinPocketThreshold.set_range(0, 20000);
-  labelPocketThreshold.set_label("ps");
+  labelPs.set_label("ps");
   hboxPocketThreshold.set_spacing(10);
   hboxPocketThreshold.pack_start(labelPocketThreshold, PACK_SHRINK);
   hboxPocketThreshold.pack_start(spinPocketThreshold);
-  hboxPocketThreshold.pack_start(hboxPocketThreshold, PACK_SHRINK);
+  hboxPocketThreshold.pack_start(labelPs, PACK_SHRINK);
 
   vboxFrame2.set_spacing(10);
   vboxFrame2.pack_start(hboxRadius);
@@ -160,7 +160,6 @@ NewAnalysis::runAnalysis()
   while(Main::events_pending())
     Main::iteration();
 
-  gromacs.__getAverageStructure();
   gromacs.calculateSas();
 
   while((currentFrame = gromacs.getCurrentFrame()) < count)

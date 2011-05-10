@@ -399,7 +399,7 @@ namespace Gromacs
   }
 
   const Protein&
-  Gromacs::getAverageStructure()
+  Gromacs::getAverageStructure() const
   {
     return averageStructure;
   }
