@@ -99,6 +99,9 @@ Pittpi::makeGroups(float radius)
       j++
     )
     {
+      if(residues[distance(centersBegin, j)].type == AA_PRO)
+        continue;
+
       if(distance(centersBegin, j) ==
          distance(vector<Residue>::const_iterator(residues.begin()), i))
         continue;
