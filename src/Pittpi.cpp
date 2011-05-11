@@ -1,4 +1,6 @@
 #include "Pittpi.h"
+#include "SasAtom.h"
+#include "SasAnalysis.h"
 #include <cstring>
 
 using namespace Gromacs;
@@ -6,7 +8,14 @@ using namespace std;
 
 Group::Group(const Residue& refResidue)
 {
-  reference = &refResidue;
+  reference = &refResidue.getAtomByType("H");
+  zeros = 0;
+}
+
+Group::Group(const PdbAtom& refAtomH)
+{
+  reference = &refAtomH;
+  zeros = 0;
 }
 
 Group&
@@ -23,17 +32,118 @@ Group::getResidues() const
   return residues;
 }
 
-Pittpi::Pittpi(const Gromacs& gromacs, float radius, unsigned long threshold)
+const PdbAtom&
+Group::getCentralH() const
 {
-  averageStructure = gromacs.getAverageStructure();
-
-  std::vector<Group> groups = makeGroups(radius);
+  return *reference;
 }
 
-std::vector<Group>
+Pittpi::Pittpi(const Gromacs& gromacs,
+               const std::string& sasAnalysisFileName,
+               float radius,
+               unsigned long threshold)
+{
+  float* sas;
+  float* meanSas;
+  float* fIndex;
+  SasAtom* sasAtoms = 0;
+  SasAnalysis* sasAnalysis;
+  const float frames = gromacs.getFramesCount();
+
+  averageStructure = gromacs.getAverageStructure();
+  vector<Group> groups = makeGroups(radius);
+
+  meanSas = new float[gromacs.getAtomsCount()]();
+
+  /* First of all we need to calculate SAS means */
+  sasAnalysis = new SasAnalysis(gromacs, sasAnalysisFileName, false);
+  while(((*sasAnalysis) >> sasAtoms) != 0)
+  {
+    fIndex = meanSas;
+    for
+    (
+      SasAtom* atom = sasAtoms;
+      atom < sasAtoms + gromacs.getAtomsCount();
+      atom++, fIndex++
+    )
+      *fIndex += atom->sas;
+  }
+
+  {
+    for(fIndex = meanSas; fIndex < meanSas + gromacs.getAtomsCount(); fIndex++)
+      *fIndex /= frames;
+  }
+
+  delete sasAnalysis;
+
+  /* Let's prepare groups sas vectors */
+  for
+  (
+    vector<Group>::iterator i = groups.begin();
+    i < groups.end();
+    i++
+  )
+    i->sas.reserve(frames);
+
+  /* Now we have to normalize values and store results per group */
+  unsigned int curFrame = 0;
+  sas = new float[gromacs.getAtomsCount()];
+  sasAnalysis = new SasAnalysis(gromacs, sasAnalysisFileName, false);
+  while(((*sasAnalysis) >> sasAtoms) != 0)
+  {
+    fIndex = sas;
+    for
+    (
+      SasAtom* atom = sasAtoms;
+      atom < sasAtoms + gromacs.getAtomsCount();
+      atom++, fIndex++
+    )
+      *fIndex = atom->sas;
+
+    for
+    (
+      vector<Group>::iterator i = groups.begin();
+      i < groups.end();
+      i++
+    )
+    {
+      if(sas[i->getCentralH().index] == 0)
+      {
+        i->sas[curFrame] = 0;
+        i->zeros++;
+        continue;
+      }
+
+      const vector<const Residue*>& residues = i->getResidues();
+      for
+      (
+        vector<const Residue*>::const_iterator j = residues.begin();
+        j < residues.end();
+        j++
+      )
+        for
+        (
+          vector<PdbAtom>::const_iterator k = (*j)->atoms.begin();
+          k < (*j)->atoms.end();
+          k++
+        )
+          if(k->type[0] == 'H')
+            i->sas[curFrame] += sas[k->index - 1] / meanSas[k->index -1];
+
+      i->sas[curFrame] /= frames;
+      if(i->sas[curFrame] == 0)
+        i->zeros++;
+    }
+
+    curFrame++;
+  }
+  delete sasAnalysis;
+}
+
+vector<Group>
 Pittpi::makeGroups(float radius)
 {
-  std::vector<Group> groups;
+  vector<Group> groups;
   vector<Atom> centers;
   const vector<Residue>& residues = averageStructure.residues();
 
@@ -87,11 +197,11 @@ Pittpi::makeGroups(float radius)
     i++
   )
   {
-    Group group(*i);
     const PdbAtom& hAtom = i->getAtomByType("H");
     if(strcmp(hAtom.type, "UNK") == 0)
       continue;
 
+    Group group(*i);
     for
     (
       vector<Atom>::const_iterator j = centersBegin;
@@ -113,6 +223,7 @@ Pittpi::makeGroups(float radius)
     groups.push_back(group);
   }
 
+//  FIXME: Missing sadic alghoritm
 //  FIXME: NEVER TESTED!!
 
   return groups;

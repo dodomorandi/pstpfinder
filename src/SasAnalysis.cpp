@@ -109,6 +109,12 @@ SasAnalysis::operator >>(SasAtom* sasAtom)
     for(i = frames.begin(); i < frames.end(); i++)
       delete[] *i;
 
+    if(chunks.empty())
+    {
+      bufferMutex.unlock();
+      return 0;
+    }
+
     frames = chunks.front();
     chunks.pop_front();
     i = frames.begin();

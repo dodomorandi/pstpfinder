@@ -55,6 +55,7 @@ namespace Gromacs
     unsigned int index;
     float bFactor;
     float occupancy;
+    float sas;
   };
 
   struct Residue

@@ -437,7 +437,7 @@ namespace Gromacs
 #ifdef GMX45
     if(not gotTrajectory)
     {
-      oenv = new output_env();
+      snew(oenv, 1);
       output_env_init_default(oenv);
     }
     
@@ -496,7 +496,7 @@ namespace Gromacs
     matrix _box;
     int _natoms;
     
-    _oenv = new output_env();
+    snew(_oenv, 1);
     output_env_init_default(_oenv);
     
     if((_natoms = read_first_x(_oenv,&_status, trjName.c_str(), &_t, &_x, 
@@ -564,7 +564,7 @@ namespace Gromacs
     int _natoms;
     t_trxframe _fr;
 
-    _oenv = new output_env();
+    snew(_oenv, 1);
     output_env_init_default(_oenv);
 
     if((_natoms = read_first_frame(_oenv,&_status, trjName.c_str(), &_fr, 0)
@@ -575,6 +575,7 @@ namespace Gromacs
     }
 
     read_next_frame(_oenv, _status, &_fr);
+    close_trx(_status);
 
     output_env_done(_oenv);
 
@@ -593,7 +594,7 @@ namespace Gromacs
     int _natoms;
     t_trxframe _fr;
 
-    _oenv = new output_env();
+    snew(_oenv, 1);
     output_env_init_default(_oenv);
 
     if((_natoms = read_first_frame(_oenv,&_status, trjName.c_str(), &_fr, 0)

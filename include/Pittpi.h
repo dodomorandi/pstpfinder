@@ -11,10 +11,15 @@ namespace Gromacs
   {
   public:
     Group(const Residue& refResidue);
+    Group(const PdbAtom& refAtomH);
     Group& operator <<(const Residue& value);
     const vector<const Residue*>& getResidues() const;
+    const PdbAtom& getCentralH() const;
+
+    vector<float> sas;
+    unsigned int zeros;
   private:
-    const Residue* reference;
+    const PdbAtom* reference;
     vector<const Residue*> residues;
   };
 
@@ -33,7 +38,10 @@ namespace Gromacs
   class Pittpi
   {
   public:
-    Pittpi(const Gromacs& gromacs, float radius, unsigned long threshold);
+    Pittpi(const Gromacs& gromacs,
+           const std::string& sasAnalysisFileName,
+           float radius,
+           unsigned long threshold);
   private:
     std::vector<Group> makeGroups(float radius);
 
