@@ -14,23 +14,10 @@ namespace Gromacs
   struct SasAtom: public Atom
   {
     real sas;
-  };
-  
-  class SasAtomSerializable: public SasAtom
-  {
-  public:
-    SasAtomSerializable() {};
-    SasAtomSerializable(SasAtom& sasAtom)
-    {
-      x = sasAtom.x;
-      y = sasAtom.y;
-      z = sasAtom.z;
-      sas = sasAtom.sas;
-    }
 
   private:
     friend class boost::serialization::access;
-    
+
     template <typename Archive>
     void
     serialize(Archive& ar, const unsigned int version)

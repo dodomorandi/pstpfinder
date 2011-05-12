@@ -49,28 +49,32 @@ Pittpi::Pittpi(const Gromacs& gromacs,
   SasAtom* sasAtoms = 0;
   SasAnalysis* sasAnalysis;
   const float frames = gromacs.getFramesCount();
+  vector<int> protein = gromacs.getGroup("Protein");
 
   averageStructure = gromacs.getAverageStructure();
   vector<Group> groups = makeGroups(radius);
 
-  meanSas = new float[gromacs.getAtomsCount()]();
+  meanSas = new float[protein.size()]();
 
   /* First of all we need to calculate SAS means */
   sasAnalysis = new SasAnalysis(gromacs, sasAnalysisFileName, false);
-  while(((*sasAnalysis) >> sasAtoms) != 0)
+  (*sasAnalysis) >> sasAtoms;
+  while(sasAtoms != 0)
   {
     fIndex = meanSas;
     for
     (
       SasAtom* atom = sasAtoms;
-      atom < sasAtoms + gromacs.getAtomsCount();
+      atom < sasAtoms + protein.size();
       atom++, fIndex++
     )
       *fIndex += atom->sas;
+
+    (*sasAnalysis) >> sasAtoms;
   }
 
   {
-    for(fIndex = meanSas; fIndex < meanSas + gromacs.getAtomsCount(); fIndex++)
+    for(fIndex = meanSas; fIndex < meanSas + protein.size(); fIndex++)
       *fIndex /= frames;
   }
 
@@ -87,15 +91,16 @@ Pittpi::Pittpi(const Gromacs& gromacs,
 
   /* Now we have to normalize values and store results per group */
   unsigned int curFrame = 0;
-  sas = new float[gromacs.getAtomsCount()];
+  sas = new float[protein.size()];
   sasAnalysis = new SasAnalysis(gromacs, sasAnalysisFileName, false);
-  while(((*sasAnalysis) >> sasAtoms) != 0)
+  (*sasAnalysis) >> sasAtoms;
+  while(sasAtoms != 0)
   {
     fIndex = sas;
     for
     (
       SasAtom* atom = sasAtoms;
-      atom < sasAtoms + gromacs.getAtomsCount();
+      atom < sasAtoms + protein.size();
       atom++, fIndex++
     )
       *fIndex = atom->sas;
@@ -136,6 +141,7 @@ Pittpi::Pittpi(const Gromacs& gromacs,
     }
 
     curFrame++;
+    (*sasAnalysis) >> sasAtoms;
   }
   delete sasAnalysis;
 }

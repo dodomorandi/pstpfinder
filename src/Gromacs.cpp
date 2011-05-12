@@ -76,7 +76,13 @@ namespace Gromacs
     operationThread = boost::thread(boost::bind(&Gromacs::__calculateSas,
                                                 boost::ref(*this)));
   }
-  
+
+  void
+  Gromacs::waitOperation()
+  {
+    operationThread.join();
+  }
+
   void
   Gromacs::__calculateSas()
   {
@@ -84,7 +90,7 @@ namespace Gromacs
     real totarea, totvolume;
     int nsurfacedots;
     real *dgs_factor, *radius, *area = 0, *surfacedots = 0, dgsolv;
-    atom_id* index;
+    vector<atom_id> index;
     gmx_rmpbc_t gpbc;
     int nx;
     
@@ -100,40 +106,9 @@ namespace Gromacs
       gmx_fatal(FARGS, "Could not read coordinates from statusfile.\n");
     
     // TODO: index file handling and integration
-    
-    // The original code was simply:
-    // get_index(&top.atoms, 0, 2, nx, index, grpname);
-    // but now I need an automatic selection or a GUI.
-    // For this purpose it's necessary to partially use index.c code in GROMACS
-    
-    // These will be reallocated by Gromacs libraries.
-    // They must be allocated on the heap.
-    // I think it'g good to allocate them as arrays, because they will probably
-    // be reallocated. It would be easier to debug later.
-    t_blocka* grps;
-    grps = new t_blocka[1]();
-    grps->index = new atom_id[1]();
-    char*** gnames;
-    gnames = new char**[1]();
-    int targetIndex = -1;
-    
-    analyse(&top.atoms, grps, gnames, FALSE, FALSE);
-    
-    for(char** i = *gnames; i < *gnames + grps->nr; i++)
-    {
-      if(*i == sasTarget)
-      {
-        targetIndex = (int)(i - *gnames);
-        break;
-      }
-    }
-    // TODO: Return in case of missing target index
 
-    nx = grps->index[targetIndex + 1] - grps->index[targetIndex];
-    index = new atom_id[nx];
-    
-    for(int i = 0; i < nx; i++)
-      index[i] = grps->a[grps->index[targetIndex] + i];
+    index = getGroup("Protein");
+    nx = index.size();
     
     if(bDGsol)
       dgs_factor = new real[nx];
@@ -167,7 +142,7 @@ namespace Gromacs
       gmx_rmpbc(gpbc, natoms, box, x);
       if(nsc_dclm_pbc(x, radius, nx, 24, FLAG_ATOM_AREA, &totarea,
                             &area, &totvolume, &surfacedots, &nsurfacedots,
-                            index, ePBC, box) != 0)
+                            index.data(), ePBC, box) != 0)
         gmx_fatal(FARGS, "Something wrong in nsc_dclm_pbc");
         
       SasAtom atoms[nx];
@@ -207,17 +182,12 @@ namespace Gromacs
     if(bDGsol)
       delete[] dgs_factor;
     delete[] radius;
-    delete[] gnames;
-    delete[] grps->index;
-    delete[] grps;
-    
-    //return true;
   }
 
   const Protein&
   Gromacs::__calculateAverageStructure()
   {
-    atom_id* index;
+    vector<atom_id> index;
     int npdbatoms, isize, count;
     rvec xcm;
     matrix pdbbox;
@@ -225,6 +195,7 @@ namespace Gromacs
     real invcount;
     double *xav, *rmsf;
     double** U;
+    gmx_rmpbc_t gpbc;
 
     if(not getTopology())
       gmx_fatal(FARGS, "Could not read topology file.\n");
@@ -232,37 +203,11 @@ namespace Gromacs
     if(not getTrajectory())
       gmx_fatal(FARGS, "Could not read coordinates from statusfile.\n");
 
-    /*
-     * Stolen from __calculateSas(). I should create a private method for this.
-     */
-    t_blocka* grps;
-    grps = new t_blocka[1]();
-    grps->index = new atom_id[1]();
-    char*** gnames;
-    gnames = new char**[1]();
-    int targetIndex = -1;
-    gmx_rmpbc_t gpbc = NULL;
-
-    analyse(&top.atoms, grps, gnames, FALSE, FALSE);
-
-    for(char** i = *gnames; i < *gnames + grps->nr; i++)
-    {
-      if(string(*i) == "Protein")
-      {
-        targetIndex = (int)(i - *gnames);
-        break;
-      }
-    }
-    // TODO: Return in case of missing target index
-
-    isize = grps->index[targetIndex + 1] - grps->index[targetIndex];
-    index = new atom_id[isize];
-
-    for(int i = 0; i < isize; i++)
-      index[i] = grps->a[grps->index[targetIndex] + i];
+    index = getGroup("Protein");
+    isize = index.size();
 
     w_rls = new real[top.atoms.nr];
-    for(atom_id* i = index; i < index + isize; i++)
+    for(vector<atom_id>::const_iterator i = index.begin(); i < index.end(); i++)
       w_rls[*i] = top.atoms.atom[*i].m;
 
     xav = new double[isize*DIM];
@@ -275,14 +220,14 @@ namespace Gromacs
     snew(top.atoms.pdbinfo, npdbatoms);
     copy_mat(box, pdbbox);
 
-    sub_xcm(xtop, isize, index, top.atoms.atom, xcm, FALSE);
+    sub_xcm(xtop, isize, index.data(), top.atoms.atom, xcm, FALSE);
     gpbc = gmx_rmpbc_init(&top.idef, ePBC, natoms, box);
 
     count = 0;
     do
     {
       gmx_rmpbc(gpbc, natoms, box, x);
-      sub_xcm(x, isize, index, top.atoms.atom, xcm, FALSE);
+      sub_xcm(x, isize, index.data(), top.atoms.atom, xcm, FALSE);
       do_fit(natoms, w_rls, xtop, x);
 
       for(int i =0; i < isize; i++)
@@ -390,11 +335,6 @@ namespace Gromacs
     delete[] xav;
     delete[] w_rls;
 
-    delete[] index;
-    delete[] gnames;
-    delete[] grps->index;
-    delete[] grps;
-
     return averageStructure;
   }
 
@@ -412,7 +352,58 @@ namespace Gromacs
     else
       return 0;
   }
-  
+
+  vector<atom_id>
+  Gromacs::getGroup(const string& groupName) const
+  {
+    // The original code was simply:
+    // get_index(&top.atoms, 0, 2, nx, index, grpname);
+    // but now I need an automatic selection or a GUI.
+    // For this purpose it's necessary to partially use index.c code in GROMACS
+
+    // These will be reallocated by Gromacs libraries.
+    // They must be allocated on the heap.
+    // I think it'g good to allocate them as arrays, because they will probably
+    // be reallocated. It would be easier to debug later.
+    vector<atom_id> group;
+    int size;
+
+    t_blocka* grps;
+    snew(grps, 1);
+    snew(grps->index, 1);
+    char*** gnames;
+    snew(gnames, 1);
+    int targetIndex = -1;
+
+    t_atoms* m_atoms = new t_atoms;
+    memcpy(m_atoms, &top.atoms, sizeof(t_atoms));
+
+    analyse(m_atoms, grps, gnames, FALSE, FALSE);
+
+    for(char** i = *gnames; i < *gnames + grps->nr; i++)
+    {
+      if(groupName.compare(*i) == 0)
+      {
+        targetIndex = (int)(i - *gnames);
+        break;
+      }
+    }
+    // TODO: Return in case of missing target index
+
+    size = grps->index[targetIndex + 1] - grps->index[targetIndex];
+    group.reserve(size);
+
+    for(int i = 0; i < size; i++)
+      group.push_back(grps->a[grps->index[targetIndex] + i]);
+
+    delete[] gnames;
+    delete[] grps->index;
+    delete[] grps;
+    delete[] m_atoms;
+
+    return group;
+  }
+
   bool Gromacs::getTopology()
   {
     t_inputrec ir;

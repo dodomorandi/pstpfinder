@@ -49,6 +49,7 @@ namespace Gromacs
     unsigned int getFrameStep() const;
     void setBegin(float beginTime);
     void setEnd(float endTime);
+    vector<atom_id> getGroup(const string& groupName) const;
     
     /**
      * @brief Returns the number of the current frame starting from 1
@@ -68,6 +69,7 @@ namespace Gromacs
     const Protein& __calculateAverageStructure();
     const Protein& getAverageStructure() const;
     // TODO: calculateAverageStructureDetach()
+    void waitOperation();
   private:
 #ifdef GMX45
     output_env_t oenv;
