@@ -43,16 +43,116 @@ Pittpi::Pittpi(const Gromacs& gromacs,
                float radius,
                unsigned long threshold)
 {
+  m_gromacs = &gromacs;
+
+  averageStructure = gromacs.getAverageStructure();
+  vector<Group> groups = makeGroups(radius);
+
+  fillGroups(groups, sasAnalysisFileName);
+}
+
+vector<Group>
+Pittpi::makeGroups(float radius)
+{
+  vector<Group> groups;
+  vector<Atom> centers;
+  const vector<Residue>& residues = averageStructure.residues();
+
+  // Calculate the center for every sidechain (excluding PRO)
+  centers.reserve(residues.size());
+  for
+  (
+    vector<Residue>::const_iterator i = residues.begin();
+    i < residues.end();
+    i++
+  )
+  {
+    Atom center(0);
+    const vector<PdbAtom>& atoms = i->atoms;
+
+    if(strcmp(i->getAtomByType("H1").type, "UNK") != 0)
+      continue;
+
+    if(i->type == AA_PRO)
+    {
+      centers.push_back(center);
+      continue;
+    }
+    else if(i->type == AA_GLY)
+    {
+      centers.push_back(i->getAtomByType("CA"));
+      continue;
+    }
+    unsigned int count = 0;
+    for(vector<PdbAtom>::const_iterator j = atoms.begin(); j < atoms.end(); j++)
+    {
+      if(strcmp(j->type, "N") != 0 and strcmp(j->type, "CA") != 0 and
+         strcmp(j->type, "H") != 0 and strcmp(j->type, "C") != 0 and
+         strcmp(j->type, "O") != 0 and strcmp(j->type, "HA") != 0)
+      {
+        center += *j;
+        count++;
+      }
+    }
+    center /= (float)count;
+
+    centers.push_back(center);
+  }
+
+  vector<Atom>::const_iterator centersBegin = centers.begin();
+
+  for
+  (
+    vector<Residue>::const_iterator i = residues.begin();
+    i < residues.end();
+    i++
+  )
+  {
+    const PdbAtom& hAtom = i->getAtomByType("H");
+    if(strcmp(hAtom.type, "UNK") == 0)
+      continue;
+
+    Group group(*i);
+    for
+    (
+      vector<Atom>::const_iterator j = centersBegin;
+      j < centers.end();
+      j++
+    )
+    {
+      if(residues[distance(centersBegin, j)].type == AA_PRO)
+        continue;
+
+      if(distance(centersBegin, j) ==
+         distance(vector<Residue>::const_iterator(residues.begin()), i))
+        continue;
+
+      if(hAtom.distance(*j) <= radius)
+        group << residues[distance(centersBegin, j)];
+    }
+
+    groups.push_back(group);
+  }
+
+//  FIXME: Missing sadic alghoritm
+//  FIXME: NEVER TESTED!!
+
+  return groups;
+}
+
+void
+Pittpi::fillGroups(vector<Group>& groups, const string& sasAnalysisFileName)
+{
   float* sas;
   float* meanSas;
   float* fIndex;
   SasAtom* sasAtoms = 0;
   SasAnalysis* sasAnalysis;
+
+  const Gromacs& gromacs = *m_gromacs;
+
   const float frames = gromacs.getFramesCount();
   vector<int> protein = gromacs.getGroup("Protein");
-
-  averageStructure = gromacs.getAverageStructure();
-  vector<Group> groups = makeGroups(radius);
 
   meanSas = new float[protein.size()]();
 
@@ -144,93 +244,4 @@ Pittpi::Pittpi(const Gromacs& gromacs,
     (*sasAnalysis) >> sasAtoms;
   }
   delete sasAnalysis;
-}
-
-vector<Group>
-Pittpi::makeGroups(float radius)
-{
-  vector<Group> groups;
-  vector<Atom> centers;
-  const vector<Residue>& residues = averageStructure.residues();
-
-  // Calculate the center for every sidechain (excluding PRO)
-  centers.reserve(residues.size());
-  for
-  (
-    vector<Residue>::const_iterator i = residues.begin();
-    i < residues.end();
-    i++
-  )
-  {
-    Atom center(0);
-    const vector<PdbAtom>& atoms = i->atoms;
-
-    if(strcmp(i->getAtomByType("H1").type, "UNK") != 0)
-      continue;
-
-    if(i->type == AA_PRO)
-    {
-      centers.push_back(center);
-      continue;
-    }
-    else if(i->type == AA_GLY)
-    {
-      centers.push_back(i->getAtomByType("CA"));
-      continue;
-    }
-    unsigned int count = 0;
-    for(vector<PdbAtom>::const_iterator j = atoms.begin(); j < atoms.end(); j++)
-    {
-      if(strcmp(j->type, "N") != 0 and strcmp(j->type, "CA") != 0 and
-         strcmp(j->type, "H") != 0 and strcmp(j->type, "C") != 0 and
-         strcmp(j->type, "O") != 0 and strcmp(j->type, "HA") != 0)
-      {
-        center += *j;
-        count++;
-      }
-    }
-    center /= (float)count;
-
-    centers.push_back(center);
-  }
-
-  vector<Atom>::const_iterator centersBegin = centers.begin();
-
-  for
-  (
-    vector<Residue>::const_iterator i = residues.begin();
-    i < residues.end();
-    i++
-  )
-  {
-    const PdbAtom& hAtom = i->getAtomByType("H");
-    if(strcmp(hAtom.type, "UNK") == 0)
-      continue;
-
-    Group group(*i);
-    for
-    (
-      vector<Atom>::const_iterator j = centersBegin;
-      j < centers.end();
-      j++
-    )
-    {
-      if(residues[distance(centersBegin, j)].type == AA_PRO)
-        continue;
-
-      if(distance(centersBegin, j) ==
-         distance(vector<Residue>::const_iterator(residues.begin()), i))
-        continue;
-
-      if(hAtom.distance(*j) <= radius)
-        group << residues[distance(centersBegin, j)];
-    }
-
-    groups.push_back(group);
-  }
-
-//  FIXME: Missing sadic alghoritm
-//  FIXME: NEVER TESTED!!
-
-  return groups;
 }

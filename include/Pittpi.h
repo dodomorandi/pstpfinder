@@ -44,7 +44,10 @@ namespace Gromacs
            unsigned long threshold);
   private:
     std::vector<Group> makeGroups(float radius);
+    void fillGroups(std::vector<Group>& groups,
+                    const string& sasAnalysisFileName);
 
+    const Gromacs* m_gromacs;
     Protein averageStructure;
   };
 }
