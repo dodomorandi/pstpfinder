@@ -2,6 +2,7 @@
 #include "SasAtom.h"
 #include "SasAnalysis.h"
 #include <cstring>
+#include <algorithm>
 
 using namespace Gromacs;
 using namespace std;
@@ -38,6 +39,12 @@ Group::getCentralH() const
   return *reference;
 }
 
+bool
+Group::sortByZeros(const Group& a, const Group& b)
+{
+  return (a.zeros > b.zeros);
+}
+
 Pittpi::Pittpi(const Gromacs& gromacs,
                const std::string& sasAnalysisFileName,
                float radius,
@@ -49,6 +56,97 @@ Pittpi::Pittpi(const Gromacs& gromacs,
   vector<Group> groups = makeGroups(radius);
 
   fillGroups(groups, sasAnalysisFileName);
+
+  /*
+   * This part is a "legacy" method. It have been implemented in perl time ago
+   * and needs refactory. The main problem is math related, because we have to
+   * find a good solution to take "consecutively opened pocked" above a certain
+   * threshold. With every frame (and every SAS value) it could be not so easy
+   * to develop a GOOD alghorithm. For now we implement only the old method used
+   * until now.
+   * -- Edoardo Morandi
+   */
+
+#define PS_PER_SAS 5
+  unsigned int frameStep = PS_PER_SAS * gromacs.getFrameStep();
+  threshold /= frameStep;
+  unsigned int frames = gromacs.getFramesCount();
+  unsigned int newSasCount = frames / PS_PER_SAS +
+                             (frames % PS_PER_SAS == 0) ? 0 : 1;
+  vector<Group> meanGroups = groups;
+  for
+  (
+    vector<Group>::iterator i = meanGroups.begin(), j = groups.begin();
+    i < meanGroups.end();
+    i++, j++
+  )
+  {
+    i->sas.reserve(newSasCount);
+    for(vector<float>::iterator k = j->sas.begin(); k < j->sas.end(); k++)
+    {
+      float mean = 0;
+      vector<float>::iterator end = k + frameStep;
+      for(;k < end; k++)
+        mean += *k;
+
+      mean /= frameStep;
+      i->sas.push_back(mean);
+    }
+  }
+
+  sort(meanGroups.begin(), meanGroups.end(), Group::sortByZeros);
+
+  unsigned int noZeroPass = threshold / PS_PER_SAS;
+  if(noZeroPass < 20)
+    noZeroPass = 0;
+  else if(noZeroPass < 40)
+    noZeroPass = 1;
+  else if(NoZeroPass < 60)
+    noZeroPass = 2;
+  else
+    noZeroPass = 3;
+
+  vector<Pocket> pockets;
+  for
+  (
+    vector<Group>::const_iterator i = meanGroups.begin();
+    i < meanGroups.end();
+    i++
+  )
+  {
+    vector<float>::const_iterator startPocket = i->sas.end();
+    unsigned int notOpenCounter = 0;
+
+    for
+    (
+      vector<float>::const_iterator j = i->sas.begin();
+      j < i->sas.end();
+      j++;
+    )
+    {
+      if(startPocket == i->sas.end() and *j > 1)
+        startPocket = j;
+      else if(startPocket != i->sas.end and *j < 1)
+      {
+        if(notOpenCounter < noZeroPass)
+          notOpenCounter++
+        else
+        {
+          if(distance(startPocket, j) >= threshold)
+          {
+            Pocket pocket;
+            pocket.group = &(*i);
+            pocket.startFrame = distance(i->sas.begin(), startPocket);
+            pocket.endFrame = distance(i->sas.begin(), j);
+            // TODO: correct and fill these values! Note: start and end Frame
+            // TODO: are not in "frame" format!
+          }
+          startPocket = i->sas.end();
+          notOpenCounter = 0;
+        }
+      }
+    }
+  }
 }
 
 vector<Group>

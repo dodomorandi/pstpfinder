@@ -15,12 +15,23 @@ namespace Gromacs
     Group& operator <<(const Residue& value);
     const vector<const Residue*>& getResidues() const;
     const PdbAtom& getCentralH() const;
+    static bool sortByZeros(const Group& a, const Group& b);
 
     vector<float> sas;
     unsigned int zeros;
   private:
     const PdbAtom* reference;
     vector<const Residue*> residues;
+  };
+
+  struct Pocket
+  {
+    const Group* group;
+    unsigned int startFrame;
+    unsigned int endFrame;
+    float openingFraction;
+    unsigned int meanNearFrame;
+    unsigned int maxAreaFrame;
   };
 
   /**
