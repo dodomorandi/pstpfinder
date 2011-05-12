@@ -68,11 +68,11 @@ Pittpi::Pittpi(const Gromacs& gromacs,
    */
 
 #define PS_PER_SAS 5
-  unsigned int frameStep = PS_PER_SAS * gromacs.getFrameStep();
-  threshold /= frameStep;
-  unsigned int frames = gromacs.getFramesCount();
-  unsigned int newSasCount = frames / PS_PER_SAS +
-                             (frames % PS_PER_SAS == 0) ? 0 : 1;
+  unsigned int const frameStep = PS_PER_SAS / gromacs.getFrameStep();
+  unsigned int const frames = gromacs.getFramesCount();
+  unsigned int const newSasCount = frames / frameStep +
+                             (frames % frameStep == 0) ? 0 : 1;
+  unsigned int const dist2frame = PS_PER_SAS * gromacs.getFrameStep();
   vector<Group> meanGroups = groups;
   for
   (
@@ -101,7 +101,7 @@ Pittpi::Pittpi(const Gromacs& gromacs,
     noZeroPass = 0;
   else if(noZeroPass < 40)
     noZeroPass = 1;
-  else if(NoZeroPass < 60)
+  else if(noZeroPass < 60)
     noZeroPass = 2;
   else
     noZeroPass = 3;
@@ -109,37 +109,48 @@ Pittpi::Pittpi(const Gromacs& gromacs,
   vector<Pocket> pockets;
   for
   (
-    vector<Group>::const_iterator i = meanGroups.begin();
+    vector<Group>::iterator i = meanGroups.begin();
     i < meanGroups.end();
     i++
   )
   {
-    vector<float>::const_iterator startPocket = i->sas.end();
+    vector<float>::iterator startPocket = i->sas.end();
     unsigned int notOpenCounter = 0;
+    float* maxFrame;
 
     for
     (
-      vector<float>::const_iterator j = i->sas.begin();
+      vector<float>::iterator j = i->sas.begin();
       j < i->sas.end();
-      j++;
+      j++
     )
     {
       if(startPocket == i->sas.end() and *j > 1)
+      {
         startPocket = j;
-      else if(startPocket != i->sas.end and *j < 1)
+        maxFrame = &(*j);
+      }
+      else if(startPocket != i->sas.end() and *j < 1)
       {
         if(notOpenCounter < noZeroPass)
-          notOpenCounter++
+        {
+          notOpenCounter++;
+          if(*j > *maxFrame)
+            maxFrame = &(*j);
+        }
         else
         {
-          if(distance(startPocket, j) >= threshold)
+          if(static_cast<unsigned int>(distance(startPocket, j) * dist2frame) >=
+             threshold)
           {
             Pocket pocket;
             pocket.group = &(*i);
-            pocket.startFrame = distance(i->sas.begin(), startPocket);
-            pocket.endFrame = distance(i->sas.begin(), j);
-            // TODO: correct and fill these values! Note: start and end Frame
-            // TODO: are not in "frame" format!
+            pocket.startFrame = distance(i->sas.begin(), startPocket) *
+                                dist2frame;
+            pocket.endFrame = distance(i->sas.begin(), j) * dist2frame;
+            pocket.maxAreaFrame = static_cast<int>
+                                  (maxFrame - &(*i->sas.begin())) * dist2frame;
+            // TODO: correct and fill these values!
           }
           startPocket = i->sas.end();
           notOpenCounter = 0;
