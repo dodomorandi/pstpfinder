@@ -68,11 +68,11 @@ Pittpi::Pittpi(const Gromacs& gromacs,
    */
 
 #define PS_PER_SAS 5
-  unsigned int const frameStep = PS_PER_SAS / gromacs.getFrameStep();
+  unsigned int const frameStep = float(PS_PER_SAS) / gromacs.getTimeStep();
   unsigned int const frames = gromacs.getFramesCount();
   unsigned int const newSasCount = frames / frameStep +
                              (frames % frameStep == 0) ? 0 : 1;
-  unsigned int const dist2frame = PS_PER_SAS * gromacs.getFrameStep();
+  unsigned int const dist2frame = PS_PER_SAS * gromacs.getTimeStep();
   vector<Group> meanGroups = groups;
   for
   (
@@ -117,6 +117,8 @@ Pittpi::Pittpi(const Gromacs& gromacs,
     vector<float>::iterator startPocket = i->sas.end();
     unsigned int notOpenCounter = 0;
     float* maxFrame;
+    float mean = 0;
+    unsigned int percOpenedNotZero = 1;
 
     for
     (
@@ -129,14 +131,15 @@ Pittpi::Pittpi(const Gromacs& gromacs,
       {
         startPocket = j;
         maxFrame = &(*j);
+        mean = *j;
+        percOpenedNotZero = 1;
       }
       else if(startPocket != i->sas.end() and *j < 1)
       {
         if(notOpenCounter < noZeroPass)
         {
           notOpenCounter++;
-          if(*j > *maxFrame)
-            maxFrame = &(*j);
+          mean += *j;
         }
         else
         {
@@ -150,11 +153,29 @@ Pittpi::Pittpi(const Gromacs& gromacs,
             pocket.endFrame = distance(i->sas.begin(), j) * dist2frame;
             pocket.maxAreaFrame = static_cast<int>
                                   (maxFrame - &(*i->sas.begin())) * dist2frame;
-            // TODO: correct and fill these values!
+            pocket.openingFraction = static_cast<float>(percOpenedNotZero) /
+                                     distance(startPocket, j);
+
+            mean /=  distance(startPocket, j);
+            vector<float>::iterator nearToMean = startPocket;
+            for(vector<float>::iterator k = startPocket + 1; k < j; k++)
+              if(abs(mean - *nearToMean) > abs(mean - *k))
+                nearToMean = k;
+            pocket.meanNearFrame = distance(i->sas.begin(), nearToMean) *
+                                   dist2frame;
+
+            pockets.push_back(pocket);
           }
           startPocket = i->sas.end();
           notOpenCounter = 0;
         }
+      }
+      else
+      {
+        if(*j > *maxFrame)
+          maxFrame = &(*j);
+        mean += *j;
+        percOpenedNotZero++;
       }
     }
   }
@@ -299,7 +320,7 @@ Pittpi::fillGroups(vector<Group>& groups, const string& sasAnalysisFileName)
     i->sas.reserve(frames);
 
   /* Now we have to normalize values and store results per group */
-  unsigned int curFrame = 0;
+  vector<float>::iterator curFrame;
   sas = new float[protein.size()];
   sasAnalysis = new SasAnalysis(gromacs, sasAnalysisFileName, false);
   (*sasAnalysis) >> sasAtoms;
@@ -321,14 +342,17 @@ Pittpi::fillGroups(vector<Group>& groups, const string& sasAnalysisFileName)
       i++
     )
     {
+      i->sas.push_back(0);
+      curFrame = i->sas.end() - 1;
+
       if(sas[i->getCentralH().index] == 0)
       {
-        i->sas[curFrame] = 0;
         i->zeros++;
         continue;
       }
 
       const vector<const Residue*>& residues = i->getResidues();
+      unsigned int counter = 0;
       for
       (
         vector<const Residue*>::const_iterator j = residues.begin();
@@ -342,15 +366,19 @@ Pittpi::fillGroups(vector<Group>& groups, const string& sasAnalysisFileName)
           k++
         )
           if(k->type[0] == 'H')
-            i->sas[curFrame] += sas[k->index - 1] / meanSas[k->index -1];
+          {
+            (*curFrame) += sas[k->index - 1] / meanSas[k->index - 1];
+            counter++;
+          }
 
-      i->sas[curFrame] /= frames;
-      if(i->sas[curFrame] == 0)
+      (*curFrame) /= counter;
+      if(*curFrame == 0)
         i->zeros++;
     }
 
-    curFrame++;
     (*sasAnalysis) >> sasAtoms;
   }
   delete sasAnalysis;
+  delete[] meanSas;
+  delete[] sas;
 }

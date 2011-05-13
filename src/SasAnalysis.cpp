@@ -389,8 +389,7 @@ SasAnalysis::OperationThread::threadOpen()
 
     if(not parent->open())
       isStopped = true;
-
-    if(parent->curChunk == parent->chunks.end())
+    else if(parent->curChunk == parent->chunks.end())
       parent->curChunk--;
 
     parent->bufferSemaphore->post();
