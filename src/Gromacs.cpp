@@ -4,6 +4,7 @@
 
 #include <string>
 #include <iostream>
+#include <fstream>
 #include <cstring>
 
 #include <tpxio.h>
@@ -478,8 +479,9 @@ namespace Gromacs
     namespace file = boost::filesystem;
     if(not file::exists(file::path(trjName)))
       return 0;
-    
-    unsigned int nFrames;
+
+    int nFrames = 0;
+    /*
     output_env_t _oenv;
     t_trxstatus *_status;
     real _t;
@@ -503,7 +505,74 @@ namespace Gromacs
 
     close_trx(_status);
     output_env_done(_oenv);
-    
+    */
+
+    /* This is a workaround to obtain the f*****g number of frames... */
+    ifstream trjStream(trjName.c_str(), ios::in | ios::binary);
+    bool gotFirst = false;
+    unsigned char cTmp[4];
+    int nAtoms;
+    int step;
+
+    trjStream.seekg(4, ios::beg);
+    cTmp[3] = trjStream.get();
+    cTmp[2] = trjStream.get();
+    cTmp[1] = trjStream.get();
+    cTmp[0] = trjStream.get();
+    nAtoms = *(int*)cTmp;
+
+    while(not trjStream.eof())
+    {
+      cTmp[3] = trjStream.get();
+      cTmp[2] = trjStream.get();
+      cTmp[1] = trjStream.get();
+      cTmp[0] = trjStream.get();
+
+      if(nAtoms == *(int*)cTmp and not gotFirst)
+      {
+        gotFirst = true;
+        continue;
+      }
+      else if(nAtoms == *(int*)cTmp)
+      {
+        cTmp[3] = trjStream.get();
+        cTmp[2] = trjStream.get();
+        cTmp[1] = trjStream.get();
+        cTmp[0] = trjStream.get();
+
+        step = *(int*)cTmp;
+        gotFirst = false;
+        break;
+      }
+      trjStream.seekg(-3, ios::cur);
+    }
+
+    trjStream.seekg(-7, ios::end);
+
+    while(trjStream.seekg(-5, ios::cur))
+    {
+      cTmp[3] = trjStream.get();
+      cTmp[2] = trjStream.get();
+      cTmp[1] = trjStream.get();
+      cTmp[0] = trjStream.get();
+
+      if(nAtoms == *(int*)cTmp and not gotFirst)
+      {
+        gotFirst = true;
+        trjStream.seekg(-3, ios::cur);
+      }
+      else if(nAtoms == *(int*)cTmp)
+      {
+        cTmp[3] = trjStream.get();
+        cTmp[2] = trjStream.get();
+        cTmp[1] = trjStream.get();
+        cTmp[0] = trjStream.get();
+
+        nFrames = *(int*)cTmp / step + 1;
+        break;
+      }
+    }
+
     return cachedNFrames = nFrames;
   }
   
