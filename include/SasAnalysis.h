@@ -53,12 +53,15 @@ namespace Gromacs
     boost::iostreams::file_descriptor fileIO;
     const Gromacs* gromacs;
     unsigned long maxFrames, maxBytes, maxChunk;
-    boost::circular_buffer<std::vector<SasAtom* > >::iterator curChunk;
     mutable boost::interprocess::interprocess_semaphore* bufferSemaphore;
     unsigned int bufferSemaphoreCount;
     unsigned int bufferSemaphoreMax;
     mutable boost::interprocess::interprocess_mutex bufferMutex;
     bool changeable;
+    boost::iostreams::filtering_istream inFilter;
+    boost::archive::binary_iarchive* inArchive;
+    boost::iostreams::filtering_ostream outFilter;
+    boost::archive::binary_oarchive* outArchive;
 
     enum
     {
