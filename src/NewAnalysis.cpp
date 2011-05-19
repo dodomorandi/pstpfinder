@@ -25,8 +25,8 @@ NewAnalysis::NewAnalysis()
 void
 NewAnalysis::init()
 {
-  if(Glib::thread_supported())
-    Glib::thread_init();
+  signal_start_spin.connect(sigc::mem_fun(*this, &NewAnalysis::start_spin));
+  signal_stop_spin.connect(sigc::mem_fun(*this, &NewAnalysis::stop_spin));
 
   FileFilter trjFilter;
   trjFilter.set_name("Trajectory files");
@@ -137,6 +137,43 @@ NewAnalysis::init()
 }
 
 void
+NewAnalysis::start_spin()
+{
+  if(spinnerWait.get_parent() == 0)
+    vboxMain.pack_start(spinnerWait);
+  mainFrame.hide();
+  buttonBoxRun.hide();
+  spinnerWait.show();
+  spinnerWait.start();
+}
+
+void
+NewAnalysis::stop_spin()
+{
+  spinnerWait.stop();
+  spinnerWait.hide();
+  mainFrame.show();
+  buttonBoxRun.show();
+
+  spinBegin.set_sensitive();
+  spinEnd.set_sensitive();
+  hScaleBegin.set_sensitive();
+  hScaleEnd.set_sensitive();
+
+  spinBegin.set_range(0, (tmpGromacsFrames - 1) * tmpGromacs->getTimeStep());
+  spinBegin.set_value(0);
+  spinBegin.set_increments(tmpGromacs->getTimeStep(),
+                           (tmpGromacsFrames - 1) / 100);
+
+  spinEnd.set_range(0, (tmpGromacsFrames - 1) * tmpGromacs->getTimeStep());
+  spinEnd.set_value((tmpGromacsFrames - 1) * tmpGromacs->getTimeStep());
+  spinEnd.set_increments(tmpGromacs->getTimeStep(),
+                         (tmpGromacsFrames - 1) / 100);
+
+  delete tmpGromacs;
+}
+
+void
 NewAnalysis::runAnalysis()
 {
   Gromacs::Gromacs gromacs( trjChooser.get_filename(),
@@ -195,31 +232,10 @@ NewAnalysis::chooserTrajectoryClicked()
 void
 NewAnalysis::threadTrajectoryClicked()
 {
-  if(spinnerWait.get_parent() == 0)
-    vboxMain.pack_start(spinnerWait);
-  mainFrame.hide();
-  buttonBoxRun.hide();
-  spinnerWait.show();
-  spinnerWait.start();
+  signal_start_spin();
 
-  Gromacs::Gromacs gromacs(trjChooser.get_filename(),"");
-  int frames = gromacs.getFramesCount();
+  tmpGromacs = new Gromacs::Gromacs(trjChooser.get_filename(), "");
+  tmpGromacsFrames = tmpGromacs->getFramesCount();
 
-  spinnerWait.stop();
-  spinnerWait.hide();
-  mainFrame.show();
-  buttonBoxRun.show();
-
-  spinBegin.set_sensitive();
-  spinEnd.set_sensitive();
-  hScaleBegin.set_sensitive();
-  hScaleEnd.set_sensitive();
-
-  spinBegin.set_range(0, (frames - 1) * gromacs.getTimeStep());
-  spinBegin.set_value(0);
-  spinBegin.set_increments(gromacs.getTimeStep(), (frames - 1) / 100);
-
-  spinEnd.set_range(0, (frames - 1) * gromacs.getTimeStep());
-  spinEnd.set_value((frames - 1) * gromacs.getTimeStep());
-  spinEnd.set_increments(gromacs.getTimeStep(), (frames - 1) / 100);
+  signal_stop_spin();
 }

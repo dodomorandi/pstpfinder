@@ -1,7 +1,10 @@
 #ifndef _NEWANALYSIS_H
 #define _NEWANALYSIS_H
 
+#include "Gromacs.h"
+
 #include <gtkmm.h>
+#include <glibmm.h>
 
 using namespace Gtk;
 
@@ -15,6 +18,8 @@ public:
 
   NewAnalysis();
   NewAnalysis(Window& parent);
+  Glib::Dispatcher signal_start_spin;
+  Glib::Dispatcher signal_stop_spin;
 private:
   Frame mainFrame;
   VBox vboxFrame1, vboxFrame2, vboxMain;
@@ -30,11 +35,15 @@ private:
   HScale hScaleBegin, hScaleEnd;
   Spinner spinnerWait;
   VSeparator vSeparator;
+  Gromacs::Gromacs* tmpGromacs;
+  int tmpGromacsFrames;
 
   void init();
   void runAnalysis();
   void chooserTrajectoryClicked();
   void threadTrajectoryClicked();
+  void start_spin();
+  void stop_spin();
 };
 
 #endif
