@@ -95,7 +95,7 @@ namespace Gromacs
     gmx_rmpbc_t gpbc;
     int nx;
     
-    if(not (bTop = getTopology()))
+    if(not gotTopology and not (bTop = getTopology()))
       gmx_fatal(FARGS, "Could not read topology file.\n");
       
     //bDGsol = (strcmp(*(top.atoms.atomtype[0]),"?") != 0);
@@ -275,7 +275,7 @@ namespace Gromacs
     {
       PdbAtom atom;
       atom.index = i+1;
-      strncpy(atom.type, *top.atoms.atomname[index[i]], 4);
+      strncpy(atom.type, *top.atoms.atomname[index[i]], 5);
 
       atom.x = xcm[0] + xav[i * DIM];
       atom.y = xcm[1] + xav[i * DIM + 1];
@@ -355,6 +355,15 @@ namespace Gromacs
   }
 
   vector<atom_id>
+  Gromacs::getGroup(const string& groupName)
+  {
+    if(not gotTopology and not getTopology())
+      abort();
+
+    return const_cast<const Gromacs&>(*this).getGroup(groupName);
+  }
+
+  vector<atom_id>
   Gromacs::getGroup(const string& groupName) const
   {
     // The original code was simply:
@@ -366,6 +375,7 @@ namespace Gromacs
     // They must be allocated on the heap.
     // I think it'g good to allocate them as arrays, because they will probably
     // be reallocated. It would be easier to debug later.
+
     vector<atom_id> group;
     int size;
 

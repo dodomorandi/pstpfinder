@@ -130,6 +130,7 @@ SasAnalysis::operator >>(SasAtom*& sasAtom)
 
     for(i = frames.begin(); i < frames.end(); i++)
       delete[] *i;
+    frames.clear();
     chunks.pop_front();
 
     if(chunks.size() == 0)
@@ -149,7 +150,8 @@ SasAnalysis::operator >>(SasAtom*& sasAtom)
     frames = chunks.front();
     i = frames.begin();
 
-    operationThread->wakeUp();
+    if(bufferSemaphoreCount == bufferSemaphoreMax - 1)
+      operationThread->wakeUp();
     bufferMutex.unlock();
   }
 
@@ -182,9 +184,10 @@ SasAnalysis::flush()
   chunks.push_back(frames);
 
   frames.clear();
+  if(bufferSemaphoreCount == bufferSemaphoreMax - 1)
+    operationThread->wakeUp();
   bufferMutex.unlock();
   
-  operationThread->wakeUp();
 }
 
 bool

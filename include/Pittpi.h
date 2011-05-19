@@ -49,7 +49,7 @@ namespace Gromacs
   class Pittpi
   {
   public:
-    Pittpi(const Gromacs& gromacs,
+    Pittpi(Gromacs& gromacs,
            const std::string& sasAnalysisFileName,
            float radius,
            unsigned long threshold);
@@ -58,7 +58,7 @@ namespace Gromacs
     void fillGroups(std::vector<Group>& groups,
                     const string& sasAnalysisFileName);
 
-    const Gromacs* m_gromacs;
+    Gromacs* m_gromacs;
     Protein averageStructure;
   };
 }

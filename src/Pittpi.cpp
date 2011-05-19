@@ -3,6 +3,9 @@
 #include "SasAnalysis.h"
 #include <cstring>
 #include <algorithm>
+#include <fstream>
+#include <sstream>
+#include <iomanip>
 
 using namespace Gromacs;
 using namespace std;
@@ -45,7 +48,7 @@ Group::sortByZeros(const Group& a, const Group& b)
   return (a.zeros > b.zeros);
 }
 
-Pittpi::Pittpi(const Gromacs& gromacs,
+Pittpi::Pittpi(Gromacs& gromacs,
                const std::string& sasAnalysisFileName,
                float radius,
                unsigned long threshold)
@@ -149,8 +152,8 @@ Pittpi::Pittpi(const Gromacs& gromacs,
             Pocket pocket;
             pocket.group = &(*i);
             pocket.startFrame = distance(i->sas.begin(), startPocket) *
-                                dist2frame;
-            pocket.endFrame = distance(i->sas.begin(), j) * dist2frame;
+                                dist2frame + 1;
+            pocket.endFrame = distance(i->sas.begin(), j) * dist2frame + 1;
             pocket.maxAreaFrame = static_cast<int>
                                   (maxFrame - &(*i->sas.begin())) * dist2frame;
             pocket.openingFraction = static_cast<float>(percOpenedNotZero) /
@@ -162,7 +165,7 @@ Pittpi::Pittpi(const Gromacs& gromacs,
               if(abs(mean - *nearToMean) > abs(mean - *k))
                 nearToMean = k;
             pocket.meanNearFrame = distance(i->sas.begin(), nearToMean) *
-                                   dist2frame;
+                                   dist2frame + 1;
 
             pockets.push_back(pocket);
           }
@@ -178,6 +181,25 @@ Pittpi::Pittpi(const Gromacs& gromacs,
         percOpenedNotZero++;
       }
     }
+  }
+
+  ofstream pocketLog("/tmp/pockets.log");
+  for
+  (
+    vector<Pocket>::const_iterator i = pockets.begin();
+    i < pockets.end();
+    i++
+  )
+  {
+    const Residue& res = averageStructure.
+                           getResidueByAtom(i->group->getCentralH());
+    stringstream aaRef;
+    aaRef << aminoacidTriplet[res.type] << res.index;
+
+    pocketLog << setfill('0') << setw(8) << i->group->zeros << " ";
+    pocketLog << setfill(' ') << setw(8) << aaRef.str() << " ";
+    pocketLog << setfill('0') << setw(8) << i->startFrame << " ";
+    pocketLog << setfill('0') << setw(8) << i->endFrame << endl;
   }
 }
 
@@ -264,7 +286,7 @@ Pittpi::makeGroups(float radius)
     groups.push_back(group);
   }
 
-//  FIXME: Missing sadic alghoritm
+//  FIXME: Missing sadic algorithm
 //  FIXME: NEVER TESTED!!
 
   return groups;
@@ -279,7 +301,7 @@ Pittpi::fillGroups(vector<Group>& groups, const string& sasAnalysisFileName)
   SasAtom* sasAtoms = 0;
   SasAnalysis* sasAnalysis;
 
-  const Gromacs& gromacs = *m_gromacs;
+  Gromacs& gromacs = *m_gromacs;
 
   const float frames = gromacs.getFramesCount();
   vector<int> protein = gromacs.getGroup("Protein");
@@ -292,12 +314,9 @@ Pittpi::fillGroups(vector<Group>& groups, const string& sasAnalysisFileName)
   while(sasAtoms != 0)
   {
     fIndex = meanSas;
-    for
-    (
-      SasAtom* atom = sasAtoms;
-      atom < sasAtoms + protein.size();
-      atom++, fIndex++
-    )
+    SasAtom* m_end = sasAtoms + protein.size();
+
+    for(SasAtom* atom = sasAtoms; atom < m_end; atom++, fIndex++)
       *fIndex += atom->sas;
 
     (*sasAnalysis) >> sasAtoms;

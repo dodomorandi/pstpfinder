@@ -49,6 +49,7 @@ namespace Gromacs
     unsigned int getFrameStep() const;
     void setBegin(float beginTime);
     void setEnd(float endTime);
+    vector<atom_id> getGroup(const string& groupName);
     vector<atom_id> getGroup(const string& groupName) const;
     
     /**
