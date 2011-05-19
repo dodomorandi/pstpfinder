@@ -1,0 +1,759 @@
+commit 760ab63878a62cb698078d56a7bd1d5e8c106531
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Thu May 19 07:19:22 2011 +0200
+
+    Fixed graphics glitches
+    
+    I used a dispatcher to send signals about starting end stopping spinning.
+
+commit 1d2234a82008f538fe6b2b012da48ac0c000232d
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Thu May 19 03:23:48 2011 +0200
+
+    Lots of implementations and fixes
+    
+    * Added non-const getGroup (checks for the topology);
+    * gromacs-related parameters in Pittpi are not const anymore;
+    * implemented Protein::getTypeByName;
+    * implemented PDB loading with new Protein constructor;
+    * implemented Protein::dumpPdb;
+    * implemented Protein::getAtomByIndex;
+    * implemented Protein::getResidueByAtom;
+    * first implementation of basic log;
+    * optimized code using variable m_end;
+    * FIXED: check for gotTopology before calling getTopology;
+    * FIXED: raised limit to strncpy to 5;
+    * FIXED: frames must start from 1;
+    * FIXED: semaphore count check before waking up operation thread.
+
+commit ceff1ca0ff10475513389a3e5e61671b851cebd8
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue May 17 15:53:06 2011 +0200
+
+    Created a fast frame counter
+    
+    It's a simple workaround: we take the atoms count as reference, then we get the second frame "step", we seek the last position of the file, search for the atoms count and get it's subsequential number (the step). This will give the number of frames.
+
+commit ebce744509f8a105d5be088fabd2b5cc308aca58
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue May 17 12:20:00 2011 +0200
+
+    Lots of code refactory and bug fixes
+    
+    * curChunks is not more used. It's better pushing and popping elements;
+    * filters and archives are declared class-wide;
+    * FIXED: fileIO is always opened with "binary" flag;
+    * FIXED: missing openThread stopping;
+    * FIXED: using peek() to detect EOF;
+    * FIXED: number and size of chunks.
+
+commit 3d21410bc5457fee8be3ff55a37709692754be9b
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri May 13 11:45:40 2011 +0200
+
+    Various fixes and implementations
+    
+    * Implemented every pocket parameter calculation;
+    * FIXED: using getTimeStep instead of getFrameStep;
+    * FIXED: some uninitialized data;
+    * FIXED: sas must have been pushed;
+    * FIXED: missing counter for sas mean calculation;
+    * FIXED: a couple of memory leaks;
+    * FIXED: curChunk shouldn't be reassigned if open() returns false.
+
+commit bc81d47b72347c509271c1268161057876ea68e0
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Thu May 12 18:46:19 2011 +0200
+
+    Fixed couple of things in Pittpi
+
+commit c0b41d66a9e866e5f78d85baff07336ea6939a1b
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Thu May 12 17:41:16 2011 +0200
+
+    Continuing implementation of Pittpi algorithm
+    
+    * Added sortByZeros function to Group;
+    * Added struct Pocket;
+    * Implemented mean recalculation for sas;
+    * Partially implemented pocket recognition.
+
+commit 3c77bca7f221fd1f6f7aeb6bcad681ca9d9a04e3
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Thu May 12 15:56:58 2011 +0200
+
+    Part of Pittpi algorithm put in fillGroups
+
+commit 36ef4649a892250a2bf1309c0d4890081d2e6205
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Thu May 12 14:55:22 2011 +0200
+
+    Lots of fixes. Now it should be quite stable.
+    
+    * Added getGroup in Gromacs class;
+    * Added waitOperation;
+    * SasAtomSerializable have been implemented completely inside SasAtom;
+    * Added semaphore waiting system in SasAnalysis::operator >>;
+    * Added control for empty circular buffer in SasAnalysis::operator >>. It should also work for EOF handling;
+    * Added file status control in SasAnalysis::open;
+    * FIXED: group selection now uses GROMACS snew instead of new[] operator;
+    * FIXED: operator >> in SasAnalysis must return a reference to the class instance and accept a reference to SasAtom;
+    * FIXED: using "protein" group for Pittpi operation instead of getAtomsCount -- it considers EVERY atom of the box;
+    * FIXED: wrong loop condition;
+    * FIXED: semaphore handling in SasAnalysis::operator >>. It must start with value 0 instead of bufferSemaphoreMax. Consequently different part of code have been changed to avoid semaphore problems;
+    * FIXED: using curChunk in SasAnalysis::operator >> instead of popping from chunks;
+    * FIXED: missing operationThread->wakeUp in SasAnalysis::operator >>;
+    * FIXED: loadChunk(in) must be pushed, not assigned;
+    * FIXED: loadChunk must use unsigned int instead of unsigned long;
+    * FIXED: SasAtom size is nAtoms, not "size";
+    * FIXED: added missing code after parent->open() in OperationThread::threadOpen.
+
+commit e0db193d64ac628056d1f50e3ca065e7e966d6be
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed May 11 18:18:00 2011 +0200
+
+    Lots of fixes and a couple of improvements
+    
+    * Added zeros and getCentralH Group
+    * reference in Group is an Atom now
+    * passing sas analysis filename to Pittpi
+    * added sas to PdbAtom
+    * initial support for Pittpi algorithm
+    * implemented an untested method to know when a SasAnalysis reached EOF
+    * FIXED: oenv if now freed using GROMACS sfree. This should avoid memory leaks.
+    * FIXED: missing close_trx
+    
+    Still lots, lots, lots of bugs.
+
+commit 5f4cec2083dd85bcde80354b1bb304d9db34fc4c
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue May 10 17:42:07 2011 +0200
+
+    Fixed condition with PRO
+
+commit 6eab191e1e9ace4cbaf3d7c98fd53e4dfbb36ba3
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue May 10 16:10:15 2011 +0200
+
+    Group class implementation and various fixes
+    
+    * Added Group class
+    * Added Silvia Bottini inside Pittpi references
+    * FIXED: makeGroups must return a vector of Groups, not of Residues
+    * FIXED: passed threshold instead of radius to makeGroups
+    * FIXED: discarded first aminoacid (every AA with H1)
+    * FIXED: used getAtomByType instead of a redundant loop
+    * FIXED: double control of "C" atom
+    * FIXED: used a counter to calculate sidechains center
+
+commit 33c4ed5ae6b4b4250a4365208a7666a0be02b7b8
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue May 10 14:49:20 2011 +0200
+
+    Pittpi initial implementation + fixes
+    
+    * Added some operators to Atom structure;
+    * Added getAtomByType to Protein;
+    * Added stub of Pittpi class;
+    * Added Pittpi::makeGroups;
+    * FIXED: getAverageStructure is const;
+    * FIXED: __calculateAverageStructure shouldn't be called directly. It was here just for testing purposes.
+
+commit 19649fb55f0e01b0f64ebc26dc1a0b6c7035c46a
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Mon May 9 16:11:40 2011 +0200
+
+    Fix + short implementation
+    
+    * Changed name of getAverageStructure in calculateAverageStructure;
+    * Implemented getAverageStructure
+
+commit c5e74c55eaaf6c8c8eea7c31b195beb0255b1b81
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Mon May 9 15:52:07 2011 +0200
+
+    Couple of minor things
+    
+    * Added "ps" to the threshold parameter
+    * Corrected mispelling of "threshold"
+
+commit e180c89995d848fc84c2c8041bb125e7a52369f7
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Mon May 9 15:45:25 2011 +0200
+
+    averageProtein added to Gromacs properties
+    
+    Still missing getProtein methods. I will implement it later. Maybe.
+
+commit a2ded7b4f364b8dece09450068a45a7919b40306
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Mon May 9 13:27:37 2011 +0200
+
+    Added some analysis parameters
+
+commit 356f1258aacd65252dde3f1b13114ba672738adb
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Mon May 9 12:25:55 2011 +0200
+
+    Better GROMACS headers compatibility
+    
+    They use a signed index for residues. Changed behaviour for coherence.
+
+commit 8fcea1b4aad8d57cff1b8d188d21e60bd61dc84c
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri May 6 13:20:14 2011 +0200
+
+    Couple of improvements + fix
+    
+    * Added "unknown" aminoacid
+    * Added a translation system for uncommon aminoacid nomenclature (see Amber)
+    * Changed behaviour for to access residues and atoms inside a protein object. Now every problem related to atom references should be fixed/avoided.
+    * FIXED: using different AA index instead of AA type to determine a new aminoacid
+
+commit 6380b27d3e567eb8eb947c451eabc20389cd4332
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Thu May 5 19:03:19 2011 +0200
+
+    Implemented the protein in getAverageStructure
+    
+    * Changed from unsigned char to char for type in PdbAtom
+    * Implemented type in Residue
+    * Code refactoring for appendResidue. STILL DOESN'T WORK!
+    * Protein is built inside __getAverageStructure
+    
+    There are still some problems around protein->atoms references. This is probably related to memory reallocation of residues vector. I still miss a simple way to handle realtime referencing in a safe way.
+
+commit 58bb1dfe40c4d9c3a55185311bcc781438506349
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Thu May 5 16:41:44 2011 +0200
+
+    Missing atom type
+
+commit b3b75d68fec439721ed8d46b6a710218cdf7cf45
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed May 4 15:33:18 2011 +0200
+
+    Fixed two memory leaks
+
+commit 855c0c3c56586eb19ba85b92b83a84ecd2fb8695
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed May 4 15:08:16 2011 +0200
+
+    Initial support for getAverageStructure + fixes
+    
+    * Moved rerefences to gromacs header files from Gromacs.h to Gromacs.cpp if unneeded there. Also removed C reference to these files, because I noticed they are C++ headers;
+    * New method readNextX. It's a wrapper to gromacs read_next_x. The method should be version-indipendent and should close and reopen the trajectory when finished.
+    * Initial getAverageStructure method. The Protein "building" is still missing, but average calculation should work
+    * FIXED: area and surfacedots must be initializated;
+    * FIXED: aminoacidLetter and aminoacidTriplet must be const
+
+commit 052df9d954e1b766296daed0a938fce44e28ae5d
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed May 4 11:32:24 2011 +0200
+
+    Changed Protein behaviour
+
+commit 7e795834306640c40bc902e2bc876b8669dfed94
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue May 3 17:09:32 2011 +0200
+
+    Inserted basic structures for protein handling
+    
+    It should be possible to handle proteins and PDBs.
+
+commit 064c91496bdb79a8330c4bc24df8a30119ee0d81
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue May 3 16:14:22 2011 +0200
+
+    Fixed a couple of things
+    
+    * Gromacs now uses boost::bind instead of boost::ref for threads
+    * Changed a simple deallocation with Gromacs sfree. It seems to not work as the std free function...
+
+commit c12fb4c1e7ab2b72321912f633adfb7558c2cf17
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue May 3 14:59:36 2011 +0200
+
+    Changed name to pstpfinder
+
+commit aa8b3d259fcaad54be87b9bb4bc274280815de62
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Apr 20 11:54:18 2011 +0200
+
+    Still writing open mode
+    
+    Also changed a mutex locking behaviour that could bring to race conditions.
+
+commit 42b589f70aa8683ba66d0a3e415c1508661db122
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue Apr 19 16:05:33 2011 +0200
+
+    Initial implementation of Sas opening methods
+    
+    * SasAtomSerializable has an empty constructor too
+    * Fixed a missing "public" inheritance
+    * open and loadChunk in SasAnalysis
+    * Fixed some missing std references
+
+commit a0db332e3d0d7c7a44357cb5b9629ff480c7fac6
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue Apr 19 12:07:58 2011 +0200
+
+    Changet SaveThread to OperationThread
+    
+    Now a ThreadOpen can be implemented
+
+commit d4a382be7df0060ff6111026704dd39f446c32ee
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue Apr 19 11:12:56 2011 +0200
+
+    Changed SasAnalysis thread handling
+    
+    Now it is used a normal member, not the callable class anymore.
+
+commit 0abbc93a4e868a1e251c54c58903b0ff866123ee
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue Apr 19 11:12:19 2011 +0200
+
+    Fixed missing updateChunks call
+
+commit a34bdc3efd6bab3f37e6a8544b0fdcf2bed6560c
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Mon Apr 18 17:41:18 2011 +0200
+
+    Changed max Bytes and Chunk behaviour
+    
+    Now these are not passed using constructor anymore. There's a default value that can be changed using set* methods until the class is used in writing mode or flushed.
+
+commit ffc08cebd6cf01dec99f3d80312eee815d1b09f3
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Mon Apr 18 17:13:10 2011 +0200
+
+    Changed default filename
+    
+    I wanted to use an unique session file, but this could need a rewrite of the class structure. I think I'll continue developing everything in splitted files, then, maybe in the future, I'll change everything and let the Gromacs class handle the unique file. Related class will have only a stream they use to read and write their "work". It's not easy because I need to write a particular device that doesn't allow to work outside particular buffer regions. Nowadays there are other priorities.
+
+commit 3588d4730e9d83fb2a41bb10ec09573ab27a22d8
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri Apr 15 18:05:06 2011 +0200
+
+    Various fixes
+    
+    * Started using GLibmm
+    * Migrating from executable classes to boost::bind to handle multithread in a better way
+    * Now getTimeStep and getFrameStep use read_x_frame instead of read_x_xtc. It seems there was something wrong in memory handling, because GUI gave lots of errors
+    * Better spinner handling. Now it's created only if it's missing and other controllers are hidden or disabled. There are still some problems that must be fixed
+    * iteration() have been used in blocking mode while events_pending() is true
+    * Now NewAnalysis::operator ()() is NewAnalysis::threadTrajectoryClicked()
+
+commit 172154157357dd30923ad7b41e8fef5acdbea889
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Thu Apr 14 17:42:02 2011 +0200
+
+    Spinner works
+    
+    Now when loaded a trajectory a spinner is... spinned.
+
+commit 82dfabff290c88f73c8bb6bed0820ae0f8deecab
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Thu Apr 14 16:43:37 2011 +0200
+
+    Fixed a problem when saving
+    
+    Now is checked if save() returns true or false
+
+commit 0ff041167a095df493a479bf4824f713afa27b16
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Thu Apr 14 15:54:19 2011 +0200
+
+    Various improvements
+    
+    * Missing Gromacs.calculateSas()
+    * New and getFrameStep, getTimeStep
+    * Bound begin and end to setBegin and setEnd methods
+    * waitNextFrame now will block only if the current frame is less than the number
+     of frames
+    * 3 digits on begin and end spin
+    * Ranges are now related to MD time
+
+commit ade6dab7926b9c672d38e7b221d8bcb7d10392aa
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Apr 13 17:22:00 2011 +0200
+
+    Added begin and end to GUI
+    
+    They must be implemented
+
+commit 9a4a052a9da6834c3006c8b4bda7c672cd861254
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri Apr 8 16:14:27 2011 +0200
+
+    No open static method anymore
+
+commit 30bea63ec80ecdb2e424109cc5c76fd31c81e3ef
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri Apr 8 15:35:12 2011 +0200
+
+    Rearranged SasAnalysis arguments
+    
+    With "open mode" is more important the kind of IO instead of the allocable ram
+
+commit 647508ffd6a7a5581def9ce04b02ce597aa138c2
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri Apr 8 15:17:38 2011 +0200
+
+    Implemented saveMode in SasAnalysis
+
+commit 558c29ae71425fecf8442eb052e842febd15a1a8
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri Apr 8 11:16:00 2011 +0200
+
+    ProgressBar inside NewAnalysis
+    
+    Simple, but should work correctly
+
+commit 51f96b5c169b60564c68c8dd136b5692e189d524
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Apr 6 18:00:52 2011 +0200
+
+    Added EOL on some EOF
+
+commit 56917577d9e36ddd8db2028d422cbeb1bbefc52a
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Apr 6 17:54:35 2011 +0200
+
+    Support to get current frame number
+    
+    In Gromacs now the current frame number is saved (index-0 based) and can be asked usign getCurrentFrame(index-1 based -- it's the GROMACS' way!)
+    Fixed the count number if a new trajectory is loaded
+    Naturally the "current frame" variable is thread-safe!
+
+commit 9cc66e8170f262c71cd361a0a40dc420662cabe8
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Apr 6 17:31:31 2011 +0200
+
+    Cached number of frames in Gromacs
+    
+    Now getFramesCount uses a cached value
+
+commit 6de47658ed7e3bd42466e26ce4cc4f60da22d445
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Apr 6 17:27:46 2011 +0200
+
+    Added getFramesCount to Gromacs
+    
+    Now it is possible to get the number of frames of a trajectory
+
+commit 6c7a846e0a805ca22782030bf161d836243f01d7
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue Apr 5 16:09:39 2011 +0200
+
+    Started with multithread calculateSas
+    
+    An initial implementation to let calculateSas run indepentently from the GUI. This will allow to have a progressbar and details about "WTF is happening in background"
+
+commit 5b6eefdc4bb2daa054b413b152a8a021b6345660
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue Apr 5 12:57:19 2011 +0200
+
+    Fixed some mutex-related problems
+    
+    Now the program flows correctly. Still don't know if it really works. Controls related to data integrity and auto-saving must be done.
+
+commit b09fe95aaba94f01d14a75ab39f016fa823a2842
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Thu Mar 31 12:40:36 2011 +0200
+
+    Better configure scripts handling
+    
+    Added an explicit system for debugging/optimization handling.
+
+commit bae8f01b3613b1b59323426a5f35c77487e12554
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Mar 30 17:59:29 2011 +0200
+
+    Semi-working implementation of autosave
+    
+    It still doesn't work. There are some problems related to mutexes and semaphores. I'll have a look.
+
+commit 322b356754edbe7f78fcb7169d02becac3a39e8b
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue Mar 29 17:32:31 2011 +0200
+
+    Started using circular buffer
+    
+    A very preliminary implementation to use a circular buffer on SasAnalysis. This will let the program to periodically save calculous on hard disk.
+
+commit 31e2218b7e181efc7d170edf38e6dc5ba41458df
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri Mar 25 19:41:29 2011 +0100
+
+    Rearranged Gromacs code
+    
+    Redistribuited some code in getTrajectory and getTopology. This allows to recall these codes later. It also allow to run some procedures outside calculateSas.
+    oenv has again a class-wide scope (with LOTS of other variables!).
+
+commit 668cda94144eed3b77b60158d81d205f121d515b
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri Mar 25 17:03:21 2011 +0100
+
+    Saving system based on boost libs
+    
+    A simple system for data dumping have been implemented using boost serialization and iostreams (for zlib compression).
+    This system is not architecture-portable, because of the width of basic data structures and endianess. Maybe a day I will write a filter to convert also data endianess.
+
+commit 9361e7d91b34dcb58a9a467341d5ee67391bfad9
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Mar 16 10:52:53 2011 +0100
+
+    Missing libboost_iostream in LIBS
+
+commit 5b834ab5c00dae79f82b3399f7e36679af700523
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Mon Mar 14 14:56:46 2011 +0100
+
+    Missing boost.m4
+
+commit 8e58f13d3d283b79932b5699e389a0c243d1e9b9
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Mon Mar 14 13:47:44 2011 +0100
+
+    Implemented Boost::thread and libtool
+
+commit e0064443d43eee4b06f52d6f378dc636781b23d9
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Mon Mar 14 13:07:25 2011 +0100
+
+    SasAnalysis missing return value
+
+commit 4c09704cc06573a85cb20bda952bd503f48b467d
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Mon Mar 14 12:33:22 2011 +0100
+
+    Handling gromacs errors could be difficult
+    
+    Added a comment that explains the problem...
+
+commit 3d8313a00546ac192b6b706fe37e1a35457a1eda
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Mon Mar 14 12:30:49 2011 +0100
+
+    C Exception handler object
+    
+    Simple to use: initialize it inside a scope where you think the library could segfault, than destroy it. If a sigsegv is catched the function will print an error and terminate the program.
+
+commit bc3f3a73362c0f35f97ac45075ac89bfbbaace3e
+Author: edoardom <edoardom@orione.SBLab.intra>
+Date:   Mon Mar 14 10:29:52 2011 +0100
+
+    Missing reference to gmx library
+
+commit 7492d5089b593c6b2079174c8868a32673aa5778
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri Mar 11 19:26:54 2011 +0100
+
+    Implemented SasAnalysis object inside SAS analysis
+
+commit 1969402d65982e162be08838153a196ef6eccf13
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri Mar 11 19:26:30 2011 +0100
+
+    When did I added the binary file?
+
+commit 71c6eed9a81ed2f53a15606446b1b0d29d0c8f36
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri Mar 11 18:41:00 2011 +0100
+
+    Reference to Gromacs namespace added
+
+commit 1828415ad1fc4d59c3ab2c40a6ecb221526f4d06
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri Mar 11 18:15:49 2011 +0100
+
+    Create a new basic class for Sas data exchange
+
+commit 440bf91a453ee02c2f0390fb141a217eeafdc981
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri Mar 11 18:09:22 2011 +0100
+
+    A couple of changes
+    
+    * It's possible (and easy) to get atom coordinates and sas
+    * Removed one useless index
+    * bDGSol always false. For now we don't calculate it -- I really don't know what can I do with DGSol value...
+
+commit 5b2779ba6d77762aa9c8cd0ff1a60ba1c4baf7a7
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri Mar 11 17:32:08 2011 +0100
+
+    Basic structure for atom coordinates+sas handling
+    
+    A new structure called Atom contains spatial coordinates. SasAtom inherits Atom and adds the sas value.
+
+commit af7cf111d6e54d2f8d4e2cd9fe4f0904a0653df1
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri Mar 11 17:27:37 2011 +0100
+
+    Fixed a wrong property request
+    
+    Asked for a epropVDW instead of epropDGSol.
+
+commit 9464d6eb7a7af293f54880541e849f610126241c
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri Mar 11 16:57:35 2011 +0100
+
+    Added memory deallocation; new sas target approach
+    
+    Now memory should be handled correctly in calculateSas.
+    A dynamic way for SAS targeting have been added. There's no way to handle it for now -- it's simply initialized inside Gromacs::init() function.
+
+commit 3a03535bcb0ed97c51369cd54da448974ef33f60
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri Mar 11 15:39:29 2011 +0100
+
+    Make calculateSas works automatically on protein
+    
+    Using analyse code from gmxlib/index.c of GROMACS a couple of atom indexes have been created and can be used automatically to work with nsc_dclm_pbc.
+
+commit 7633537707ae76a0045b89187787c6f008912329
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Thu Mar 10 16:08:22 2011 +0100
+
+    Written a base for calculateSAS
+    
+    This is completely taken from gmx_sas.c. Lots of changes must be done. First of all a dynamic way to handle atom indexes must be written. Then we have to work on data saving. A hybrid disk/ram handling would be great.
+
+commit 13ecc33a9db00895874ecccb06716af87e0cf4b6
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Thu Mar 10 16:06:42 2011 +0100
+
+    Added GROMACS_ANALYSIS in configure.ac
+    
+    I forgot to add it in the last commit
+
+commit e9e6dc3d4100fa060506b5e828da0048a65a6697
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue Mar 8 20:49:00 2011 +0100
+
+    Fixed other things on gromacs m4 script
+
+commit f10abc35aa0ab630a035ddf92826c28b056898f1
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue Mar 8 16:11:53 2011 +0100
+
+    Missed changes to configure.ac.
+
+commit 262666850b58ec9259271159e0d7a8c906cbf80c
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue Mar 8 12:40:33 2011 +0100
+
+    Started working on SAS. Various changes.
+    
+    * "main" files changed to "trapof" due to conflicts with GROMACS headers
+    * Added namespace for everything regarding GROMACS
+    * Now output_env_t is handled directly by the calculateSas method
+    * calculateSas have been started. We need to implement things from sas_plot
+
+commit 56138b7b25fda6392b5428aa6728b576b54dc457
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Thu Mar 3 17:34:45 2011 +0100
+
+    Started writing Gromacs implementation code
+    
+    Only a few lines written 'till now.
+
+commit 475cc2a5da3510f71cbd4b2d6fb2eadfc4f9f3ef
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Thu Mar 3 16:25:21 2011 +0100
+
+    Local include directory first
+    
+    The code didn't compile correctly only because there is a main.h somewhere in inside included directories. I didn't notice it because I'm working with codelite.
+
+commit 92dacfd4e5e7733620d648f72561ea2fd222989d
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Thu Mar 3 15:26:16 2011 +0100
+
+    Renamed close_app in closeApplication
+    
+    Let's avoid using old C-style names...
+
+commit 68d89a711b8bd5c236301085a607700abf9986fd
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Thu Mar 3 15:18:41 2011 +0100
+
+    Added Run button and fixed some things
+    
+    The Run button have been added in NewAnalysis window and a couple of modifies have been done to simplify closing the application. Now it can be done directly setting a callback function to close_app.
+
+commit c3f87a37fb697dfb4518b5d1e0aa0f4cf01dccf7
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Thu Mar 3 12:16:45 2011 +0100
+
+    Implemented few things in NewAnalysis window
+    
+    Added two file chooser and re-organized main things about program flow handling. Now a function called close_app exists and allows to quit from the program. Actually it's used by the delete callback method of MainWindow window.
+
+commit 201860f50a96652c29881c2c9433ea7cdb1fe19a
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Mar 2 22:22:58 2011 +0100
+
+    Added a base for a new analysis
+    
+    Only a file chooser have been implemented 'till now.
+
+commit 0cddc98039af84f23d99b8c1372693f7513fec22
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Mar 2 20:53:10 2011 +0100
+
+    Removed "this->" references.
+    
+    I really don't know if it could be a good idea, because using "this" avoids conflicting variables. However I shouldn't need it if I write a good code. Isn't it?
+
+commit 8f8ecf95b387d22a5a7680543ae82296c9661dcd
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Mar 2 20:24:10 2011 +0100
+
+    Missing things in autotool files
+    
+    Inserted reference to include directory and MainWindow.cpp source file.
+
+commit 0f3913b9437c004cd9a59803954ea448860af134
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Mar 2 19:55:19 2011 +0100
+
+    Started with something useful.
+    
+    Wrote what will be the first window of the program. From here you will be able to have a new analysis or open an existent one.
+
+commit 5690a7c803a4631355aa9ad7b6a90752a7c88002
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri Feb 25 16:24:38 2011 +0100
+
+    Created the base main.cpp to implement GTKMM.
+
+commit 2cec1ddc9d332b12746966d7628941efe1198395
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri Feb 25 16:01:43 2011 +0100
+
+    Added gtkmm-2.4 dependency in configure.ac
+
+commit c597f38e6ac5ade3eae19cf72eb5646ed4d83b28
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri Feb 25 14:57:26 2011 +0100
+
+    Added an m4 script for gromacs.
+    
+    This is a script developed some time ago that helps compiling programs with GROMACS libraries and headers. It have been included in configure.ac and Makefile.am.
+
+commit a9ca6e70a7077900309dca5bb21bd9eee98e78f8
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri Feb 25 14:50:07 2011 +0100
+
+    Created some basic autotools configuration files
+
+commit 2757a646ffd94fcbef365f4ddc4481beaa748484
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri Feb 25 14:41:40 2011 +0100
+
+    Starting new TraPoF project
