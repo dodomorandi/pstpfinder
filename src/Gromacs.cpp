@@ -98,6 +98,13 @@ namespace Gromacs
   }
 
   void
+  Gromacs::calculateAverageStructure()
+  {
+    operationThread = boost::thread(boost::bind(
+                    &Gromacs::__calculateAverageStructure, boost::ref(*this)));
+  }
+
+  void
   Gromacs::waitOperation()
   {
     operationThread.join();
@@ -113,10 +120,12 @@ namespace Gromacs
     vector<atom_id> index;
     gmx_rmpbc_t gpbc;
     int nx;
-    
+
     if(not gotTopology and not (bTop = getTopology()))
       gmx_fatal(FARGS, "Could not read topology file.\n");
-      
+
+    currentFrame = 0;
+
     //bDGsol = (strcmp(*(top.atoms.atomtype[0]),"?") != 0);
     // TODO: warnings about bDGsol
     // For now I really don't want anything related to DG solvatation!
@@ -216,12 +225,15 @@ namespace Gromacs
     double *xav, *rmsf;
     double** U;
     gmx_rmpbc_t gpbc;
+    int statusCount = 0;
 
     if(not getTopology())
       gmx_fatal(FARGS, "Could not read topology file.\n");
 
     if(not getTrajectory())
       gmx_fatal(FARGS, "Could not read coordinates from statusfile.\n");
+
+    currentFrame = 0;
 
     index = getGroup("Protein");
     isize = index.size();
@@ -262,6 +274,10 @@ namespace Gromacs
       }
 
       count++;
+      operationMutex.lock();
+      currentFrame = (float)getFramesCount() / (count + isize) * statusCount++;
+      wakeCondition.notify_all();
+      operationMutex.unlock();
     } while(readNextX());
 
     gmx_rmpbc_done(gpbc);
@@ -348,6 +364,11 @@ namespace Gromacs
           }
       }
       res.atoms.push_back(atom);
+
+      operationMutex.lock();
+      currentFrame = (float)getFramesCount() / (count + isize) * statusCount++;
+      wakeCondition.notify_all();
+      operationMutex.unlock();
     }
     averageStructure.appendResidue(res);
 
@@ -541,14 +562,15 @@ namespace Gromacs
     bool gotFirst = false;
     unsigned char cTmp[4];
     int nAtoms;
-    int step;
+    int* iTmp = (int*)cTmp;
+    int step = -1;
 
     trjStream.seekg(4, ios::beg);
     cTmp[3] = trjStream.get();
     cTmp[2] = trjStream.get();
     cTmp[1] = trjStream.get();
     cTmp[0] = trjStream.get();
-    nAtoms = *(int*)cTmp;
+    nAtoms = *iTmp;
 
     while(not trjStream.eof())
     {
@@ -557,24 +579,27 @@ namespace Gromacs
       cTmp[1] = trjStream.get();
       cTmp[0] = trjStream.get();
 
-      if(nAtoms == *(int*)cTmp and not gotFirst)
+      if(nAtoms == *iTmp and not gotFirst)
       {
         gotFirst = true;
         continue;
       }
-      else if(nAtoms == *(int*)cTmp)
+      else if(nAtoms == *iTmp)
       {
         cTmp[3] = trjStream.get();
         cTmp[2] = trjStream.get();
         cTmp[1] = trjStream.get();
         cTmp[0] = trjStream.get();
 
-        step = *(int*)cTmp;
+        step = *iTmp;
         gotFirst = false;
         break;
       }
       trjStream.seekg(-3, ios::cur);
     }
+
+    if(step == -1)
+      return 0;
 
     trjStream.seekg(-7, ios::end);
 
@@ -585,19 +610,19 @@ namespace Gromacs
       cTmp[1] = trjStream.get();
       cTmp[0] = trjStream.get();
 
-      if(nAtoms == *(int*)cTmp and not gotFirst)
+      if(nAtoms == *iTmp and not gotFirst)
       {
         gotFirst = true;
         trjStream.seekg(-3, ios::cur);
       }
-      else if(nAtoms == *(int*)cTmp)
+      else if(nAtoms == *iTmp)
       {
         cTmp[3] = trjStream.get();
         cTmp[2] = trjStream.get();
         cTmp[1] = trjStream.get();
         cTmp[0] = trjStream.get();
 
-        nFrames = *(int*)cTmp / step + 1;
+        nFrames = *iTmp / step + 1;
         break;
       }
     }

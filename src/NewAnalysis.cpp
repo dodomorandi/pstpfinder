@@ -22,6 +22,7 @@
 #include "pstpfinder.h"
 #include "NewAnalysis.h"
 #include "Gromacs.h"
+#include "Pittpi.h"
 
 #include <boost/filesystem.hpp>
 
@@ -225,9 +226,32 @@ NewAnalysis::runAnalysis()
       Main::iteration();
     gromacs.waitNextFrame();
   }
+
+  gromacs.waitOperation();
   progress.set_fraction(1);
   while(Main::events_pending())
     Main::iteration();
+
+  progress.set_fraction(0);
+  while(Main::events_pending())
+    Main::iteration();
+  gromacs.calculateAverageStructure();
+
+  while((currentFrame = gromacs.getCurrentFrame()) < count)
+  {
+    progress.set_fraction(static_cast<float>(currentFrame) / count);
+    while(Main::events_pending())
+      Main::iteration();
+    gromacs.waitNextFrame();
+  }
+
+  gromacs.waitOperation();
+  progress.set_fraction(1);
+  while(Main::events_pending())
+    Main::iteration();
+
+  Gromacs::Pittpi pittpi(gromacs, "/tmp/sas.csf", spinRadius.get_value(),
+                         spinPocketThreshold.get_value());
 
   progress.hide();
   set_sensitive(true);

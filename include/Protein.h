@@ -153,6 +153,9 @@ namespace Gromacs
                           &atom.index, atom.type, resName, &resNdx, &atom.x,
                           &atom.y, &atom.z, &atom.occupancy, &atom.bFactor);
 
+        atom.x /= 10.;
+        atom.y /= 10.;
+        atom.z /= 10.;
 
         if(ret != 9)
           abort();
@@ -242,8 +245,9 @@ namespace Gromacs
         {
           fprintf(pdb, "ATOM% 7d  %-4s%-4sA%4d %11.3f %7.3f %7.3f %5.2f"
                        " %5.2f%12c\n", j->index, j->type,
-                       aminoacidTriplet[i->type].c_str(), i->index, j->x, j->y,
-                       j->z, j->occupancy, /*j->bFactor*/ 0., j->type[0]);
+                       aminoacidTriplet[i->type].c_str(), i->index, j->x * 10.,
+                       j->y * 10., j->z * 10., j->occupancy, /*j->bFactor*/ 0.,
+                       j->type[0]);
         }
       }
 

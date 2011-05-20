@@ -93,8 +93,7 @@ Pittpi::Pittpi(Gromacs& gromacs,
   unsigned int const frameStep = float(PS_PER_SAS) / gromacs.getTimeStep();
   unsigned int const frames = gromacs.getFramesCount();
   unsigned int const newSasCount = frames / frameStep +
-                             (frames % frameStep == 0) ? 0 : 1;
-  unsigned int const dist2frame = PS_PER_SAS * gromacs.getTimeStep();
+                             ((frames % frameStep == 0) ? 0 : 1);
   vector<Group> meanGroups = groups;
   for
   (
@@ -165,16 +164,17 @@ Pittpi::Pittpi(Gromacs& gromacs,
         }
         else
         {
-          if(static_cast<unsigned int>(distance(startPocket, j) * dist2frame) >=
-             threshold)
+          if(static_cast<unsigned int>(distance(startPocket, j) *
+            (float)PS_PER_SAS) >= threshold)
           {
             Pocket pocket;
             pocket.group = &(*i);
+            // FIXME: they seem to be wrong!!
             pocket.startFrame = distance(i->sas.begin(), startPocket) *
-                                dist2frame + 1;
-            pocket.endFrame = distance(i->sas.begin(), j) * dist2frame + 1;
+                                frameStep + 1;
+            pocket.endFrame = distance(i->sas.begin(), j) * frameStep + 1;
             pocket.maxAreaFrame = static_cast<int>
-                                  (maxFrame - &(*i->sas.begin())) * dist2frame;
+                                  (maxFrame - &(*i->sas.begin())) * frameStep;
             pocket.openingFraction = static_cast<float>(percOpenedNotZero) /
                                      distance(startPocket, j);
 
@@ -184,7 +184,7 @@ Pittpi::Pittpi(Gromacs& gromacs,
               if(abs(mean - *nearToMean) > abs(mean - *k))
                 nearToMean = k;
             pocket.meanNearFrame = distance(i->sas.begin(), nearToMean) *
-                                   dist2frame + 1;
+                                   frameStep + 1;
 
             pockets.push_back(pocket);
           }
@@ -194,7 +194,7 @@ Pittpi::Pittpi(Gromacs& gromacs,
       }
       else
       {
-        if(*j > *maxFrame)
+        if(maxFrame == 0 or *j > *maxFrame)
           maxFrame = &(*j);
         mean += *j;
         percOpenedNotZero++;
@@ -210,15 +210,27 @@ Pittpi::Pittpi(Gromacs& gromacs,
     i++
   )
   {
-    const Residue& res = averageStructure.
+    const Residue& ref = averageStructure.
                            getResidueByAtom(i->group->getCentralH());
+    const vector<const Residue*>& res = i->group->getResidues();
+
     stringstream aaRef;
-    aaRef << aminoacidTriplet[res.type] << res.index;
+    aaRef << aminoacidTriplet[ref.type] << ref.index;
 
     pocketLog << setfill('0') << setw(8) << i->group->zeros << " ";
     pocketLog << setfill(' ') << setw(8) << aaRef.str() << " ";
     pocketLog << setfill('0') << setw(8) << i->startFrame << " ";
-    pocketLog << setfill('0') << setw(8) << i->endFrame << endl;
+    pocketLog << setfill('0') << setw(8) << i->endFrame;
+
+    for
+    (
+      vector<const Residue*>::const_iterator j = res.begin();
+      j < res.end();
+      j++
+    )
+      pocketLog << " " << (*j)->index;
+
+    pocketLog << endl;
   }
 }
 
@@ -228,6 +240,7 @@ Pittpi::makeGroups(float radius)
   vector<Group> groups;
   vector<Atom> centers;
   const vector<Residue>& residues = averageStructure.residues();
+  radius /= 10.0;
 
   // Calculate the center for every sidechain (excluding PRO)
   centers.reserve(residues.size());
@@ -294,10 +307,6 @@ Pittpi::makeGroups(float radius)
       if(residues[distance(centersBegin, j)].type == AA_PRO)
         continue;
 
-      if(distance(centersBegin, j) ==
-         distance(vector<Residue>::const_iterator(residues.begin()), i))
-        continue;
-
       if(hAtom.distance(*j) <= radius)
         group << residues[distance(centersBegin, j)];
     }
@@ -306,7 +315,6 @@ Pittpi::makeGroups(float radius)
   }
 
 //  FIXME: Missing sadic algorithm
-//  FIXME: NEVER TESTED!!
 
   return groups;
 }
@@ -324,8 +332,9 @@ Pittpi::fillGroups(vector<Group>& groups, const string& sasAnalysisFileName)
 
   const float frames = gromacs.getFramesCount();
   vector<int> protein = gromacs.getGroup("Protein");
+  const int nAtoms = protein.size();
 
-  meanSas = new float[protein.size()]();
+  meanSas = new float[nAtoms]();
 
   /* First of all we need to calculate SAS means */
   sasAnalysis = new SasAnalysis(gromacs, sasAnalysisFileName, false);
@@ -333,7 +342,7 @@ Pittpi::fillGroups(vector<Group>& groups, const string& sasAnalysisFileName)
   while(sasAtoms != 0)
   {
     fIndex = meanSas;
-    SasAtom* m_end = sasAtoms + protein.size();
+    SasAtom* m_end = sasAtoms + nAtoms;
 
     for(SasAtom* atom = sasAtoms; atom < m_end; atom++, fIndex++)
       *fIndex += atom->sas;
@@ -341,10 +350,8 @@ Pittpi::fillGroups(vector<Group>& groups, const string& sasAnalysisFileName)
     (*sasAnalysis) >> sasAtoms;
   }
 
-  {
-    for(fIndex = meanSas; fIndex < meanSas + protein.size(); fIndex++)
-      *fIndex /= frames;
-  }
+  for(fIndex = meanSas; fIndex < meanSas + nAtoms; fIndex++)
+    *fIndex /= frames;
 
   delete sasAnalysis;
 

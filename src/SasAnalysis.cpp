@@ -144,7 +144,6 @@ SasAnalysis::operator >>(SasAtom*& sasAtom)
   }
   else if(i == frames.end())
   {
-    // TODO: Control for EOF
     bufferMutex.lock();
 
     for(i = frames.begin(); i < frames.end(); i++)
@@ -152,25 +151,22 @@ SasAnalysis::operator >>(SasAtom*& sasAtom)
     frames.clear();
     chunks.pop_front();
 
+    bufferMutex.unlock();
+    bufferSemaphore->wait();
+    bufferMutex.lock();
+    bufferSemaphoreCount--;
+
     if(chunks.size() == 0)
     {
       bufferMutex.unlock();
-      bufferSemaphore->wait();
-      bufferMutex.lock();
-      bufferSemaphoreCount--;
-      if(chunks.size() == 0)
-      {
-        bufferMutex.unlock();
-        sasAtom = 0;
-        return *this;
-      }
+      sasAtom = 0;
+      return *this;
     }
 
     frames = chunks.front();
     i = frames.begin();
 
-    if(bufferSemaphoreCount == bufferSemaphoreMax - 1)
-      operationThread->wakeUp();
+    operationThread->wakeUp();
     bufferMutex.unlock();
   }
 
@@ -203,8 +199,7 @@ SasAnalysis::flush()
   chunks.push_back(frames);
 
   frames.clear();
-  if(bufferSemaphoreCount == bufferSemaphoreMax - 1)
-    operationThread->wakeUp();
+  operationThread->wakeUp();
   bufferMutex.unlock();
   
 }
@@ -344,7 +339,7 @@ SasAnalysis::OperationThread::threadSave()
   while(not isStopped)
   {
     parent->bufferMutex.lock();
-    cond = (parent->bufferSemaphoreCount == parent->bufferSemaphoreMax and
+    cond = (parent->bufferSemaphoreCount == parent->bufferSemaphoreMax - 1 and
        not isStopped);
     
     if(cond)
@@ -399,7 +394,7 @@ SasAnalysis::OperationThread::threadOpen()
   while(not isStopped)
   {
     parent->bufferMutex.lock();
-    cond = (parent->bufferSemaphoreCount == parent->bufferSemaphoreMax and
+    cond = (parent->bufferSemaphoreCount == parent->bufferSemaphoreMax - 1 and
             not isStopped);
 
     if(cond)
@@ -411,6 +406,11 @@ SasAnalysis::OperationThread::threadOpen()
     }
     else if(isStopped)
     {
+      while(parent->bufferSemaphoreCount < parent->bufferSemaphoreMax)
+      {
+        parent->bufferSemaphore->post();
+        parent->bufferSemaphoreCount++;
+      }
       parent->bufferMutex.unlock();
       break;
     }
@@ -492,7 +492,7 @@ SasAnalysis::updateChunks()
   maxFrames = numFrames / bufferSemaphoreMax;
 
   if(mode == MODE_SAVE)
-    bufferSemaphoreCount = bufferSemaphoreMax;
+    bufferSemaphoreCount = bufferSemaphoreMax - 1;
   else
     bufferSemaphoreCount = 0;
 
