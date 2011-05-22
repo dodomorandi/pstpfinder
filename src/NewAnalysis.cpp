@@ -69,6 +69,8 @@ NewAnalysis::init()
   tprFilter.add_pattern("*.tpr");
   tprChooser.add_filter(tprFilter);
   tprChooser.set_size_request(150, -1);
+  tprChooser.signal_file_set().connect(
+    sigc::mem_fun(*this, &NewAnalysis::checkParameters));
   
   labelTopology.set_label("Topology file:");
   
@@ -112,23 +114,37 @@ NewAnalysis::init()
   spinRadius.set_range(0.0, 20.0);
   spinRadius.set_value(7.0);
   spinRadius.set_increments(0.1, 1.0);
+  labelAngstrom.set_label("Angstrom");
   hboxRadius.set_spacing(10);
   hboxRadius.pack_start(labelRadius, PACK_SHRINK);
   hboxRadius.pack_start(spinRadius);
+  hboxRadius.pack_start(labelAngstrom, PACK_SHRINK);
 
   labelPocketThreshold.set_label("Pocket threshold:");
   spinPocketThreshold.set_digits(0);
   spinPocketThreshold.set_increments(1, 10);
   spinPocketThreshold.set_range(0, 20000);
+  spinPocketThreshold.set_value(500);
   labelPs.set_label("ps");
   hboxPocketThreshold.set_spacing(10);
   hboxPocketThreshold.pack_start(labelPocketThreshold, PACK_SHRINK);
   hboxPocketThreshold.pack_start(spinPocketThreshold);
   hboxPocketThreshold.pack_start(labelPs, PACK_SHRINK);
 
+  labelSessionFile.set_label("Session file:");
+  buttonBrowseFile.set_label("Browse...");
+  buttonBrowseFile.signal_clicked().connect(
+    sigc::mem_fun(*this, &NewAnalysis::buttonBrowseFileClicked));
+  hboxSession.set_spacing(10);
+  hboxSession.set_homogeneous(false);
+  hboxSession.pack_start(labelSessionFile, PACK_SHRINK);
+  hboxSession.pack_start(entrySessionFile);
+  hboxSession.pack_start(buttonBrowseFile);
+
   vboxFrame2.set_spacing(10);
   vboxFrame2.pack_start(hboxRadius);
   vboxFrame2.pack_start(hboxPocketThreshold);
+  vboxFrame2.pack_start(hboxSession);
 
   hboxFrame.set_spacing(10);
   hboxFrame.set_border_width(10);
@@ -140,6 +156,7 @@ NewAnalysis::init()
   mainFrame.add(hboxFrame);
   
   buttonRun.set_label("Run!");
+  buttonRun.set_sensitive(false);
   buttonRun.signal_clicked().
     connect(sigc::mem_fun(*this, &NewAnalysis::runAnalysis));
   buttonBoxRun.set_layout(BUTTONBOX_END);
@@ -270,6 +287,8 @@ NewAnalysis::chooserTrajectoryClicked()
   else
     Glib::Thread::create(
       sigc::mem_fun(*this, &NewAnalysis::threadTrajectoryClicked), false);
+
+  checkParameters();
 }
 
 void
@@ -281,4 +300,42 @@ NewAnalysis::threadTrajectoryClicked()
   tmpGromacsFrames = tmpGromacs->getFramesCount();
 
   signal_stop_spin();
+}
+
+void
+NewAnalysis::checkParameters()
+{
+  if(fs::exists(fs::path(tprChooser.get_filename())) and
+     fs::exists(fs::path(trjChooser.get_filename())))
+    buttonRun.set_sensitive(true);
+  else
+    buttonRun.set_sensitive(false);
+}
+
+void
+NewAnalysis::buttonBrowseFileClicked()
+{
+  FileFilter filter;
+  filter.add_pattern("*.csf");
+  filter.set_name("PSTP-filter compressed session file");
+
+  FileChooserDialog chooser("Choose a saving file for this session",
+                            FILE_CHOOSER_ACTION_SAVE);
+  chooser.add_filter(filter);
+  chooser.add_button(Stock::CANCEL, RESPONSE_CANCEL);
+  chooser.add_button(Stock::OK, RESPONSE_OK);
+  int response = chooser.run();
+
+  switch(response)
+  {
+    case RESPONSE_OK:
+    {
+      string filename = chooser.get_filename();
+      if(fs::extension(fs::path(filename)) != ".csf")
+        filename = fs::change_extension(fs::path(filename), ".csf").string();
+
+      entrySessionFile.set_text(filename);
+      break;
+    }
+  }
 }

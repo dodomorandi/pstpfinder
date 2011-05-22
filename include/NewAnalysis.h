@@ -44,11 +44,12 @@ private:
   VBox vboxFrame1, vboxFrame2, vboxMain;
   FileChooserButton trjChooser, tprChooser;
   Label labelTrajectory, labelTopology, labelBegin, labelEnd, labelRadius,
-        labelPocketThreshold, labelPs;
+        labelPocketThreshold, labelPs, labelAngstrom, labelSessionFile;
   HBox hboxTrajectory, hboxTopology, hboxBegin, hboxEnd, hboxFrame, hboxRadius,
-       hboxPocketThreshold;
+       hboxPocketThreshold, hboxSession;
+  Entry entrySessionFile;
   HButtonBox buttonBoxRun;
-  Button  buttonRun;
+  Button  buttonRun, buttonBrowseFile;
   ProgressBar progress;
   SpinButton spinBegin, spinEnd, spinRadius, spinPocketThreshold;
   HScale hScaleBegin, hScaleEnd;
@@ -63,6 +64,8 @@ private:
   void threadTrajectoryClicked();
   void start_spin();
   void stop_spin();
+  void checkParameters();
+  void buttonBrowseFileClicked();
 };
 
 #endif

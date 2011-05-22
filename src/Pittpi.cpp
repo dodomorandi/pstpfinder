@@ -365,7 +365,6 @@ Pittpi::fillGroups(vector<Group>& groups, const string& sasAnalysisFileName)
     i->sas.reserve(frames);
 
   /* Now we have to normalize values and store results per group */
-  vector<float>::iterator curFrame;
   sas = new float[protein.size()];
   sasAnalysis = new SasAnalysis(gromacs, sasAnalysisFileName, false);
   (*sasAnalysis) >> sasAtoms;
@@ -388,7 +387,7 @@ Pittpi::fillGroups(vector<Group>& groups, const string& sasAnalysisFileName)
     )
     {
       i->sas.push_back(0);
-      curFrame = i->sas.end() - 1;
+      float& curFrame = *(i->sas.end() - 1);
 
       if(sas[i->getCentralH().index] == 0)
       {
@@ -412,12 +411,12 @@ Pittpi::fillGroups(vector<Group>& groups, const string& sasAnalysisFileName)
         )
           if(k->type[0] == 'H')
           {
-            (*curFrame) += sas[k->index - 1] / meanSas[k->index - 1];
+            curFrame += sas[k->index - 1] / meanSas[k->index - 1];
             counter++;
           }
 
-      (*curFrame) /= counter;
-      if(*curFrame == 0)
+      curFrame /= counter;
+      if(curFrame == 0)
         i->zeros++;
     }
 
