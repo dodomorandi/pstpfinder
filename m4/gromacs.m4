@@ -13,7 +13,10 @@ fi
 AC_SUBST([CPPFLAGS])
 AC_SUBST([LDFLAGS])
 
-AC_CHECK_TYPE([struct output_env], [AC_DEFINE([GMX45], [1], [Gromacs major.minor version is 4.5])],,[[#include "oenv.h"]])
+AC_CHECK_TYPE([struct output_env], [AC_DEFINE([GMX45], [1], [Gromacs major.minor version is 4.5])],[
+   echo "Sorry, GROMACS versions before 4.5 still not implemented."
+   exit 1
+],[[#include "oenv.h"]])
 
 ])
 

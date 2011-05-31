@@ -131,7 +131,7 @@ namespace Gromacs
     // For now I really don't want anything related to DG solvatation!
     bDGsol = false;
     
-    if(not getTrajectory())
+    if(not gotTrajectory and not getTrajectory())
       gmx_fatal(FARGS, "Could not read coordinates from statusfile.\n");
     
     // TODO: index file handling and integration
@@ -142,7 +142,7 @@ namespace Gromacs
     if(bDGsol)
       dgs_factor = new real[nx];
     radius = new real[natoms];
-    
+
     for(int i = 0; i < natoms; i++)
     {
       gmx_atomprop_query( aps, epropVDW,
@@ -383,6 +383,12 @@ namespace Gromacs
   Gromacs::getAverageStructure() const
   {
     return averageStructure;
+  }
+
+  void
+  Gromacs::setAverageStructure(Protein structure)
+  {
+    averageStructure = structure;
   }
 
   unsigned long

@@ -49,11 +49,11 @@ namespace Gromacs
   {
   public:
     SasAnalysis(unsigned int nAtoms,
-                std::string filename = "/tmp/sas.csf",
+                std::string filename = "/tmp/sas.psf",
                 bool savingMode = true);
                 
     SasAnalysis(const Gromacs& gromacs,
-                std::string filename = "/tmp/sas.csf",
+                std::string filename = "/tmp/sas.psf",
                 bool savingMode = true);
     
     ~SasAnalysis();

@@ -38,8 +38,9 @@ protected:
   HButtonBox buttonBox;
   Button buttonNew, buttonOpen;
 private:
-  void init();
   NewAnalysis* newAnalysis;
+  void init();
+  void buttonOpenClicked();
 };
 
 #endif

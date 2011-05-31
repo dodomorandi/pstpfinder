@@ -89,6 +89,7 @@ namespace Gromacs
     const Protein& __calculateAverageStructure();
     void calculateAverageStructure();
     const Protein& getAverageStructure() const;
+    void setAverageStructure(Protein structure);
     void waitOperation();
   private:
 #ifdef GMX45

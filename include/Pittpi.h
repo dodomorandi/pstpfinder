@@ -22,24 +22,29 @@
 
 #include "Gromacs.h"
 #include <vector>
+#include <boost/thread/thread.hpp>
+#include <boost/interprocess/sync/interprocess_mutex.hpp>
+#include <boost/interprocess/sync/interprocess_condition.hpp>
 
 namespace Gromacs
 {
-
   class Group
   {
   public:
     Group(const Residue& refResidue);
     Group(const PdbAtom& refAtomH);
+    Group(const PdbAtom& refAtomH, const Protein& protein);
     Group& operator <<(const Residue& value);
     const vector<const Residue*>& getResidues() const;
     const PdbAtom& getCentralH() const;
+    const Residue& getCentralRes() const;
     static bool sortByZeros(const Group& a, const Group& b);
 
     vector<float> sas;
     unsigned int zeros;
   private:
-    const PdbAtom* reference;
+    const PdbAtom* referenceAtom;
+    const Residue* referenceRes;
     vector<const Residue*> residues;
   };
 
@@ -47,10 +52,15 @@ namespace Gromacs
   {
     const Group* group;
     unsigned int startFrame;
+    float startPs;
     unsigned int endFrame;
+    float endPs;
+    unsigned int width;
     float openingFraction;
-    unsigned int meanNearFrame;
+    unsigned int averageNearFrame;
+    float averageNearPs;
     unsigned int maxAreaFrame;
+    float maxAreaPs;
   };
 
   /**
@@ -72,13 +82,30 @@ namespace Gromacs
            const std::string& sasAnalysisFileName,
            float radius,
            unsigned long threshold);
+    ~Pittpi();
+
+    void join();
+    void setStatus(float value);
+    float getStatus() const;
+    void waitNextStatus();
+    bool isFinished();
   private:
     std::vector<Group> makeGroups(float radius);
     void fillGroups(std::vector<Group>& groups,
                     const string& sasAnalysisFileName);
+    void pittpiRun();
 
-    Gromacs* m_gromacs;
+    Gromacs* p_gromacs;
+    std::string sasAnalysisFileName;
+    float radius;
+    unsigned long threshold;
     Protein averageStructure;
+    boost::thread pittpiThread;
+    mutable boost::interprocess::interprocess_mutex statusMutex;
+    mutable boost::interprocess::interprocess_mutex nextStatusMutex;
+    mutable boost::interprocess::interprocess_condition nextStatusCondition;
+    float __status;
+    bool sync;
   };
 }
 

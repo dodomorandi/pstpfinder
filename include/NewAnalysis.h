@@ -37,8 +37,10 @@ public:
 
   NewAnalysis();
   NewAnalysis(Window& parent);
+  void openSessionFile(const string& sessionFileName);
   Glib::Dispatcher signal_start_spin;
   Glib::Dispatcher signal_stop_spin;
+  Glib::Dispatcher signal_update_limits;
 private:
   Frame mainFrame;
   VBox vboxFrame1, vboxFrame2, vboxMain;
@@ -55,8 +57,8 @@ private:
   HScale hScaleBegin, hScaleEnd;
   Spinner spinnerWait;
   VSeparator vSeparator;
-  Gromacs::Gromacs* tmpGromacs;
-  int tmpGromacsFrames;
+  int __frames;
+  float __timeStep;
 
   void init();
   void runAnalysis();
@@ -66,6 +68,9 @@ private:
   void stop_spin();
   void checkParameters();
   void buttonBrowseFileClicked();
+  void update_limits();
+  void runPittpi(Gromacs::Gromacs& gromacs, const string& analysisFileName,
+                 float radius, float threshold);
 };
 
 #endif

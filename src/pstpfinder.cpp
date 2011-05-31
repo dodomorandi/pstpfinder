@@ -17,10 +17,10 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <gtkmm.h>
-
 #include "pstpfinder.h"
 #include "MainWindow.h"
+
+#include <gtkmm.h>
 
 using namespace Gtk;
 

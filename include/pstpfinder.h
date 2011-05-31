@@ -20,6 +20,8 @@
 #ifndef _MAIN_H
 #define _MAIN_H
 
+#include <gtkmm.h>
+
 bool closeApplication(GdkEventAny* event);
 
 #endif

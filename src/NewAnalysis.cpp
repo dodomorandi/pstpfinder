@@ -17,27 +17,28 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <gtkmm.h>
-
 #include "pstpfinder.h"
 #include "NewAnalysis.h"
 #include "Gromacs.h"
 #include "Pittpi.h"
 
+#include <gtkmm.h>
+#include <fstream>
+#include <string>
 #include <boost/filesystem.hpp>
 
 using namespace Gtk;
 namespace fs = boost::filesystem;
 
-NewAnalysis::NewAnalysis(Window& parent)
+NewAnalysis::NewAnalysis()
 {
-  set_transient_for(parent);
   init();
   show_all();
 }
 
-NewAnalysis::NewAnalysis()
+NewAnalysis::NewAnalysis(Window& parent)
 {
+  set_transient_for(parent);
   init();
   show_all();
 }
@@ -47,6 +48,10 @@ NewAnalysis::init()
 {
   signal_start_spin.connect(sigc::mem_fun(*this, &NewAnalysis::start_spin));
   signal_stop_spin.connect(sigc::mem_fun(*this, &NewAnalysis::stop_spin));
+  signal_update_limits.
+    connect(sigc::mem_fun(*this, &NewAnalysis::update_limits));
+
+  set_title("PSTP-finder");
 
   FileFilter trjFilter;
   trjFilter.set_name("Trajectory files");
@@ -191,28 +196,36 @@ NewAnalysis::stop_spin()
   spinnerWait.hide();
   mainFrame.show();
   buttonBoxRun.show();
+}
 
-  spinBegin.set_sensitive();
-  spinEnd.set_sensitive();
-  hScaleBegin.set_sensitive();
-  hScaleEnd.set_sensitive();
+void
+NewAnalysis::runPittpi(Gromacs::Gromacs& gromacs,
+                       const string& analysisFileName,
+                       float radius,
+                       float threshold)
+{
+  progress.set_fraction(0);
+  while(Main::events_pending())
+    Main::iteration();
 
-  spinBegin.set_range(0, (tmpGromacsFrames - 1) * tmpGromacs->getTimeStep());
-  spinBegin.set_value(0);
-  spinBegin.set_increments(tmpGromacs->getTimeStep(),
-                           (tmpGromacsFrames - 1) / 100);
+  Gromacs::Pittpi pittpi(gromacs, analysisFileName, radius, threshold);
 
-  spinEnd.set_range(0, (tmpGromacsFrames - 1) * tmpGromacs->getTimeStep());
-  spinEnd.set_value((tmpGromacsFrames - 1) * tmpGromacs->getTimeStep());
-  spinEnd.set_increments(tmpGromacs->getTimeStep(),
-                         (tmpGromacsFrames - 1) / 100);
-
-  delete tmpGromacs;
+  while(not pittpi.isFinished())
+  {
+    progress.set_fraction(pittpi.getStatus());
+    while(Main::events_pending())
+      Main::iteration();
+    pittpi.waitNextStatus();
+  }
 }
 
 void
 NewAnalysis::runAnalysis()
 {
+  bool writeSession = true;
+  std::locale oldLocale;
+  std::locale::global(std::locale("C"));
+
   Gromacs::Gromacs gromacs( trjChooser.get_filename(),
                             tprChooser.get_filename());
 
@@ -226,6 +239,26 @@ NewAnalysis::runAnalysis()
 
   progress.set_fraction(0);
   progress.show();
+  while(Main::events_pending())
+    Main::iteration();
+
+  if(entrySessionFile.get_text().empty())
+    writeSession = false;
+
+  std::ofstream sessionFile;
+  if(writeSession)
+  {
+    sessionFile.open(entrySessionFile.get_text().c_str(),
+                     std::ios::trunc | std::ios::out | std::ios::binary);
+
+    sessionFile << trjChooser.get_filename() << endl;
+    sessionFile << tprChooser.get_filename() << endl;
+    sessionFile << spinBegin.get_value() << endl;
+    sessionFile << spinEnd.get_value() << endl;
+    sessionFile << spinRadius.get_value() << endl;
+    sessionFile << spinPocketThreshold.get_value() << endl;
+  }
+
   while(Main::events_pending())
     Main::iteration();
 
@@ -245,6 +278,17 @@ NewAnalysis::runAnalysis()
   }
 
   gromacs.waitOperation();
+  while(Main::events_pending())
+    Main::iteration();
+
+  if(writeSession)
+  {
+    sessionFile << fs::file_size(fs::path("/tmp/sas.psf")) << endl;
+    std::ifstream sasFile("/tmp/sas.psf", std::ios::in | std::ios::binary);
+    sessionFile << sasFile.rdbuf();
+    sessionFile << endl;
+  }
+
   progress.set_fraction(1);
   while(Main::events_pending())
     Main::iteration();
@@ -263,15 +307,39 @@ NewAnalysis::runAnalysis()
   }
 
   gromacs.waitOperation();
+  while(Main::events_pending())
+    Main::iteration();
+
+
+  gromacs.getAverageStructure().dumpPdb("/tmp/aver.pdb");
+
+  if(writeSession)
+  {
+    sessionFile << fs::file_size(fs::path("/tmp/aver.pdb")) << endl;
+    std::ifstream pdbFile("/tmp/aver.pdb");
+    sessionFile << pdbFile.rdbuf();
+    sessionFile << endl;
+
+    sessionFile.flush();
+    sessionFile.close();
+  }
+  fs::remove(fs::path("/tmp/aver.pdb"));
+
   progress.set_fraction(1);
   while(Main::events_pending())
     Main::iteration();
 
-  Gromacs::Pittpi pittpi(gromacs, "/tmp/sas.csf", spinRadius.get_value(),
-                         spinPocketThreshold.get_value());
+  runPittpi(gromacs, "/tmp/sas.psf", spinRadius.get_value(),
+            spinPocketThreshold.get_value());
+  fs::remove(fs::path("/tmp/sas.psf"));
 
   progress.hide();
   set_sensitive(true);
+  std::locale::global(oldLocale);
+
+  MessageDialog msg("Two log files have been written in /tmp/pockets.log and "
+                    "/tmp/pockets_details.log");
+  msg.run();
 }
 
 void
@@ -296,10 +364,31 @@ NewAnalysis::threadTrajectoryClicked()
 {
   signal_start_spin();
 
-  tmpGromacs = new Gromacs::Gromacs(trjChooser.get_filename(), "");
-  tmpGromacsFrames = tmpGromacs->getFramesCount();
+  Gromacs::Gromacs tmpGromacs(trjChooser.get_filename(), "");
+  __frames = tmpGromacs.getFramesCount();
+  __timeStep = tmpGromacs.getTimeStep();
 
   signal_stop_spin();
+  signal_update_limits();
+}
+
+void
+NewAnalysis::update_limits()
+{
+  /*
+  spinBegin.set_sensitive();
+  spinEnd.set_sensitive();
+  hScaleBegin.set_sensitive();
+  hScaleEnd.set_sensitive();
+  */
+
+  spinBegin.set_range(0, (__frames - 1) * __timeStep);
+  spinBegin.set_value(0);
+  spinBegin.set_increments(__timeStep, (__frames - 1) / 100);
+
+  spinEnd.set_range(0, (__frames - 1) * __timeStep);
+  spinEnd.set_value((__frames - 1) * __timeStep);
+  spinEnd.set_increments(__timeStep, (__frames - 1) / 100);
 }
 
 void
@@ -338,4 +427,141 @@ NewAnalysis::buttonBrowseFileClicked()
       break;
     }
   }
+}
+
+void
+NewAnalysis::openSessionFile(const string& sessionFileName)
+{
+  std::locale oldLocale;
+  std::locale::global(std::locale("C"));
+
+  start_spin();
+  while(Main::events_pending())
+    Main::iteration();
+
+  std::ifstream sessionFile(sessionFileName.c_str(), std::ios::in | std::ios::binary);
+  std::string tmpString;
+  double tmpDouble;
+  unsigned int tmpUInt;
+
+  std::getline(sessionFile, tmpString);
+  trjChooser.set_filename(tmpString);
+  std::getline(sessionFile, tmpString);
+  tprChooser.set_filename(tmpString);
+  sessionFile >> tmpDouble;
+
+  spinBegin.set_value(tmpDouble);
+  sessionFile >> tmpDouble;
+  spinEnd.set_value(tmpDouble);
+  sessionFile >> tmpDouble;
+
+  spinRadius.set_value(tmpDouble);
+  sessionFile >> tmpDouble;
+  spinPocketThreshold.set_value(tmpDouble);
+  entrySessionFile.set_text(sessionFileName);
+
+  set_sensitive(false);
+  start_spin();
+  while(Main::events_pending())
+    Main::iteration();
+
+  sessionFile >> tmpUInt;
+  if(sessionFile.peek() == '\n')
+    sessionFile.get();
+  char* chunk = new char[1024*1024*128];
+  unsigned long nChunks = tmpUInt / (1024*1024*128);
+  unsigned long remainChunk = tmpUInt % (1024*1024*128);
+  std::ofstream streamSas("/tmp/sas.psf",
+                          std::ios::trunc | std::ios::out | std::ios::binary);
+  for(unsigned long i = 0; i < nChunks; i++)
+  {
+    while(Main::events_pending())
+      Main::iteration();
+    sessionFile.read(chunk, 1024*1024*128);
+    while(Main::events_pending())
+      Main::iteration();
+    streamSas.write(chunk, 1024*1024*128);
+  }
+
+  if(remainChunk != 0)
+  {
+    while(Main::events_pending())
+      Main::iteration();
+    sessionFile.read(chunk, remainChunk);
+    while(Main::events_pending())
+      Main::iteration();
+    streamSas.write(chunk, remainChunk);
+  }
+  streamSas.flush();
+  streamSas.close();
+
+  sessionFile >> tmpUInt;
+  if(sessionFile.peek() == '\n')
+    sessionFile.get();
+  nChunks = tmpUInt / (1024*1024*128);
+  remainChunk = tmpUInt % (1024*1024*128);
+  std::ofstream streamPdb("/tmp/aver.pdb",
+                          std::ios::trunc | std::ios::out | std::ios::binary);
+  for(unsigned long i = 0; i < nChunks; i++)
+  {
+    while(Main::events_pending())
+      Main::iteration();
+    sessionFile.read(chunk, 1024*1024*128);
+    while(Main::events_pending())
+      Main::iteration();
+    streamPdb.write(chunk, 1024*1024*128);
+  }
+
+  if(remainChunk != 0)
+  {
+    while(Main::events_pending())
+      Main::iteration();
+    sessionFile.read(chunk, remainChunk);
+    while(Main::events_pending())
+      Main::iteration();
+    streamPdb.write(chunk, remainChunk);
+  }
+  streamPdb.flush();
+  streamPdb.close();
+  sessionFile >> tmpString;
+
+  delete[] chunk;
+
+  Gromacs::Gromacs gromacs(trjChooser.get_filename(), tprChooser.get_filename());
+  gromacs.setBegin(spinBegin.get_value());
+  gromacs.setEnd(spinEnd.get_value());
+  gromacs.setAverageStructure(Gromacs::Protein("/tmp/aver.pdb"));
+
+  stop_spin();
+  while(Main::events_pending())
+    Main::iteration();
+
+  if(not progress.is_ancestor(vboxMain))
+    vboxMain.pack_end(progress, PACK_EXPAND_WIDGET, 10);
+
+  progress.set_fraction(0);
+  progress.show();
+  while(Main::events_pending())
+    Main::iteration();
+
+  runPittpi(gromacs, "/tmp/sas.psf", spinRadius.get_value(),
+                         spinPocketThreshold.get_value());
+
+  progress.hide();
+  std::locale::global(oldLocale);
+
+  set_sensitive(true);
+
+  /* These are set to unsensitive only in relation to the length bug */
+  spinBegin.set_sensitive(false);
+  spinEnd.set_sensitive(false);
+  hScaleBegin.set_sensitive(false);
+  hScaleEnd.set_sensitive(false);
+
+  while(Main::events_pending())
+    Main::iteration();
+
+  MessageDialog msg("Two log files have been written in /tmp/pockets.log and "
+                    "/tmp/pockets_details.log");
+  msg.run();
 }

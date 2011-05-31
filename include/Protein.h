@@ -192,7 +192,7 @@ namespace Gromacs
       return pResidues;
     }
 
-    vector<PdbAtom*>& atoms()
+    vector<const PdbAtom*>& atoms() const
     {
       if(not locked)
       {
@@ -200,13 +200,13 @@ namespace Gromacs
         pAtoms.clear();
         for
         (
-          vector<Residue>::iterator i = pResidues.begin();
+          vector<Residue>::const_iterator i = pResidues.begin();
           i < pResidues.end();
           i++
         )
           for
           (
-            vector<PdbAtom>::iterator j = i->atoms.begin();
+            vector<PdbAtom>::const_iterator j = i->atoms.begin();
             j < i->atoms.end();
             j++
           )
@@ -261,8 +261,8 @@ namespace Gromacs
 
       for
       (
-        vector<PdbAtom*>::const_iterator i = pAtoms.begin();
-        i < pAtoms.end();
+        vector<const PdbAtom*>::const_iterator i = atoms().begin();
+        i < atoms().end();
         i++
       )
       {
@@ -309,8 +309,8 @@ namespace Gromacs
     }
   private:
     vector<Residue> pResidues;
-    vector<PdbAtom*> pAtoms;
-    bool locked;
+    mutable vector<const PdbAtom*> pAtoms;
+    mutable bool locked;
   };
 }
 

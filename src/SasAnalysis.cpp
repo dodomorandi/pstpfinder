@@ -100,7 +100,7 @@ SasAnalysis::operator <<(SasAtom* sasAtoms)
     changeable = false;
     bufferSemaphore = new ip::interprocess_semaphore(bufferSemaphoreMax);
 
-    outFilter.push(io::zlib_compressor());
+    //outFilter.push(io::zlib_compressor());
     outFilter.push(fileIO);
     outArchive = new archive::binary_oarchive(outFilter);
 
@@ -108,7 +108,7 @@ SasAnalysis::operator <<(SasAtom* sasAtoms)
   }
 
   std::copy(sasAtoms, sasAtoms + nAtoms, tmpFrame);
-  
+
   frames.push_back(tmpFrame);
   if(frames.size() == maxFrames)
     flush();
@@ -125,7 +125,7 @@ SasAnalysis::operator >>(SasAtom*& sasAtom)
     changeable = false;
     bufferSemaphore = new ip::interprocess_semaphore(0);
 
-    inFilter.push(io::zlib_decompressor());
+    //inFilter.push(io::zlib_decompressor());
     inFilter.push(fileIO);
     inArchive = new archive::binary_iarchive(inFilter);
 
@@ -186,7 +186,7 @@ SasAnalysis::flush()
     changeable = false;
     bufferSemaphore = new ip::interprocess_semaphore(bufferSemaphoreMax);
 
-    outFilter.push(io::zlib_compressor());
+    //outFilter.push(io::zlib_compressor());
     outFilter.push(fileIO);
     outArchive = new archive::binary_oarchive(outFilter);
 
@@ -306,7 +306,21 @@ SasAnalysis::loadChunk(archive::binary_iarchive& in)
     atom = atoms;
 
     for(unsigned int k = 0; k < nAtoms; k++, atom++)
-      in >> *atom;
+    {
+      try
+      {
+        in >> *atom;
+      }
+      catch(int e)
+      {
+        std::cerr << "Warning: inconsistent binary file." << std::endl;
+        SasAtom* tmpatoms = new SasAtom[k];
+        std::copy(atoms, atoms + k, tmpatoms);
+        delete[] atoms;
+        atoms = tmpatoms;
+        break;
+      }
+    }
 
     chunk.push_back(atoms);
   }
@@ -376,7 +390,7 @@ SasAnalysis::OperationThread::threadSave()
   }
   
   parent->bufferMutex.lock();
-  while(parent->bufferSemaphoreCount < parent->bufferSemaphoreMax)
+  while(parent->bufferSemaphoreCount < parent->bufferSemaphoreMax - 1)
   {
     parent->save();
     parent->chunks.pop_front();
@@ -406,7 +420,7 @@ SasAnalysis::OperationThread::threadOpen()
     }
     else if(isStopped)
     {
-      while(parent->bufferSemaphoreCount < parent->bufferSemaphoreMax)
+      while(parent->bufferSemaphoreCount < parent->bufferSemaphoreMax - 1)
       {
         parent->bufferSemaphore->post();
         parent->bufferSemaphoreCount++;

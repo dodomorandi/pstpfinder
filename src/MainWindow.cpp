@@ -17,14 +17,17 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <gtkmm.h>
-#include <vector>
-
 #include "pstpfinder.h"
 #include "MainWindow.h"
 #include "NewAnalysis.h"
 
+#include <gtkmm.h>
+#include <vector>
+
+#include <boost/filesystem.hpp>
+
 using namespace Gtk;
+namespace fs = boost::filesystem;
 
 MainWindow::MainWindow()
 {
@@ -40,10 +43,13 @@ MainWindow::~MainWindow()
 void
 MainWindow::init()
 {
+  set_title("PSTP-finder");
   buttonNew.set_label("New analysis");
   buttonNew.signal_clicked().
     connect(sigc::mem_fun(*this, &MainWindow::createNewAnalysis));
   buttonOpen.set_label("Open analysis...");
+  buttonOpen.signal_clicked().
+    connect(sigc::mem_fun(*this, &MainWindow::buttonOpenClicked));
   
   buttonBox.add((Widget&)buttonNew);
   buttonBox.add(buttonOpen);
@@ -80,5 +86,41 @@ MainWindow::destroyNewAnalysis()
     delete(newAnalysis);
     newAnalysis = 0;
     show();
+  }
+}
+
+void
+MainWindow::buttonOpenClicked()
+{
+  int response;
+  string filename;
+  {
+    FileFilter filter;
+    filter.add_pattern("*.csf");
+    filter.set_name("PSTP-filter compressed session file");
+
+    FileChooserDialog chooser("Choose a saving file for this session",
+                              FILE_CHOOSER_ACTION_OPEN);
+    chooser.add_filter(filter);
+    chooser.add_button(Stock::CANCEL, RESPONSE_CANCEL);
+    chooser.add_button(Stock::OPEN, RESPONSE_OK);
+    response = chooser.run();
+    filename = chooser.get_filename();
+  }
+
+  switch(response)
+  {
+    case RESPONSE_OK:
+    {
+      if(fs::exists(fs::path(filename)) and newAnalysis == 0)
+      {
+        hide();
+        newAnalysis = new NewAnalysis(*this);
+        newAnalysis->set_position(WIN_POS_CENTER_ON_PARENT);
+        newAnalysis->signal_unmap().
+          connect(sigc::mem_fun(*this, &MainWindow::destroyNewAnalysis));
+        newAnalysis->openSessionFile(filename);
+      }
+    }
   }
 }
