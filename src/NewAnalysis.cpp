@@ -375,12 +375,10 @@ NewAnalysis::threadTrajectoryClicked()
 void
 NewAnalysis::update_limits()
 {
-  /*
   spinBegin.set_sensitive();
   spinEnd.set_sensitive();
   hScaleBegin.set_sensitive();
   hScaleEnd.set_sensitive();
-  */
 
   spinBegin.set_range(0, (__frames - 1) * __timeStep);
   spinBegin.set_value(0);
@@ -434,6 +432,7 @@ NewAnalysis::openSessionFile(const string& sessionFileName)
 {
   std::locale oldLocale;
   std::locale::global(std::locale("C"));
+  double beginTime, endTime;
 
   start_spin();
   while(Main::events_pending())
@@ -448,13 +447,13 @@ NewAnalysis::openSessionFile(const string& sessionFileName)
   trjChooser.set_filename(tmpString);
   std::getline(sessionFile, tmpString);
   tprChooser.set_filename(tmpString);
-  sessionFile >> tmpDouble;
 
-  spinBegin.set_value(tmpDouble);
-  sessionFile >> tmpDouble;
-  spinEnd.set_value(tmpDouble);
-  sessionFile >> tmpDouble;
+  sessionFile >> beginTime;
+  spinBegin.set_value(beginTime);
+  sessionFile >> endTime;
+  spinEnd.set_value(endTime);
 
+  sessionFile >> tmpDouble;
   spinRadius.set_value(tmpDouble);
   sessionFile >> tmpDouble;
   spinPocketThreshold.set_value(tmpDouble);
@@ -528,8 +527,8 @@ NewAnalysis::openSessionFile(const string& sessionFileName)
   delete[] chunk;
 
   Gromacs::Gromacs gromacs(trjChooser.get_filename(), tprChooser.get_filename());
-  gromacs.setBegin(spinBegin.get_value());
-  gromacs.setEnd(spinEnd.get_value());
+  gromacs.setBegin(beginTime);
+  gromacs.setEnd(endTime);
   gromacs.setAverageStructure(Gromacs::Protein("/tmp/aver.pdb"));
 
   stop_spin();
@@ -551,12 +550,6 @@ NewAnalysis::openSessionFile(const string& sessionFileName)
   std::locale::global(oldLocale);
 
   set_sensitive(true);
-
-  /* These are set to unsensitive only in relation to the length bug */
-  spinBegin.set_sensitive(false);
-  spinEnd.set_sensitive(false);
-  hScaleBegin.set_sensitive(false);
-  hScaleEnd.set_sensitive(false);
 
   while(Main::events_pending())
     Main::iteration();

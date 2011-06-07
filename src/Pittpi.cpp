@@ -101,6 +101,7 @@ Pittpi::Pittpi(Gromacs& gromacs,
   this->radius = radius;
   this->threshold = threshold;
   sync = true;
+  __status = 0;
 
   pittpiThread = boost::thread(&Pittpi::pittpiRun, boost::ref(*this));
 }
