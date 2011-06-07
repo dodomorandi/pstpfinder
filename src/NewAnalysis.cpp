@@ -547,6 +547,7 @@ NewAnalysis::openSessionFile(const string& sessionFileName)
                          spinPocketThreshold.get_value());
 
   progress.hide();
+  fs::remove(fs::path("/tmp/sas.psf"));
   std::locale::global(oldLocale);
 
   set_sensitive();
