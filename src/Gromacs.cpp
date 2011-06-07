@@ -568,7 +568,7 @@ namespace Gromacs
     */
 
     if(_begin != -1 and _end != -1)
-      return (_end - _begin) / getTimeStep() + 1;
+      return (_end - _begin) / getTimeStep();
 
     /* This is a workaround to obtain the f*****g number of frames... */
     ifstream trjStream(trjName.c_str(), ios::in | ios::binary);
