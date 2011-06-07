@@ -75,6 +75,7 @@ namespace Gromacs
     cachedNFrames = 0;
     _begin = -1;
     _end = -1;
+    timeStepCached = 0;
 
     // Damn it! I can't handle errors raised inside this f*****g function,
     // because it simply crashes on a ERROR HANDLING FUNCTION, overriding
@@ -492,6 +493,7 @@ namespace Gromacs
     }
     
     cachedNFrames = 0;
+    timeStepCached = 0;
     currentFrame = 0;
     
     if((natoms = 
@@ -564,6 +566,9 @@ namespace Gromacs
     close_trx(_status);
     output_env_done(_oenv);
     */
+
+    if(_begin != -1 and _end != -1)
+      return (_end - _begin) / getTimeStep() + 1;
 
     /* This is a workaround to obtain the f*****g number of frames... */
     ifstream trjStream(trjName.c_str(), ios::in | ios::binary);
@@ -681,27 +686,31 @@ namespace Gromacs
     if(not file::exists(file::path(trjName)))
       return 0;
 
+    if(timeStepCached != 0)
+      return timeStepCached;
+
     output_env_t _oenv;
     t_trxstatus *_status;
     int _natoms;
-    t_trxframe _fr;
+    t_trxframe fr1, fr2;
 
     snew(_oenv, 1);
     output_env_init_default(_oenv);
 
-    if((_natoms = read_first_frame(_oenv,&_status, trjName.c_str(), &_fr, 0)
+    if((_natoms = read_first_frame(_oenv,&_status, trjName.c_str(), &fr1, 0)
        ) == 0)
     {
       output_env_done(_oenv);
       return 0;
     }
 
-    read_next_frame(_oenv, _status, &_fr);
+    read_next_frame(_oenv, _status, &fr2);
     close_trx(_status);
 
     output_env_done(_oenv);
 
-    return _fr.time;
+    timeStepCached = fr2.time - fr1.time;
+    return timeStepCached;
   }
 
   unsigned int

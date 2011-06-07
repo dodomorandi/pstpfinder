@@ -122,6 +122,7 @@ namespace Gromacs
     unsigned int currentFrame; // index-0 based -- like always
     Protein averageStructure;
     float _begin, _end;
+    mutable float timeStepCached;
     
     void init(float solventSize);
     bool getTopology();
