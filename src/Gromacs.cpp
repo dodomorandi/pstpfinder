@@ -73,6 +73,8 @@ namespace Gromacs
     gotTopology = false;
     gotTrajectory = false;
     cachedNFrames = 0;
+    _begin = -1;
+    _end = -1;
 
     // Damn it! I can't handle errors raised inside this f*****g function,
     // because it simply crashes on a ERROR HANDLING FUNCTION, overriding
@@ -733,15 +735,29 @@ namespace Gromacs
     return _fr.step;
   }
 
+  float
+  Gromacs::getBegin() const
+  {
+    return _begin;
+  }
+
   void
   Gromacs::setBegin(float beginTime)
   {
+    _begin = beginTime;
     setTimeValue(TBEGIN, beginTime);
+  }
+
+  float
+  Gromacs::getEnd() const
+  {
+    return _end;
   }
 
   void
   Gromacs::setEnd(float endTime)
   {
+    _end = endTime;
     setTimeValue(TEND, endTime);
   }
 };

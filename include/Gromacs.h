@@ -66,7 +66,9 @@ namespace Gromacs
     unsigned int getFramesCount() const;
     float getTimeStep() const; // In nsec
     unsigned int getFrameStep() const;
+    float getBegin() const;
     void setBegin(float beginTime);
+    float getEnd() const;
     void setEnd(float endTime);
     vector<atom_id> getGroup(const string& groupName);
     vector<atom_id> getGroup(const string& groupName) const;
@@ -119,6 +121,7 @@ namespace Gromacs
     mutable unsigned int cachedNFrames;
     unsigned int currentFrame; // index-0 based -- like always
     Protein averageStructure;
+    float _begin, _end;
     
     void init(float solventSize);
     bool getTopology();
