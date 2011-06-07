@@ -1,3 +1,65 @@
+commit aab7e95e9ef9a09d6086172c672d283c32812f1e
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue Jun 7 17:20:46 2011 +0200
+
+    Remove sas.psf after opening a session
+
+commit a6898507054344fe1a06845ceaa7a1439a98066b
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue Jun 7 17:18:18 2011 +0200
+
+    Fixed begin and end spins/scrolls
+    
+    They didn't work correctly when opening an old session.
+
+commit 4ced77b936cb7716d10795c8bd6c0fdc7e225445
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue Jun 7 17:08:03 2011 +0200
+
+    Off by one in getFramesCount
+
+commit 6a604ee9b0c002ad74843d0b2931fc42e5911cea
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue Jun 7 17:01:54 2011 +0200
+
+    Begin and end time for the analysis can be used
+    
+    Thanks to this and some previous commits.
+
+commit 717306e91fc16da7428a0e147956890d85842a1a
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue Jun 7 16:58:13 2011 +0200
+
+    Fixed bug in Gromacs::getTimeStep
+    
+    Strange behaviour of GROMACS using different trxframe objects.
+
+commit cf50ddd4722ef8887a2133f52054d9e5d83c2904
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue Jun 7 16:52:03 2011 +0200
+
+    Saved file must be truncated, not appended
+
+commit 55d3ae247469edec209480e0d90d01a48143de6d
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue Jun 7 16:35:01 2011 +0200
+
+    timeStep is cached and fixed
+    
+    Before this commit timestep took only the time of the second frame. Now subtract from this value the time of the first frame.
+
+commit b8c1b55875dbfef993caf41fcef1426e6243e1ce
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue Jun 7 11:04:59 2011 +0200
+
+    Added getBegin and getEnd in class Gromacs
+
+commit fddccac922274a4d664cae2f812052b4c3d45975
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue May 31 12:59:22 2011 +0200
+
+    Updated changelog
+
 commit 83b04d511938b7d98cd788b8bfee0eb8035a7005
 Author: Edoardo Morandi <morandidodo@gmail.com>
 Date:   Tue May 31 12:48:25 2011 +0200
