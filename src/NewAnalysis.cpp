@@ -449,9 +449,7 @@ NewAnalysis::openSessionFile(const string& sessionFileName)
   tprChooser.set_filename(tmpString);
 
   sessionFile >> beginTime;
-  spinBegin.set_value(beginTime);
   sessionFile >> endTime;
-  spinEnd.set_value(endTime);
 
   sessionFile >> tmpDouble;
   spinRadius.set_value(tmpDouble);
@@ -527,6 +525,8 @@ NewAnalysis::openSessionFile(const string& sessionFileName)
   delete[] chunk;
 
   Gromacs::Gromacs gromacs(trjChooser.get_filename(), tprChooser.get_filename());
+  __timeStep = gromacs.getTimeStep();
+  __frames = gromacs.getFramesCount();
   gromacs.setBegin(beginTime);
   gromacs.setEnd(endTime);
   gromacs.setAverageStructure(Gromacs::Protein("/tmp/aver.pdb"));
@@ -549,7 +549,10 @@ NewAnalysis::openSessionFile(const string& sessionFileName)
   progress.hide();
   std::locale::global(oldLocale);
 
-  set_sensitive(true);
+  set_sensitive();
+  update_limits();
+  spinBegin.set_value(beginTime);
+  spinEnd.set_value(endTime);
 
   while(Main::events_pending())
     Main::iteration();
