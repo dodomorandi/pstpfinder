@@ -219,7 +219,7 @@ SasAnalysis::save(const std::string& filename)
     return false;
 
   this->filename = filename;
-  fileIO = io::file_descriptor(filename, BOOST_IOS::app | BOOST_IOS::out |
+  fileIO = io::file_descriptor(filename, BOOST_IOS::trunc | BOOST_IOS::out |
                                          BOOST_IOS::binary);
   
   if(not save())
