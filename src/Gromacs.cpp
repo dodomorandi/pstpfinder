@@ -692,24 +692,27 @@ namespace Gromacs
     output_env_t _oenv;
     t_trxstatus *_status;
     int _natoms;
-    t_trxframe fr1, fr2;
+    t_trxframe _fr;
+    float time1, time2;
 
     snew(_oenv, 1);
     output_env_init_default(_oenv);
 
-    if((_natoms = read_first_frame(_oenv,&_status, trjName.c_str(), &fr1, 0)
+    if((_natoms = read_first_frame(_oenv,&_status, trjName.c_str(), &_fr, 0)
        ) == 0)
     {
       output_env_done(_oenv);
       return 0;
     }
 
-    read_next_frame(_oenv, _status, &fr2);
+    time1 = _fr.time;
+    read_next_frame(_oenv, _status, &_fr);
+    time2 = _fr.time;
     close_trx(_status);
 
     output_env_done(_oenv);
 
-    timeStepCached = fr2.time - fr1.time;
+    timeStepCached = time2 - time1;
     return timeStepCached;
   }
 
