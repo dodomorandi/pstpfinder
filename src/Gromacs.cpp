@@ -72,6 +72,7 @@ namespace Gromacs
     sasTarget = "Protein";
     gotTopology = false;
     gotTrajectory = false;
+    currentFrame = 0;
     cachedNFrames = 0;
     _begin = -1;
     _end = -1;
