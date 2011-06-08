@@ -23,6 +23,8 @@
 #include "Pittpi.h"
 
 #include <gtkmm.h>
+#include <glibmm.h>
+#include <gdkmm.h>
 #include <fstream>
 #include <string>
 #include <boost/filesystem.hpp>
@@ -233,7 +235,18 @@ NewAnalysis::runAnalysis()
   gromacs.setEnd(spinEnd.get_value());
 
   if(not progress.is_ancestor(vboxMain))
+  {
     vboxMain.pack_end(progress, PACK_EXPAND_WIDGET, 10);
+    int x, y, width, height;
+    get_position(x, y);
+    get_size(width, height);
+    Glib::RefPtr<Gdk::Screen> screen = get_screen();
+    if(screen->get_height() < y + height)
+    {
+      y = screen->get_height() - height;
+      move(x, y);
+    }
+  }
 
   set_sensitive(false);
 
@@ -536,7 +549,18 @@ NewAnalysis::openSessionFile(const string& sessionFileName)
     Main::iteration();
 
   if(not progress.is_ancestor(vboxMain))
+  {
     vboxMain.pack_end(progress, PACK_EXPAND_WIDGET, 10);
+    int x, y, width, height;
+    get_position(x, y);
+    get_size(width, height);
+    Glib::RefPtr<Gdk::Screen> screen = get_screen();
+    if(screen->get_height() < y + height)
+    {
+      y = screen->get_height() - height;
+      move(x, y);
+    }
+  }
 
   progress.set_fraction(0);
   progress.show();
