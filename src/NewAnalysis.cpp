@@ -21,6 +21,7 @@
 #include "NewAnalysis.h"
 #include "Gromacs.h"
 #include "Pittpi.h"
+#include "Results.h"
 
 #include <gtkmm.h>
 #include <glibmm.h>
@@ -356,6 +357,8 @@ NewAnalysis::runAnalysis()
   MessageDialog msg("Two log files have been written in /tmp/pockets.log and "
                     "/tmp/pockets_details.log");
   msg.run();
+
+  resultsWindows.push_back(new Gromacs::Results(*this, pittpi));
 }
 
 void
@@ -589,4 +592,23 @@ NewAnalysis::openSessionFile(const string& sessionFileName)
   MessageDialog msg("Two log files have been written in /tmp/pockets.log and "
                     "/tmp/pockets_details.log");
   msg.run();
+
+  resultsWindows.push_back(new Gromacs::Results(*this, pittpi));
+}
+
+void
+NewAnalysis::deleteResultsWindow(const Gromacs::Results& resultsWindow)
+{
+  for
+  (
+    vector<Gromacs::Results*>::iterator i = resultsWindows.begin();
+    i < resultsWindows.end();
+    i++
+  )
+    if(*i == &resultsWindow)
+    {
+      delete *i;
+      resultsWindows.erase(i);
+      break;
+    }
 }

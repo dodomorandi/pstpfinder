@@ -21,11 +21,16 @@
 #define _NEWANALYSIS_H
 
 #include "Gromacs.h"
+#include "Pittpi.h"
+#include "Results.h"
 
+#include <vector>
 #include <gtkmm.h>
 #include <glibmm.h>
 
 using namespace Gtk;
+
+namespace Gromacs { class Results; };
 
 class NewAnalysis: public Window
 {
@@ -38,6 +43,7 @@ public:
   NewAnalysis();
   NewAnalysis(Window& parent);
   void openSessionFile(const string& sessionFileName);
+  void deleteResultsWindow(const Gromacs::Results& resultsWindow);
   Glib::Dispatcher signal_start_spin;
   Glib::Dispatcher signal_stop_spin;
   Glib::Dispatcher signal_update_limits;
@@ -59,6 +65,7 @@ private:
   VSeparator vSeparator;
   int __frames;
   float __timeStep;
+  std::vector<Gromacs::Results*> resultsWindows;
 
   void init();
   void runAnalysis();
