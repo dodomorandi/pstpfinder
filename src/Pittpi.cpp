@@ -106,6 +106,17 @@ Pittpi::Pittpi(Gromacs& gromacs,
   pittpiThread = boost::thread(&Pittpi::pittpiRun, boost::ref(*this));
 }
 
+Pittpi::Pittpi(const Pittpi& pittpi)
+{
+  p_gromacs = pittpi.p_gromacs;
+  sasAnalysisFileName = pittpi.sasAnalysisFileName;
+  radius = pittpi.radius;
+  threshold = pittpi.threshold;
+  sync = pittpi.sync;
+  __status = pittpi.__status;
+  pockets = pittpi.pockets;
+}
+
 Pittpi::~Pittpi()
 {
   join();
@@ -226,7 +237,6 @@ Pittpi::pittpiRun()
     noZeroPass = 3;
 
   setStatus(0);
-  vector<Pocket> pockets;
   for
   (
     vector<Group>::iterator i = meanGroups.begin();

@@ -21,10 +21,13 @@
 #define _PITTPI_H
 
 #include "Gromacs.h"
+
 #include <vector>
 #include <boost/thread/thread.hpp>
 #include <boost/interprocess/sync/interprocess_mutex.hpp>
 #include <boost/interprocess/sync/interprocess_condition.hpp>
+
+using namespace std;
 
 namespace Gromacs
 {
@@ -82,6 +85,7 @@ namespace Gromacs
            const std::string& sasAnalysisFileName,
            float radius,
            unsigned long threshold);
+    Pittpi(const Pittpi& pittpi);
     ~Pittpi();
 
     void join();
@@ -106,6 +110,7 @@ namespace Gromacs
     mutable boost::interprocess::interprocess_condition nextStatusCondition;
     float __status;
     bool sync;
+    std::vector<Pocket> pockets;
   };
 }
 
