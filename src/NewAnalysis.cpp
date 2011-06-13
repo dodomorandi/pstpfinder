@@ -200,7 +200,7 @@ NewAnalysis::stop_spin()
   buttonBoxRun.show();
 }
 
-void
+Gromacs::Pittpi
 NewAnalysis::runPittpi(Gromacs::Gromacs& gromacs,
                        const string& analysisFileName,
                        float radius,
@@ -219,6 +219,8 @@ NewAnalysis::runPittpi(Gromacs::Gromacs& gromacs,
       Main::iteration();
     pittpi.waitNextStatus();
   }
+
+  return pittpi;
 }
 
 void
@@ -342,8 +344,9 @@ NewAnalysis::runAnalysis()
   while(Main::events_pending())
     Main::iteration();
 
-  runPittpi(gromacs, "/tmp/sas.psf", spinRadius.get_value(),
-            spinPocketThreshold.get_value());
+  Gromacs::Pittpi pittpi = runPittpi(gromacs, "/tmp/sas.psf",
+                                     spinRadius.get_value(),
+                                     spinPocketThreshold.get_value());
   fs::remove(fs::path("/tmp/sas.psf"));
 
   progress.hide();
@@ -567,8 +570,9 @@ NewAnalysis::openSessionFile(const string& sessionFileName)
   while(Main::events_pending())
     Main::iteration();
 
-  runPittpi(gromacs, "/tmp/sas.psf", spinRadius.get_value(),
-                         spinPocketThreshold.get_value());
+  Gromacs::Pittpi pittpi = runPittpi(gromacs, "/tmp/sas.psf",
+                                     spinRadius.get_value(),
+                                     spinPocketThreshold.get_value());
 
   progress.hide();
   fs::remove(fs::path("/tmp/sas.psf"));

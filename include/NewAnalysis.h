@@ -69,8 +69,9 @@ private:
   void checkParameters();
   void buttonBrowseFileClicked();
   void update_limits();
-  void runPittpi(Gromacs::Gromacs& gromacs, const string& analysisFileName,
-                 float radius, float threshold);
+  Gromacs::Pittpi runPittpi(Gromacs::Gromacs& gromacs,
+                            const string& analysisFileName, float radius,
+                            float threshold);
 };
 
 #endif
