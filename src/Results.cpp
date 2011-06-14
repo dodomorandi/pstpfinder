@@ -18,6 +18,8 @@
  */
 
 #include "Results.h"
+#include <gdkmm.h>
+#include <cairomm/cairomm.h>
 
 using namespace Gromacs;
 
@@ -34,6 +36,9 @@ Results::init()
       .connect(sigc::mem_fun(*this, &Results::removeFromParent));
 
   drawResultsGraph.set_size_request(500, 200);
+  drawResultsGraph.signal_expose_event()
+    .connect(sigc::mem_fun(*this, &Results::drawResultsGraphExposeEvent));
+
   notebook.append_page(drawResultsGraph, "Results");
 
   add(notebook);
@@ -44,5 +49,27 @@ bool
 Results::removeFromParent(GdkEventAny* event)
 {
   parent.deleteResultsWindow(*this);
+  return true;
+}
+
+bool
+Results::drawResultsGraphExposeEvent(GdkEventExpose* event)
+{
+  Glib::RefPtr<Gdk::Window> window = drawResultsGraph.get_window();
+  Cairo::RefPtr<Cairo::Context> context = window->create_cairo_context();
+
+  window->clear();
+
+  Gdk::Rectangle area_paint(0, 0, window->get_height(), window->get_width());
+  window->begin_paint_rect(area_paint);
+  // Color background
+  context->set_source_rgb(1.0, 1.0, 1.0);
+  context->paint();
+
+  // Draw graph
+  // TODO
+
+  window->end_paint();
+
   return true;
 }

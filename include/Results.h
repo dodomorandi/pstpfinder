@@ -43,6 +43,7 @@ namespace Gromacs
       NewAnalysis& parent;
 
       bool removeFromParent(GdkEventAny* event);
+      bool drawResultsGraphExposeEvent(GdkEventExpose* event);
   };
 };
 
