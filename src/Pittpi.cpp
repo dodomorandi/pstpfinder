@@ -172,7 +172,7 @@ Pittpi::pittpiRun()
   Gromacs& gromacs = *p_gromacs;
 
   averageStructure = gromacs.getAverageStructure();
-  vector<Group> groups = makeGroups(radius);
+  groups = makeGroups(radius);
 
   fillGroups(groups, sasAnalysisFileName);
 
@@ -191,7 +191,7 @@ Pittpi::pittpiRun()
   unsigned int const frames = gromacs.getFramesCount();
   unsigned int const newSasCount = frames / frameStep +
                              ((frames % frameStep == 0) ? 0 : 1);
-  vector<Group> meanGroups = vector<Group>(groups);
+  meanGroups = vector<Group>(groups);
 
   setStatus(0);
   for

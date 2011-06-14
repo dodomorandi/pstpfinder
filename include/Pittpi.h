@@ -112,6 +112,7 @@ namespace Gromacs
     float __status;
     bool sync;
     std::vector<Pocket> pockets;
+    vector<Group> groups, meanGroups;
   };
 }
 
