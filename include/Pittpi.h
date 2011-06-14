@@ -93,6 +93,7 @@ namespace Gromacs
     float getStatus() const;
     void waitNextStatus();
     bool isFinished();
+    const std::vector<Pocket>& getPockets() const;
   private:
     std::vector<Group> makeGroups(float radius);
     void fillGroups(std::vector<Group>& groups,

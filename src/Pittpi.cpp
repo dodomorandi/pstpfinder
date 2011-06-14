@@ -651,3 +651,15 @@ Pittpi::fillGroups(vector<Group>& groups, const string& sasAnalysisFileName)
   delete[] meanSas;
   delete[] sas;
 }
+
+const vector<Pocket>&
+Pittpi::getPockets() const
+{
+  if(sync)
+  {
+    static vector<Pocket> static_empty_pockets;
+    return static_empty_pockets;
+  }
+
+  return pockets;
+}
