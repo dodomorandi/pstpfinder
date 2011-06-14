@@ -60,14 +60,21 @@ Results::drawResultsGraphExposeEvent(GdkEventExpose* event)
 
   window->clear();
 
-  Gdk::Rectangle area_paint(0, 0, window->get_height(), window->get_width());
+  Gdk::Rectangle area_paint(0, 0, window->get_width(), window->get_height());
   window->begin_paint_rect(area_paint);
   // Color background
   context->set_source_rgb(1.0, 1.0, 1.0);
   context->paint();
 
   // Draw graph
-  // TODO
+  // Axis
+  context->set_source_rgb(0.0, 0.0, 0.0);
+  context->set_line_width(1);
+  context->move_to(20, area_paint.get_height() - 20);
+  context->line_to(area_paint.get_width() - 20, area_paint.get_height() - 20);
+  context->move_to(20, area_paint.get_height() - 20);
+  context->line_to(20, 10);
+  context->stroke();
 
   window->end_paint();
 
