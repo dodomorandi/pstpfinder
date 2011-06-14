@@ -39,8 +39,8 @@ namespace Gromacs
       Notebook notebook;
       DrawingArea drawResultsGraph;
 
-      const Pittpi& mPittpi;
-      NewAnalysis& mParent;
+      const Pittpi& pittpi;
+      NewAnalysis& parent;
 
       bool removeFromParent(GdkEventAny* event);
   };

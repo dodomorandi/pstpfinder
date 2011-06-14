@@ -22,7 +22,7 @@
 using namespace Gromacs;
 
 Results::Results(NewAnalysis& parent, const Pittpi& pittpi)
-  : mPittpi(pittpi), mParent(parent)
+  : pittpi(pittpi), parent(parent)
 {
   init();
 }
@@ -43,6 +43,6 @@ Results::init()
 bool
 Results::removeFromParent(GdkEventAny* event)
 {
-  mParent.deleteResultsWindow(*this);
+  parent.deleteResultsWindow(*this);
   return true;
 }
