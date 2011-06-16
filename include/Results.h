@@ -30,6 +30,15 @@ class NewAnalysis;
 
 namespace Gromacs
 {
+  struct PocketResidue
+  {
+    const Residue& residue;
+    vector<const Pocket*> pockets;
+
+    PocketResidue(const Residue& residue) :
+      residue(residue) { ; }
+  };
+
   class Results: public Window
   {
     public:
@@ -41,6 +50,7 @@ namespace Gromacs
 
       const Pittpi& pittpi;
       NewAnalysis& parent;
+      vector<PocketResidue> residues;
 
       bool removeFromParent(GdkEventAny* event);
       bool drawResultsGraphExposeEvent(GdkEventExpose* event);
