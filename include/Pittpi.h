@@ -82,7 +82,7 @@ namespace Gromacs
   {
   public:
     Pittpi(Gromacs& gromacs,
-           const std::string& sasAnalysisFileName,
+           const string& sasAnalysisFileName,
            float radius,
            unsigned long threshold);
     Pittpi(const Pittpi& pittpi);
@@ -93,15 +93,14 @@ namespace Gromacs
     float getStatus() const;
     void waitNextStatus();
     bool isFinished();
-    const std::vector<Pocket>& getPockets() const;
+    const vector<Pocket>& getPockets() const;
   private:
-    std::vector<Group> makeGroups(float radius);
-    void fillGroups(std::vector<Group>& groups,
-                    const string& sasAnalysisFileName);
+    vector<Group> makeGroups(float radius);
+    void fillGroups(vector<Group>& groups, const string& sasAnalysisFileName);
     void pittpiRun();
 
     Gromacs* p_gromacs;
-    std::string sasAnalysisFileName;
+    string sasAnalysisFileName;
     float radius;
     unsigned long threshold;
     Protein averageStructure;
@@ -111,7 +110,7 @@ namespace Gromacs
     mutable boost::interprocess::interprocess_condition nextStatusCondition;
     float __status;
     bool sync;
-    std::vector<Pocket> pockets;
+    vector<Pocket> pockets;
     vector<Group> groups, meanGroups;
   };
 }
