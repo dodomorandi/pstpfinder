@@ -37,6 +37,14 @@ namespace Gromacs
 
     PocketResidue(const Residue& residue) :
       residue(residue) { ; }
+
+    PocketResidue operator =(const PocketResidue& pocketResidue)
+    {
+      PocketResidue retVal(pocketResidue.residue);
+      retVal.pockets = pocketResidue.pockets;
+
+      return retVal;
+    }
   };
 
   class Results: public Window
@@ -54,6 +62,8 @@ namespace Gromacs
 
       bool removeFromParent(GdkEventAny* event);
       bool drawResultsGraphExposeEvent(GdkEventExpose* event);
+
+      void fillResidues();
   };
 };
 

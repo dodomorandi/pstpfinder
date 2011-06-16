@@ -18,9 +18,11 @@
  */
 
 #include "Results.h"
+#include <vector>
 #include <gdkmm.h>
 #include <cairomm/cairomm.h>
 
+using namespace std;
 using namespace Gromacs;
 
 Results::Results(NewAnalysis& parent, const Pittpi& pittpi)
@@ -79,4 +81,43 @@ Results::drawResultsGraphExposeEvent(GdkEventExpose* event)
   window->end_paint();
 
   return true;
+}
+
+void
+Results::fillResidues()
+{
+  const vector<Pocket>& pockets = pittpi.getPockets();
+  for
+  (
+    vector<Pocket>::const_iterator i = pockets.begin();
+    i < pockets.end();
+    i++
+  )
+  {
+    bool exists = false;
+    const Residue& currentRes = i->group->getCentralRes();
+
+    for
+    (
+      vector<PocketResidue>::iterator j = residues.begin();
+      j < residues.end();
+      j++
+    )
+    {
+      if(j->residue.index == currentRes.index)
+      {
+        j->pockets.push_back(&(*i));
+        exists = true;
+        break;
+      }
+    }
+
+    if(not exists)
+    {
+      PocketResidue pocket(currentRes);
+      pocket.pockets.push_back(&(*i));
+
+      residues.push_back(pocket);
+    }
+  }
 }
