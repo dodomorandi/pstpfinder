@@ -18,6 +18,7 @@
  */
 
 #include "Results.h"
+#include <cstdlib>
 #include <vector>
 #include <gdkmm.h>
 #include <cairomm/cairomm.h>
@@ -44,6 +45,8 @@ Results::init()
   notebook.append_page(drawResultsGraph, "Results");
 
   add(notebook);
+
+  fillResidues();
   show_all();
 }
 
@@ -78,6 +81,43 @@ Results::drawResultsGraphExposeEvent(GdkEventExpose* event)
   context->line_to(20, 10);
   context->stroke();
 
+  // Pockets
+  int graphOffsetStart = 20 + 1;
+  int columnModuleX = (area_paint.get_width() - graphOffsetStart * 2)  /
+                     (residues.size() * 4 + 1);
+  int columnModuleY = (area_paint.get_height() - graphOffsetStart * 2) /
+                      ceil(maxPocketLength);
+  for
+  (
+    vector<PocketResidue>::const_iterator i = residues.begin();
+    i < residues.end();
+    i++
+  )
+  {
+    int columnOffsetX = graphOffsetStart + columnModuleX *
+        (4 * distance(static_cast<vector<PocketResidue>::const_iterator>
+        (residues.begin()), i) + 1);
+    int columnOffsetY = area_paint.get_height() - graphOffsetStart;
+
+    for
+    (
+      vector<const Pocket*>::const_iterator j = i->pockets.begin();
+      j < i->pockets.end();
+      j++
+    )
+    {
+      int columnHeight = (float)columnModuleY * (*j)->width;
+
+      context->set_source_rgb((float)rand() / RAND_MAX,
+                              (float)rand() / RAND_MAX,
+                              (float)rand() / RAND_MAX);
+      context->rectangle(columnOffsetX, columnOffsetY - columnHeight,
+                         columnModuleX * 3, columnHeight);
+      context->fill();
+      columnOffsetY -= columnHeight;
+    }
+  }
+
   window->end_paint();
 
   return true;
@@ -87,6 +127,8 @@ void
 Results::fillResidues()
 {
   const vector<Pocket>& pockets = pittpi.getPockets();
+  maxPocketLength = 0;
+
   for
   (
     vector<Pocket>::const_iterator i = pockets.begin();
@@ -119,5 +161,8 @@ Results::fillResidues()
 
       residues.push_back(pocket);
     }
+
+    if(i->width > maxPocketLength)
+      maxPocketLength = i->width;
   }
 }

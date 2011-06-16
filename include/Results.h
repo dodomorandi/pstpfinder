@@ -59,6 +59,7 @@ namespace Gromacs
       const Pittpi& pittpi;
       NewAnalysis& parent;
       vector<PocketResidue> residues;
+      float maxPocketLength;
 
       bool removeFromParent(GdkEventAny* event);
       bool drawResultsGraphExposeEvent(GdkEventExpose* event);
