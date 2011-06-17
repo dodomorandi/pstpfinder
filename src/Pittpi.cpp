@@ -91,12 +91,12 @@ Group::sortByZeros(const Group& a, const Group& b)
   return (a.zeros > b.zeros);
 }
 
-Pittpi::Pittpi(Gromacs& gromacs,
+Pittpi::Pittpi(const Gromacs& gromacs,
                const std::string& sasAnalysisFileName,
                float radius,
-               unsigned long threshold)
+               unsigned long threshold) :
+  gromacs(gromacs)
 {
-  this->p_gromacs = &gromacs;
   this->sasAnalysisFileName = sasAnalysisFileName;
   this->radius = radius;
   this->threshold = threshold;
@@ -106,15 +106,40 @@ Pittpi::Pittpi(Gromacs& gromacs,
   pittpiThread = boost::thread(&Pittpi::pittpiRun, boost::ref(*this));
 }
 
-Pittpi::Pittpi(const Pittpi& pittpi)
+Pittpi::Pittpi(const Pittpi& pittpi) :
+  gromacs(pittpi.gromacs)
 {
-  p_gromacs = pittpi.p_gromacs;
+  clone(pittpi);
+}
+
+Pittpi::Pittpi(const Pittpi& pittpi, const Gromacs& gromacs) :
+  gromacs(gromacs)
+{
+  clone(pittpi);
+}
+
+void
+Pittpi::clone(const Pittpi& pittpi)
+{
   sasAnalysisFileName = pittpi.sasAnalysisFileName;
   radius = pittpi.radius;
   threshold = pittpi.threshold;
+  averageStructure = pittpi.averageStructure;
   sync = pittpi.sync;
   __status = pittpi.__status;
-  pockets = pittpi.pockets;
+  groups = vector<Group>(pittpi.groups);
+  meanGroups = vector<Group>(pittpi.meanGroups);
+  pockets = vector<Pocket>(pittpi.pockets);
+
+  vector<Pocket>::iterator i;
+  vector<Pocket>::const_iterator j;
+  for
+  (
+    i = pockets.begin(), j = pittpi.pockets.begin();
+    i < pockets.end();
+    i++, j++
+  )
+    i->group = &meanGroups[j->group - pittpi.meanGroups.data()];
 }
 
 Pittpi::~Pittpi()
@@ -169,8 +194,6 @@ Pittpi::waitNextStatus()
 void
 Pittpi::pittpiRun()
 {
-  Gromacs& gromacs = *p_gromacs;
-
   averageStructure = gromacs.getAverageStructure();
   groups = makeGroups(radius);
 
@@ -527,8 +550,6 @@ Pittpi::fillGroups(vector<Group>& groups, const string& sasAnalysisFileName)
   SasAtom* sasAtoms = 0;
   SasAnalysis* sasAnalysis;
   unsigned int counter = 0;
-
-  Gromacs& gromacs = *p_gromacs;
 
   const float frames = gromacs.getFramesCount();
   vector<int> protein = gromacs.getGroup("Protein");

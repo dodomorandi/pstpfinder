@@ -81,11 +81,12 @@ namespace Gromacs
   class Pittpi
   {
   public:
-    Pittpi(Gromacs& gromacs,
+    Pittpi(const Gromacs& gromacs,
            const string& sasAnalysisFileName,
            float radius,
            unsigned long threshold);
     Pittpi(const Pittpi& pittpi);
+    Pittpi(const Pittpi& pittpi, const Gromacs& gromacs);
     ~Pittpi();
 
     void join();
@@ -98,8 +99,9 @@ namespace Gromacs
     vector<Group> makeGroups(float radius);
     void fillGroups(vector<Group>& groups, const string& sasAnalysisFileName);
     void pittpiRun();
+    void clone(const Pittpi& pittpi);
 
-    Gromacs* p_gromacs;
+    Gromacs gromacs;
     string sasAnalysisFileName;
     float radius;
     unsigned long threshold;
