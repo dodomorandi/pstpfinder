@@ -74,21 +74,27 @@ Results::drawResultsGraphExposeEvent(GdkEventExpose* event)
   context->paint();
 
   // Draw graph
+  int graphLineWidth = 1;
+  int graphBorder = 0.02 * area_paint.get_height(); // 2%
+  int graphOffsetStart = graphBorder + graphLineWidth;
+  int graphFooterHeight = 0.05 * area_paint.get_height(); // 5%
   // Axis
   context->set_source_rgb(0.0, 0.0, 0.0);
-  context->set_line_width(1);
-  context->move_to(20, area_paint.get_height() - 20);
-  context->line_to(area_paint.get_width() - 20, area_paint.get_height() - 20);
-  context->move_to(20, area_paint.get_height() - 20);
-  context->line_to(20, 10);
+  context->set_line_width(graphLineWidth);
+  context->move_to(graphBorder,
+                   area_paint.get_height() - graphBorder - graphFooterHeight);
+  context->line_to(area_paint.get_width() - graphBorder,
+                   area_paint.get_height() - graphBorder - graphFooterHeight);
+  context->move_to(graphBorder,
+                   area_paint.get_height() - graphBorder - graphFooterHeight);
+  context->line_to(graphBorder, graphBorder);
   context->stroke();
 
   // Pockets
-  int graphOffsetStart = 20 + 1;
   float columnModuleX = (float)(area_paint.get_width() - graphOffsetStart * 2)
                         / (residues.size() * 3 + 1);
-  float columnModuleY = (float)(area_paint.get_height() - graphOffsetStart * 2)
-                        / maxPocketLength;
+  float columnModuleY = (float)(area_paint.get_height() - graphOffsetStart * 2
+                        - graphFooterHeight) / maxPocketLength;
   for
   (
     vector<PocketResidue>::const_iterator i = residues.begin();
@@ -99,7 +105,8 @@ Results::drawResultsGraphExposeEvent(GdkEventExpose* event)
     int columnOffsetX = graphOffsetStart + columnModuleX *
         (3 * distance(static_cast<vector<PocketResidue>::const_iterator>
         (residues.begin()), i) + 1);
-    int columnOffsetY = area_paint.get_height() - graphOffsetStart;
+    int columnOffsetY = area_paint.get_height() - graphOffsetStart
+                        - graphFooterHeight;
 
     for
     (
