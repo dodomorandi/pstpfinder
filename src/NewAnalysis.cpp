@@ -585,6 +585,7 @@ NewAnalysis::openSessionFile(const string& sessionFileName)
   update_limits();
   spinBegin.set_value(beginTime);
   spinEnd.set_value(endTime);
+  buttonRun.set_sensitive();
 
   while(Main::events_pending())
     Main::iteration();
