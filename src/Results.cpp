@@ -179,9 +179,9 @@ Results::fillResidues()
   for(unsigned int i = 0; i < maxPocketsPerResidue; i++)
   {
     Gdk::Color color;
-    color.set_rgb_p((float)rand() / RAND_MAX,
-                    (float)rand() / RAND_MAX,
-                    (float)rand() / RAND_MAX);
+    color.set_rgb_p((float)rand() / RAND_MAX * 0.8,
+                    (float)rand() / RAND_MAX * 0.8,
+                    (float)rand() / RAND_MAX * 0.8);
 
     colors.push_back(color);
   }
