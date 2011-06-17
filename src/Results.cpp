@@ -86,7 +86,7 @@ Results::drawResultsGraphExposeEvent(GdkEventExpose* event)
   // Pockets
   int graphOffsetStart = 20 + 1;
   float columnModuleX = (float)(area_paint.get_width() - graphOffsetStart * 2)
-                        / (residues.size() * 4 + 1);
+                        / (residues.size() * 3 + 1);
   float columnModuleY = (float)(area_paint.get_height() - graphOffsetStart * 2)
                         / maxPocketLength;
   for
@@ -97,7 +97,7 @@ Results::drawResultsGraphExposeEvent(GdkEventExpose* event)
   )
   {
     int columnOffsetX = graphOffsetStart + columnModuleX *
-        (4 * distance(static_cast<vector<PocketResidue>::const_iterator>
+        (3 * distance(static_cast<vector<PocketResidue>::const_iterator>
         (residues.begin()), i) + 1);
     int columnOffsetY = area_paint.get_height() - graphOffsetStart;
 
@@ -115,7 +115,7 @@ Results::drawResultsGraphExposeEvent(GdkEventExpose* event)
                               color.get_green_p(),
                               color.get_blue_p());
       context->rectangle(columnOffsetX, columnOffsetY - columnHeight,
-                         columnModuleX * 3, columnHeight);
+                         columnModuleX * 2, columnHeight);
       context->fill();
       columnOffsetY -= columnHeight;
     }
