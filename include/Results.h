@@ -45,6 +45,12 @@ namespace Gromacs
 
       return retVal;
     }
+
+    static bool sortByResidueIndex(const PocketResidue& a,
+                                   const PocketResidue& b)
+    {
+      return (a.residue.index < b.residue.index);
+    }
   };
 
   class Results: public Window

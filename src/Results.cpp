@@ -215,4 +215,6 @@ Results::fillResidues()
 
     colors.push_back(color);
   }
+
+  sort(residues.begin(), residues.end(), PocketResidue::sortByResidueIndex);
 }
