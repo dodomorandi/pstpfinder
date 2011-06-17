@@ -202,7 +202,7 @@ NewAnalysis::stop_spin()
 }
 
 Gromacs::Pittpi
-NewAnalysis::runPittpi(Gromacs::Gromacs& gromacs,
+NewAnalysis::runPittpi(const Gromacs::Gromacs& gromacs,
                        const string& analysisFileName,
                        float radius,
                        float threshold)

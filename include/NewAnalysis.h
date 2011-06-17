@@ -76,7 +76,7 @@ private:
   void checkParameters();
   void buttonBrowseFileClicked();
   void update_limits();
-  Gromacs::Pittpi runPittpi(Gromacs::Gromacs& gromacs,
+  Gromacs::Pittpi runPittpi(const Gromacs::Gromacs& gromacs,
                             const string& analysisFileName, float radius,
                             float threshold);
 };
