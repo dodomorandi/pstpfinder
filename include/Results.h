@@ -50,13 +50,15 @@ namespace Gromacs
   class Results: public Window
   {
     public:
-      Results(NewAnalysis& parent, const Pittpi& pittpi);
+      Results(NewAnalysis& parent, const Pittpi& pittpi,
+              const Gromacs& gromacs);
       void init();
     private:
       Notebook notebook;
       DrawingArea drawResultsGraph;
 
-      const Pittpi& pittpi;
+      Pittpi pittpi;
+      Gromacs gromacs;
       NewAnalysis& parent;
       vector<PocketResidue> residues;
       float maxPocketLength;

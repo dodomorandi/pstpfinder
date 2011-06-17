@@ -358,7 +358,7 @@ NewAnalysis::runAnalysis()
                     "/tmp/pockets_details.log");
   msg.run();
 
-  resultsWindows.push_back(new Gromacs::Results(*this, pittpi));
+  resultsWindows.push_back(new Gromacs::Results(*this, pittpi, gromacs));
 }
 
 void
@@ -593,7 +593,7 @@ NewAnalysis::openSessionFile(const string& sessionFileName)
                     "/tmp/pockets_details.log");
   msg.run();
 
-  resultsWindows.push_back(new Gromacs::Results(*this, pittpi));
+  resultsWindows.push_back(new Gromacs::Results(*this, pittpi, gromacs));
 }
 
 void

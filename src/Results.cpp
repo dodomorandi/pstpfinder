@@ -19,6 +19,7 @@
 
 #include "Results.h"
 #include <cstdlib>
+#include <cmath>
 #include <vector>
 #include <gdkmm.h>
 #include <cairomm/cairomm.h>
@@ -26,8 +27,9 @@
 using namespace std;
 using namespace Gromacs;
 
-Results::Results(NewAnalysis& parent, const Pittpi& pittpi)
-  : pittpi(pittpi), parent(parent)
+Results::Results(NewAnalysis& parent, const Pittpi& pittpi,
+                 const Gromacs& gromacs)
+  : pittpi(pittpi, gromacs), gromacs(gromacs), parent(parent)
 {
   init();
 }
