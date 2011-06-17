@@ -21,6 +21,7 @@
 #include <cstdlib>
 #include <cmath>
 #include <vector>
+#include <string>
 #include <gdkmm.h>
 #include <cairomm/cairomm.h>
 
@@ -75,9 +76,11 @@ Results::drawResultsGraphExposeEvent(GdkEventExpose* event)
 
   // Draw graph
   int graphLineWidth = 1;
-  int graphBorder = 0.02 * area_paint.get_height(); // 2%
+  int graphBorder = 10;
   int graphOffsetStart = graphBorder + graphLineWidth;
-  int graphFooterHeight = 0.05 * area_paint.get_height(); // 5%
+  int graphFooterHeight = 0.08 * area_paint.get_height(); // 8%
+  context->select_font_face("Sans", Cairo::FONT_SLANT_NORMAL,
+                            Cairo::FONT_WEIGHT_NORMAL);
   // Axis
   context->set_source_rgb(0.0, 0.0, 0.0);
   context->set_line_width(graphLineWidth);
@@ -126,6 +129,26 @@ Results::drawResultsGraphExposeEvent(GdkEventExpose* event)
       context->fill();
       columnOffsetY -= columnHeight;
     }
+
+    stringstream index;
+    Cairo::TextExtents extents;
+    index << i->residue.index;
+    string strIndex = index.str();
+    context->set_source_rgb(0, 0, 0);
+    context->set_font_size(graphFooterHeight * 0.6);
+    context->get_text_extents(strIndex, extents);
+    if(extents.width > columnModuleX * 2)
+    {
+      Cairo::Matrix matrix;
+      context->get_font_matrix(matrix);
+      matrix.scale((float)columnModuleX * 2 / extents.width, 1);
+      context->set_font_matrix(matrix);
+      extents.width = columnModuleX * 2;
+    }
+    context->move_to(columnOffsetX + columnModuleX - extents.width / 2,
+                     area_paint.get_height() - graphOffsetStart
+                     - graphFooterHeight * 0.2 );
+    context->show_text(strIndex);
   }
 
   window->end_paint();
