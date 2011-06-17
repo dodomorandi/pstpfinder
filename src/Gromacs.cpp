@@ -503,6 +503,9 @@ namespace Gromacs
     // I think it'g good to allocate them as arrays, because they will probably
     // be reallocated. It would be easier to debug later.
 
+    if(not gotTopology)
+      abort();
+
     vector<atom_id> group;
     int size;
 
