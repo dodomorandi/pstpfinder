@@ -44,11 +44,6 @@ using namespace std;
 
 namespace Gromacs
 {
-  Gromacs::Gromacs(float solventSize)
-  {
-    init(solventSize);
-  }
-
   Gromacs::Gromacs( const string& trajectoryFileName,
                     const string& topologyFileName, 
                     float solventSize)
@@ -56,6 +51,88 @@ namespace Gromacs
     trjName = trajectoryFileName;
     tprName = topologyFileName;
     init(solventSize);
+  }
+
+  Gromacs::Gromacs(const Gromacs& gromacs)
+  {
+#ifdef GMX45
+    if(gromacs.gotTrajectory)
+    {
+      snew(oenv, 1);
+      memcpy(oenv, gromacs.oenv, sizeof(struct output_env));
+    }
+    else
+      oenv = gromacs.oenv;
+#else
+    cr = gromacs.cr;
+    step = gromacs.step;
+    lambda = gromacs.lambda;
+#endif
+    status = gromacs.status;
+    t = gromacs.t;
+    x = gromacs.x;
+    xtop = gromacs.xtop;
+    memcpy(box, gromacs.box, sizeof(*box));
+    natoms = gromacs.natoms;
+    ePBC = gromacs.ePBC;
+    top = gromacs.top;
+    if(gromacs.top.atoms.pdbinfo != 0)
+    {
+      snew(top.atoms.pdbinfo, top.atoms.nr);
+      memcpy(top.atoms.pdbinfo, gromacs.top.atoms.pdbinfo,
+             sizeof(t_pdbinfo));
+    }
+    else
+      top.atoms.pdbinfo = 0;
+
+    if(gromacs.aps != 0)
+    {
+      snew(aps, 1);
+      memcpy(aps, gromacs.aps, sizeof(gmx_atomprop));
+      snew(aps->restype, 1);
+      memcpy(aps->restype, gromacs.aps->restype, sizeof(gmx_residuetype));
+      snew(aps->restype->resname, aps->restype->n);
+      snew(aps->restype->restype, aps->restype->n);
+
+      char **i, **j;
+      for
+      (
+        i = aps->restype->resname, j = gromacs.aps->restype->resname;
+        i < aps->restype->resname + aps->restype->n;
+        i++, j++
+      )
+      {
+        if(j != 0 and *j != 0)
+          *i = strdup(*j);
+      }
+
+      for
+      (
+        i = aps->restype->restype, j = gromacs.aps->restype->restype;
+        i < aps->restype->restype + aps->restype->n;
+        i++, j++
+      )
+      {
+        if(j != 0 and *j != 0)
+          *i = strdup(*j);
+      }
+    }
+    else
+      aps = 0;
+
+    trjName = gromacs.trjName;
+    tprName = gromacs.tprName;
+    gotTrajectory = gromacs.gotTrajectory;
+    gotTopology = gromacs.gotTopology;
+    solSize = gromacs.solSize;
+    sasTarget = gromacs.sasTarget;
+    mtop = gromacs.mtop;
+
+    cachedNFrames = gromacs.cachedNFrames;
+    averageStructure = gromacs.averageStructure;
+    _begin = gromacs._begin;
+    _end = gromacs._end;
+    timeStepCached = gromacs.timeStepCached;
   }
 
   void

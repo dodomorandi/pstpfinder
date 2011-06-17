@@ -44,6 +44,33 @@ extern "C" int nsc_dclm_pbc(rvec *coords, real *radius, int nat,
                         real **lidots, int *nu_dots,
                         atom_id index[],int ePBC,matrix box);
 
+/* Taken from src/gmxlib/gmx_atomprop.c, Gromacs 4.5.2 */
+typedef struct {
+  gmx_bool   bSet;
+  int    nprop,maxprop;
+  char   *db;
+  double def;
+  char   **atomnm;
+  char   **resnm;
+  gmx_bool   *bAvail;
+  real   *value;
+} aprop_t;
+
+struct gmx_atomprop {
+  gmx_bool       bWarned;
+  aprop_t    prop[epropNR];
+  gmx_residuetype_t restype;
+};
+
+/* Taken from src/gmxlib/index.c, Gromacs 4.5.2 */
+struct gmx_residuetype
+{
+    int      n;
+    char **  resname;
+    char **  restype;
+
+};
+
 using namespace std;
 
 namespace Gromacs
@@ -51,11 +78,11 @@ namespace Gromacs
   class Gromacs
   {
   public:
-    Gromacs(float solventSize = 0.14);
     ~Gromacs();
     Gromacs(const string& trajectoryFileName,
             const string& topologyFileName,
             float solventSize = 0.14);
+    Gromacs(const Gromacs& gromacs);
     // FIXME: It will have to return an object Molecular Dynamics with SAS
     // FIXME: additional informations
     void calculateSas();
