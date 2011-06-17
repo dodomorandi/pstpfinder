@@ -85,10 +85,10 @@ Results::drawResultsGraphExposeEvent(GdkEventExpose* event)
 
   // Pockets
   int graphOffsetStart = 20 + 1;
-  int columnModuleX = (area_paint.get_width() - graphOffsetStart * 2)  /
-                     (residues.size() * 4 + 1);
-  int columnModuleY = (area_paint.get_height() - graphOffsetStart * 2) /
-                      ceil(maxPocketLength);
+  float columnModuleX = (float)(area_paint.get_width() - graphOffsetStart * 2)
+                        / (residues.size() * 4 + 1);
+  float columnModuleY = (float)(area_paint.get_height() - graphOffsetStart * 2)
+                        / maxPocketLength;
   for
   (
     vector<PocketResidue>::const_iterator i = residues.begin();
