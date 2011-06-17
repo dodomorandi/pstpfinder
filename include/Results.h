@@ -62,6 +62,7 @@ namespace Gromacs
       NewAnalysis& parent;
       vector<PocketResidue> residues;
       float maxPocketLength;
+      vector<Gdk::Color> colors;
 
       bool removeFromParent(GdkEventAny* event);
       bool drawResultsGraphExposeEvent(GdkEventExpose* event);

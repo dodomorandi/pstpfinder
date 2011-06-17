@@ -109,10 +109,11 @@ Results::drawResultsGraphExposeEvent(GdkEventExpose* event)
     )
     {
       int columnHeight = (float)columnModuleY * (*j)->width;
+      const Gdk::Color& color = colors[distance(i->pockets.begin(), j)];
 
-      context->set_source_rgb((float)rand() / RAND_MAX,
-                              (float)rand() / RAND_MAX,
-                              (float)rand() / RAND_MAX);
+      context->set_source_rgb(color.get_red_p(),
+                              color.get_green_p(),
+                              color.get_blue_p());
       context->rectangle(columnOffsetX, columnOffsetY - columnHeight,
                          columnModuleX * 3, columnHeight);
       context->fill();
@@ -130,6 +131,7 @@ Results::fillResidues()
 {
   const vector<Pocket>& pockets = pittpi.getPockets();
   maxPocketLength = 0;
+  unsigned int maxPocketsPerResidue = 0;
 
   for
   (
@@ -151,6 +153,10 @@ Results::fillResidues()
       if(j->residue.index == currentRes.index)
       {
         j->pockets.push_back(&(*i));
+
+        if(j->pockets.size() > maxPocketsPerResidue)
+          maxPocketsPerResidue = j->pockets.size();
+
         exists = true;
         break;
       }
@@ -162,9 +168,21 @@ Results::fillResidues()
       pocket.pockets.push_back(&(*i));
 
       residues.push_back(pocket);
+      if(maxPocketsPerResidue == 0)
+        maxPocketsPerResidue = 1;
     }
 
     if(i->width > maxPocketLength)
       maxPocketLength = i->width;
+  }
+
+  for(unsigned int i = 0; i < maxPocketsPerResidue; i++)
+  {
+    Gdk::Color color;
+    color.set_rgb_p((float)rand() / RAND_MAX,
+                    (float)rand() / RAND_MAX,
+                    (float)rand() / RAND_MAX);
+
+    colors.push_back(color);
   }
 }
