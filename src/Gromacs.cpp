@@ -60,6 +60,8 @@ namespace Gromacs
     {
       snew(oenv, 1);
       memcpy(oenv, gromacs.oenv, sizeof(struct output_env));
+      oenv->cmd_line = strdup(gromacs.oenv->cmd_line);
+      oenv->program_name = strdup(gromacs.oenv->program_name);
     }
     else
       oenv = gromacs.oenv;
@@ -115,6 +117,35 @@ namespace Gromacs
       {
         if(j != 0 and *j != 0)
           *i = strdup(*j);
+      }
+
+      for(int i = 0; i < epropNR; i++)
+      {
+        aprop_t& srcProp = gromacs.aps->prop[i];
+        aprop_t& dstProp = aps->prop[i];
+
+        dstProp.bSet = srcProp.bSet;
+        if(srcProp.bSet)
+        {
+          memcpy(&dstProp, &srcProp, sizeof(aprop_t));
+
+          dstProp.db = strdup(srcProp.db);
+          snew(dstProp.bAvail, dstProp.maxprop);
+          snew(dstProp.resnm, dstProp.maxprop);
+          snew(dstProp.atomnm, dstProp.maxprop);
+          snew(dstProp.value, dstProp.maxprop);
+
+          for(int i = 0; i < dstProp.nprop; i++)
+          {
+            dstProp.atomnm[i] = strdup(srcProp.atomnm[i]);
+            dstProp.resnm[i] = strdup(srcProp.resnm[i]);
+          }
+
+          memcpy(dstProp.bAvail, srcProp.bAvail,
+                 dstProp.nprop * sizeof(gmx_bool));
+          memcpy(dstProp.value, srcProp.value,
+                 dstProp.nprop * sizeof(real));
+        }
       }
     }
     else
