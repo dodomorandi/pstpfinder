@@ -32,24 +32,16 @@ namespace Gromacs
 {
   struct PocketResidue
   {
-    const Residue& residue;
+    Residue* residue;
     vector<const Pocket*> pockets;
 
     PocketResidue(const Residue& residue) :
-      residue(residue) { ; }
-
-    PocketResidue operator =(const PocketResidue& pocketResidue)
-    {
-      PocketResidue retVal(pocketResidue.residue);
-      retVal.pockets = pocketResidue.pockets;
-
-      return retVal;
-    }
+      residue(const_cast<Residue* const>(&residue)) { ; }
 
     static bool sortByResidueIndex(const PocketResidue& a,
                                    const PocketResidue& b)
     {
-      return (a.residue.index < b.residue.index);
+      return (a.residue->index < b.residue->index);
     }
   };
 

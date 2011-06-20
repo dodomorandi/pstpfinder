@@ -21,6 +21,7 @@
 #include <cstdlib>
 #include <cmath>
 #include <vector>
+#include <algorithm>
 #include <string>
 #include <gdkmm.h>
 #include <cairomm/cairomm.h>
@@ -132,7 +133,7 @@ Results::drawResultsGraphExposeEvent(GdkEventExpose* event)
 
     stringstream index;
     Cairo::TextExtents extents;
-    index << i->residue.index;
+    index << i->residue->index;
     string strIndex = index.str();
     context->set_source_rgb(0, 0, 0);
     context->set_font_size(graphFooterHeight * 0.6);
@@ -180,7 +181,7 @@ Results::fillResidues()
       j++
     )
     {
-      if(j->residue.index == currentRes.index)
+      if(j->residue->index == currentRes.index)
       {
         j->pockets.push_back(&(*i));
 
