@@ -30,7 +30,7 @@ using namespace Gromacs;
 
 Results::Results(NewAnalysis& parent, const Pittpi& pittpi,
                  const Gromacs& gromacs)
-  : pittpi(pittpi, gromacs), gromacs(gromacs), parent(parent)
+  : gromacs(gromacs), pittpi(pittpi, this->gromacs), parent(parent)
 {
   init();
 }

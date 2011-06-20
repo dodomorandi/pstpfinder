@@ -63,8 +63,8 @@ namespace Gromacs
       Notebook notebook;
       DrawingArea drawResultsGraph;
 
-      Pittpi pittpi;
       Gromacs gromacs;
+      Pittpi pittpi;
       NewAnalysis& parent;
       vector<PocketResidue> residues;
       float maxPocketLength;
