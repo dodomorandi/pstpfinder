@@ -307,6 +307,36 @@ namespace Gromacs
 
       return unkRes;
     }
+
+    const Residue& getResidueByIndex(int index) const
+    {
+      if(pResidues[index - 1].index == index)
+        return pResidues[index - 1];
+      else if(pResidues[index].index == index)
+        return pResidues[index];
+      else
+      {
+        for
+        (
+          vector<Residue>::const_iterator i = pResidues.begin();
+          i < pResidues.end();
+          i++
+        )
+        {
+          if(i->index == index)
+            return *i;
+        }
+
+        static Residue unk;
+        unk.type = AA_UNK;
+        return unk;
+      }
+    }
+
+    void forceUnlock()
+    {
+      locked = false;
+    }
   private:
     vector<Residue> pResidues;
     mutable vector<const PdbAtom*> pAtoms;
