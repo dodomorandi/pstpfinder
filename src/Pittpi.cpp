@@ -140,12 +140,19 @@ Pittpi::clone(const Pittpi& pittpi)
   sasAnalysisFileName = pittpi.sasAnalysisFileName;
   radius = pittpi.radius;
   threshold = pittpi.threshold;
-  averageStructure = pittpi.averageStructure;
+  averageStructure = gromacs.getAverageStructure();
+  averageStructure.forceUnlock();
   sync = pittpi.sync;
   __status = pittpi.__status;
   groups = vector<Group>(pittpi.groups);
   meanGroups = vector<Group>(pittpi.meanGroups);
   pockets = vector<Pocket>(pittpi.pockets);
+
+  for(vector<Group>::iterator i = groups.begin(); i < groups.end(); i++)
+    i->switchReference(averageStructure);
+
+  for(vector<Group>::iterator i = meanGroups.begin(); i < meanGroups.end(); i++)
+    i->switchReference(averageStructure);
 
   vector<Pocket>::iterator i;
   vector<Pocket>::const_iterator j;
