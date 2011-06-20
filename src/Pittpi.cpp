@@ -91,6 +91,22 @@ Group::sortByZeros(const Group& a, const Group& b)
   return (a.zeros > b.zeros);
 }
 
+void
+Group::switchReference(const Protein& structure)
+{
+  vector<const Residue*> oldRes = vector<const Residue*>(residues);
+  residues.clear();
+  for
+  (
+    vector<const Residue*>::const_iterator i = oldRes.begin();
+    i < oldRes.end();
+    i++
+  )
+    residues.push_back(&structure.getResidueByIndex((*i)->index));
+  referenceRes = &structure.getResidueByIndex(referenceRes->index);
+  referenceAtom = &referenceRes->getAtomByType("H");
+}
+
 Pittpi::Pittpi(const Gromacs& gromacs,
                const std::string& sasAnalysisFileName,
                float radius,

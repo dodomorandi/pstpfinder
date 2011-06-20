@@ -42,6 +42,7 @@ namespace Gromacs
     const PdbAtom& getCentralH() const;
     const Residue& getCentralRes() const;
     static bool sortByZeros(const Group& a, const Group& b);
+    void switchReference(const Protein& protein);
 
     vector<float> sas;
     unsigned int zeros;
