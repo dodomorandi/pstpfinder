@@ -182,7 +182,7 @@ Results::drawResultsGraphExposeEvent(GdkEventExpose* event)
 
     unsigned int graphMaxVerticalStep = (float)(area_paint.get_height()
       - graphOffsetStart * 2 - graphHeaderHeight - graphFooterHeight)
-      / (extents.width * 8);
+      / (extents.width * (log10(maxPocketLength) + 3));
     for(unsigned int i = 1; i <= graphMaxVerticalStep; i++)
     {
       stringstream pocketSizeStream;
