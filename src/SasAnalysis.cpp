@@ -448,7 +448,10 @@ void
 SasAnalysis::OperationThread::stop()
 {
   if(isStopped)
+  {
+    thread.join();
     return;
+  }
   
   parent->bufferMutex.lock();
   isStopped = true;
