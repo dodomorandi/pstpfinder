@@ -66,6 +66,7 @@ namespace Gromacs
       bool drawResultsGraphExposeEvent(GdkEventExpose* event);
 
       void fillResidues();
+      static inline Gdk::Color rainbow(double value);
   };
 };
 

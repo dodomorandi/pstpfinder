@@ -219,3 +219,38 @@ Results::fillResidues()
 
   sort(residues.begin(), residues.end(), PocketResidue::sortByResidueIndex);
 }
+
+Gdk::Color
+Results::rainbow(double value)
+{
+  Gdk::Color color;
+  double red, green, blue;
+
+  if(value <= 0.25)
+  {
+    red = 1.0;
+    green = value * 4;
+    blue = 0;
+  }
+  else if(value <= 0.5)
+  {
+    red = 3.0 - value * 4;
+    green = 1.0;
+    blue = 0;
+  }
+  else if(value <= 0.75)
+  {
+    red = 0;
+    green = 1.0;
+    blue = (value - 0.5) * 4;
+  }
+  else
+  {
+    red = 0;
+    green = 4.0 - value * 4;
+    blue = 1.0;
+  }
+
+  color.set_rgb_p(red, green, blue);
+  return color;
+}
