@@ -238,7 +238,7 @@ Results::fillResidues()
     do
     {
       gotIt = false;
-      index = (double)rand() / RAND_MAX * maxPocketsPerResidue;
+      index = (float)rand() / RAND_MAX * maxPocketsPerResidue;
       for
       (
         vector<unsigned int>::const_iterator j = indexes.begin();
