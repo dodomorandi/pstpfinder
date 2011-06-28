@@ -202,9 +202,26 @@ Results::fillResidues()
       if(maxPocketsPerResidue == 0)
         maxPocketsPerResidue = 1;
     }
+  }
 
-    if(i->width > maxPocketLength)
-      maxPocketLength = i->width;
+  for
+  (
+    vector<PocketResidue>::const_iterator i = residues.begin();
+    i < residues.end();
+    i++
+  )
+  {
+    unsigned int residueLength = 0;
+    for
+    (
+      vector<const Pocket*>::const_iterator j = i->pockets.begin();
+      j < i->pockets.end();
+      j++
+    )
+      residueLength += (*j)->width;
+
+    if(maxPocketLength < residueLength)
+      maxPocketLength = residueLength;
   }
 
 
