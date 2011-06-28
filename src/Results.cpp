@@ -78,27 +78,39 @@ Results::drawResultsGraphExposeEvent(GdkEventExpose* event)
   // Draw graph
   int graphLineWidth = 1;
   int graphBorder = 10;
-  int graphOffsetStart = graphBorder + graphLineWidth;
   int graphFooterHeight = 0.08 * area_paint.get_height(); // 8%
+  int graphLeftBorder = 0.03 * area_paint.get_width(); // 3%
+
+  int graphHeaderHeight;
+  {
+    Cairo::TextExtents extents;
+    context->set_font_size(graphLeftBorder * 0.6);
+    context->get_text_extents("0", extents);
+    graphHeaderHeight = extents.width * (((int)maxPocketLength % 10) / 2 + 1);
+  }
+
+  int graphOffsetStart = graphBorder + graphLineWidth;
   context->select_font_face("Sans", Cairo::FONT_SLANT_NORMAL,
                             Cairo::FONT_WEIGHT_NORMAL);
   // Axis
   context->set_source_rgb(0.0, 0.0, 0.0);
   context->set_line_width(graphLineWidth);
-  context->move_to(graphBorder,
+  context->move_to(graphBorder + graphLeftBorder,
                    area_paint.get_height() - graphBorder - graphFooterHeight);
   context->line_to(area_paint.get_width() - graphBorder,
                    area_paint.get_height() - graphBorder - graphFooterHeight);
-  context->move_to(graphBorder,
+  context->move_to(graphBorder + graphLeftBorder ,
                    area_paint.get_height() - graphBorder - graphFooterHeight);
-  context->line_to(graphBorder, graphBorder);
+  context->line_to(graphBorder + graphLeftBorder,
+                   graphBorder + graphHeaderHeight);
   context->stroke();
 
   // Pockets
-  float columnModuleX = (float)(area_paint.get_width() - graphOffsetStart * 2)
-                        / (residues.size() * 3 + 1);
+  float columnModuleX = (float)(area_paint.get_width() - graphOffsetStart * 2 -
+                        graphLeftBorder) / (residues.size() * 3 + 1);
   float columnModuleY = (float)(area_paint.get_height() - graphOffsetStart * 2
-                        - graphFooterHeight) / maxPocketLength;
+                                - graphHeaderHeight - graphFooterHeight)
+                        / maxPocketLength;
   for
   (
     vector<PocketResidue>::const_iterator i = residues.begin();
@@ -106,7 +118,7 @@ Results::drawResultsGraphExposeEvent(GdkEventExpose* event)
     i++
   )
   {
-    int columnOffsetX = graphOffsetStart + columnModuleX *
+    int columnOffsetX = graphOffsetStart + graphLeftBorder + columnModuleX *
         (3 * distance(static_cast<vector<PocketResidue>::const_iterator>
         (residues.begin()), i) + 1);
     int columnOffsetY = area_paint.get_height() - graphOffsetStart
@@ -131,6 +143,7 @@ Results::drawResultsGraphExposeEvent(GdkEventExpose* event)
       columnOffsetY -= columnHeight;
     }
 
+    // X Axis text
     stringstream index;
     Cairo::TextExtents extents;
     index << i->residue->index;
@@ -151,6 +164,44 @@ Results::drawResultsGraphExposeEvent(GdkEventExpose* event)
                      - graphFooterHeight * 0.2 );
     context->show_text(strIndex);
   }
+
+  // Y Axis text
+  context->save();
+  {
+    Cairo::TextExtents extents;
+    context->set_font_size(graphLeftBorder * 0.8);
+    context->rotate(-3.1415 / 2);
+
+    context->get_text_extents("0", extents);
+    context->move_to(-area_paint.get_height() + graphOffsetStart
+                     + graphFooterHeight
+                     - (float)extents.width / 2,
+                     graphBorder + graphLeftBorder * 0.8);
+    context->show_text("0");
+
+
+    unsigned int graphMaxVerticalStep = (float)(area_paint.get_height()
+      - graphOffsetStart * 2 - graphHeaderHeight - graphFooterHeight)
+      / (extents.width * 8);
+    for(unsigned int i = 1; i <= graphMaxVerticalStep; i++)
+    {
+      stringstream pocketSizeStream;
+      string pocketSize;
+      pocketSizeStream << (int)(maxPocketLength / graphMaxVerticalStep * i);
+      pocketSize = pocketSizeStream.str();
+
+      context->get_text_extents(pocketSize, extents);
+      context->move_to(- (area_paint.get_height() - graphOffsetStart
+                          - graphFooterHeight)
+                       + (float)(area_paint.get_height() - graphOffsetStart * 2
+                                 - graphHeaderHeight - graphFooterHeight)
+                       / graphMaxVerticalStep * i - (float)extents.width / 2,
+                       graphBorder + graphLeftBorder * 0.8);
+      context->show_text(pocketSize);
+    }
+
+  }
+  context->restore();
 
   window->end_paint();
 
