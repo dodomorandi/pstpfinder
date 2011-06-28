@@ -207,14 +207,38 @@ Results::fillResidues()
       maxPocketLength = i->width;
   }
 
+
+  vector<Gdk::Color> unscrambledColors;
+  for(unsigned int i = 0; i < maxPocketsPerResidue; i++)
+    unscrambledColors.push_back(rainbow(1.0 / (maxPocketsPerResidue - 1) * i));
+
+  vector<unsigned int> indexes;
+  indexes.reserve(maxPocketsPerResidue);
   for(unsigned int i = 0; i < maxPocketsPerResidue; i++)
   {
-    Gdk::Color color;
-    color.set_rgb_p((float)rand() / RAND_MAX * 0.8,
-                    (float)rand() / RAND_MAX * 0.8,
-                    (float)rand() / RAND_MAX * 0.8);
+    unsigned int index;
+    bool gotIt;
+    do
+    {
+      gotIt = false;
+      index = (double)rand() / RAND_MAX * maxPocketsPerResidue;
+      for
+      (
+        vector<unsigned int>::const_iterator j = indexes.begin();
+        j < indexes.end();
+        j++
+      )
+      {
+        if(index == *j)
+        {
+          gotIt = true;
+          break;
+        }
+      }
+    } while(gotIt);
 
-    colors.push_back(color);
+    indexes.push_back(index);
+    colors.push_back(unscrambledColors[index]);
   }
 
   sort(residues.begin(), residues.end(), PocketResidue::sortByResidueIndex);
