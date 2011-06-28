@@ -86,7 +86,7 @@ Results::drawResultsGraphExposeEvent(GdkEventExpose* event)
     Cairo::TextExtents extents;
     context->set_font_size(graphLeftBorder * 0.6);
     context->get_text_extents("0", extents);
-    graphHeaderHeight = extents.width * (((int)maxPocketLength % 10) / 2 + 1);
+    graphHeaderHeight = extents.width * (ceil(log10(maxPocketLength)) / 2 + 1);
   }
 
   int graphOffsetStart = graphBorder + graphLineWidth;
