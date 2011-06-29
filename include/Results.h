@@ -54,6 +54,8 @@ namespace Gromacs
     private:
       Notebook notebook;
       DrawingArea drawResultsGraph;
+      TextView textViewData, textViewDetails;
+      ScrolledWindow scrollData, scrollDetails;
 
       Gromacs gromacs;
       Pittpi pittpi;

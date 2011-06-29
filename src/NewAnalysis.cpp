@@ -354,10 +354,6 @@ NewAnalysis::runAnalysis()
   set_sensitive(true);
   std::locale::global(oldLocale);
 
-  MessageDialog msg("Two log files have been written in /tmp/pockets.log and "
-                    "/tmp/pockets_details.log");
-  msg.run();
-
   resultsWindows.push_back(new Gromacs::Results(*this, pittpi, gromacs));
 }
 
@@ -589,10 +585,6 @@ NewAnalysis::openSessionFile(const string& sessionFileName)
 
   while(Main::events_pending())
     Main::iteration();
-
-  MessageDialog msg("Two log files have been written in /tmp/pockets.log and "
-                    "/tmp/pockets_details.log");
-  msg.run();
 
   resultsWindows.push_back(new Gromacs::Results(*this, pittpi, gromacs));
 }

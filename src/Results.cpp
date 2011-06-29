@@ -23,8 +23,11 @@
 #include <vector>
 #include <algorithm>
 #include <string>
+#include <sstream>
+#include <iomanip>
 #include <gdkmm.h>
 #include <cairomm/cairomm.h>
+#include <pangomm.h>
 
 using namespace std;
 using namespace Gromacs;
@@ -39,6 +42,7 @@ Results::Results(NewAnalysis& parent, const Pittpi& pittpi,
 void
 Results::init()
 {
+  fillResidues();
   signal_delete_event()
       .connect(sigc::mem_fun(*this, &Results::removeFromParent));
 
@@ -48,9 +52,125 @@ Results::init()
 
   notebook.append_page(drawResultsGraph, "Results");
 
+  stringstream streamData, streamDetails;
+  streamData << setfill(' ') << setw(11) << left << "zeros";
+  streamData << setfill(' ') << setw(11) << left << "center";
+  streamData << setfill(' ') << setw(11) << left << "start";
+  streamData << setfill(' ') << setw(11) << left << "end";
+  streamData << setfill(' ') << setw(11) << left << "duration";
+  streamData << "group members" << endl;
+
+  for
+  (
+    vector<PocketResidue>::const_iterator i = residues.begin();
+    i < residues.end();
+    i++
+  )
+  {
+    vector<const Pocket*>::const_iterator bestPocket = i->pockets.end();
+    bool writtenHeader = false;
+
+    for
+    (
+      vector<const Pocket*>::const_iterator j = i->pockets.begin();
+      j < i->pockets.end();
+      j++
+    )
+    {
+      if(not writtenHeader)
+      {
+        streamDetails << "Pocket centered on "
+                        << aminoacidTriplet[i->residue->type]
+                        << i->residue->index << ":";
+
+        const vector<const Residue*>& residuesRef = (*j)->group->getResidues();
+        for
+        (
+          vector<const Residue*>::const_iterator k = residuesRef.begin();
+          k < residuesRef.end();
+          k++
+        )
+          streamDetails << " " << (*k)->index;
+        streamDetails << endl << endl;
+
+        streamDetails << setfill(' ') << setw(11) << left << "start";
+        streamDetails << setfill(' ') << setw(11) << left << "duration";
+        streamDetails << setfill(' ') << setw(12) << left << "ps max area";
+        streamDetails << setfill(' ') << setw(11) << left << "ps average";
+        streamDetails << "percentage" << endl;
+
+        writtenHeader = true;
+      }
+
+      if(bestPocket == i->pockets.end() or (*bestPocket)->width < (*j)->width)
+        bestPocket = j;
+
+      stringstream perc;
+      perc << static_cast<int>((*j)->openingFraction * 100) << "%";
+      streamDetails << setfill('0') << setw(7) << right << (int)(*j)->startPs
+                      << "    ";
+      streamDetails << setfill('0') << setw(7) << right << (int)(*j)->width
+                      << "    ";
+      streamDetails << setfill('0') << setw(7) << right << (int)(*j)->maxAreaPs
+                      << "     ";
+      streamDetails << setfill('0') << setw(7) << right
+                      << (int)(*j)->averageNearPs << "    ";
+      streamDetails << perc.str();
+
+      streamDetails << endl;
+    }
+
+    if(bestPocket != i->pockets.end())
+    {
+      const Residue& centralRes = (*bestPocket)->group->getCentralRes();
+      stringstream aaRef;
+      aaRef << aminoacidTriplet[centralRes.type] << centralRes.index;
+
+      streamData << setfill('0') << setw(7) << right << (*bestPocket)->group->zeros
+                                << "    ";
+      streamData << setfill(' ') << setw(11) << left << aaRef.str();
+      streamData << setfill('0') << setw(7) << right << (int)(*bestPocket)->startPs
+                << "    ";
+      streamData << setfill('0') << setw(7) << right << (int)(*bestPocket)->endPs
+                << "    ";
+      streamData << setfill('0') << setw(7) << right << (int)(*bestPocket)->width
+                << "   ";
+
+      const vector<const Residue*>& pocketResidues =
+        (*bestPocket)->group->getResidues();
+      for
+      (
+        vector<const Residue*>::const_iterator k = pocketResidues.begin();
+        k < pocketResidues.end();
+        k++
+      )
+        streamData << " " << (*k)->index;
+
+      streamData << endl;
+    }
+
+    if(writtenHeader)
+      streamDetails << endl;
+  }
+
+  Pango::FontDescription fontMono;
+  fontMono.set_family("mono");
+  fontMono.set_size(8 * Pango::SCALE);
+
+  textViewData.get_buffer()->set_text(streamData.str());
+  textViewData.set_editable(false);
+  textViewData.modify_font(fontMono);
+  scrollData.add(textViewData);
+  notebook.append_page(scrollData, "Data");
+
+  textViewDetails.get_buffer()->set_text(streamDetails.str());
+  textViewDetails.set_editable(false);
+  textViewDetails.modify_font(fontMono);
+  scrollDetails.add(textViewDetails);
+  notebook.append_page(scrollDetails, "Details");
+
   add(notebook);
 
-  fillResidues();
   show_all();
 }
 

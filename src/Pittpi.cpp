@@ -21,10 +21,6 @@
 #include "SasAtom.h"
 #include "SasAnalysis.h"
 #include <cstring>
-#include <algorithm>
-#include <fstream>
-#include <sstream>
-#include <iomanip>
 
 #include <boost/interprocess/sync/scoped_lock.hpp>
 
@@ -366,109 +362,6 @@ Pittpi::pittpiRun()
               / meanGroups.size());
   }
 
-  ofstream pocketLog("/tmp/pockets.log", ios::out | ios::trunc);
-  ofstream pocketDetailLog("/tmp/pockets_details.log", ios::out | ios::trunc);
-
-  pocketLog << setfill(' ') << setw(11) << left << "zeros";
-  pocketLog << setfill(' ') << setw(11) << left << "center";
-  pocketLog << setfill(' ') << setw(11) << left << "start";
-  pocketLog << setfill(' ') << setw(11) << left << "end";
-  pocketLog << setfill(' ') << setw(11) << left << "duration";
-  pocketLog << "group members" << endl;
-
-  for
-  (
-    vector<Group>::const_iterator i = meanGroups.begin();
-    i < meanGroups.end();
-    i++
-  )
-  {
-    vector<Pocket>::const_iterator bestPocket = pockets.end();
-    bool writtenHeader = false;
-
-    for
-    (
-      vector<Pocket>::const_iterator j = pockets.begin();
-      j < pockets.end();
-      j++
-    )
-    {
-      if(j->group == &(*i))
-      {
-        if(not writtenHeader)
-        {
-          pocketDetailLog << "Pocket centered on "
-                          << aminoacidTriplet[i->getCentralRes().type]
-                          << i->getCentralRes().index << ":";
-          for
-          (
-            vector<const Residue*>::const_iterator k = i->getResidues().begin();
-            k < i->getResidues().end();
-            k++
-          )
-            pocketDetailLog << " " << (*k)->index;
-          pocketDetailLog << endl << endl;
-
-          pocketDetailLog << setfill(' ') << setw(11) << left << "start";
-          pocketDetailLog << setfill(' ') << setw(11) << left << "duration";
-          pocketDetailLog << setfill(' ') << setw(12) << left << "ps max area";
-          pocketDetailLog << setfill(' ') << setw(11) << left << "ps average";
-          pocketDetailLog << "percentage" << endl;
-
-          writtenHeader = true;
-        }
-
-        if(bestPocket == pockets.end() or bestPocket->width < j->width)
-          bestPocket = j;
-
-        stringstream perc;
-        perc << static_cast<int>(j->openingFraction * 100) << "%";
-        pocketDetailLog << setfill('0') << setw(7) << right << (int)j->startPs
-                        << "    ";
-        pocketDetailLog << setfill('0') << setw(7) << right << (int)j->width
-                        << "    ";
-        pocketDetailLog << setfill('0') << setw(7) << right << (int)j->maxAreaPs
-                        << "     ";
-        pocketDetailLog << setfill('0') << setw(7) << right
-                        << (int)j->averageNearPs << "    ";
-        pocketDetailLog << perc.str();
-
-        pocketDetailLog << endl;
-      }
-    }
-
-    if(bestPocket != pockets.end())
-    {
-      const Residue& centralRes = bestPocket->group->getCentralRes();
-      stringstream aaRef;
-      aaRef << aminoacidTriplet[centralRes.type] << centralRes.index;
-
-      pocketLog << setfill('0') << setw(7) << right << bestPocket->group->zeros
-                                << "    ";
-      pocketLog << setfill(' ') << setw(11) << left << aaRef.str();
-      pocketLog << setfill('0') << setw(7) << right << (int)bestPocket->startPs
-                << "    ";
-      pocketLog << setfill('0') << setw(7) << right << (int)bestPocket->endPs
-                << "    ";
-      pocketLog << setfill('0') << setw(7) << right << (int)bestPocket->width
-                << "   ";
-
-      const vector<const Residue*>& pocketResidues =
-        bestPocket->group->getResidues();
-      for
-      (
-        vector<const Residue*>::const_iterator k = pocketResidues.begin();
-        k < pocketResidues.end();
-        k++
-      )
-        pocketLog << " " << (*k)->index;
-
-      pocketLog << endl;
-    }
-
-    if(writtenHeader)
-      pocketDetailLog << endl;
-  }
   sync = false;
   setStatus(1);
 }
