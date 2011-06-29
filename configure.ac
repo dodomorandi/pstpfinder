@@ -32,6 +32,7 @@ PKG_CHECK_MODULES([GTKMM], [gtkmm-2.4], [
    AC_SUBST([CXXFLAGS])
    AC_SUBST([LIBS])
 ])
+
 PKG_CHECK_MODULES([PYTHON], [python >= 2.6], [
    CFLAGS="$CFLAGS $PYTHON_CFLAGS"
    CXXFLAGS="$CXXFLAGS $PYTHON_CFLAGS"
@@ -39,14 +40,32 @@ PKG_CHECK_MODULES([PYTHON], [python >= 2.6], [
    AC_SUBST([CFLAGS])
    AC_SUBST([CXXFLAGS])
    AC_SUBST([LIBS])
+   AC_DEFINE([HAVE_PYTHON], [1], "Python")
+   HAVE_PYTHON=1
+], [
+   AC_DEFINE([HAVE_PYTHON], [0], "Python")
+   HAVE_PYTHON=0
 ])
+
+if test $HAVE_PYTHON -eq 1; then
+   AX_PYTHON_MODULE([sadic])
+   if test "$HAVE_PYMOD_SADIC" = "yes"; then
+      AC_DEFINE([HAVE_PYMOD_SADIC], [1], "Sadic Python module")
+   else
+      AC_DEFINE([HAVE_PYMOD_SADIC], [0], "Sadic Python module")
+   fi
+else
+   AC_DEFINE([HAVE_PYMOD_SADIC], [0], "Sadic Python module")
+fi
 
 BOOST_REQUIRE([1.34])
 BOOST_IOSTREAMS
 BOOST_SERIALIZATION
 BOOST_THREADS
 BOOST_FILESYSTEM
-BOOST_PYTHON
+if test $HAVE_PYTHON -eq 1; then
+   BOOST_PYTHON
+fi
 LIBS="$LIBS $BOOST_SERIALIZATION_LIBS $BOOST_THREAD_LIBS $BOOST_IOSTREAMS_LIBS $BOOST_FILESYSTEM_LIBS $BOOST_PYTHON_LIBS"
 AC_SUBST([LIBS])
 
@@ -64,3 +83,31 @@ AX_ENABLE_WARNINGS
 AC_CONFIG_FILES([Makefile
                  src/Makefile])
 AC_OUTPUT
+
+# Write out status
+echo
+echo -n "Python support: "
+if test $HAVE_PYTHON -eq 1; then
+   echo "yes"
+   
+   echo -n "Boost Python support: "
+   if test "x$BOOST_PYTHON_LIBS" != "x"; then
+      echo "yes"
+   else
+      echo "no. Sadic support won't be built."
+   fi
+else
+   echo "no. Sadic support can't be checked and it won't be built."
+fi
+
+echo -n "Sadic support: "
+if test $HAVE_PYTHON -eq 1 -a "x$BOOST_PYTHON_LIBS" != "x" -a "$HAVE_PYMOD_SADIC" = "yes"; then
+   echo "yes"
+elif test $HAVE_PYTHON -eq 1 -a "x$BOOST_PYTHON_LIBS" != "x"; then
+   echo "no"
+   echo
+   echo "You can download Sadic sources from http://www.sbl.unisi.it/?pg=download-software"
+else
+   echo "no"
+fi
+echo
