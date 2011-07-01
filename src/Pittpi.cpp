@@ -171,7 +171,6 @@ Pittpi::pittpiRun()
 
   averageStructure = gromacs.getAverageStructure();
   vector<Group> groups = makeGroups(radius);
-  runSadic(averageStructure);
 
   fillGroups(groups, sasAnalysisFileName);
 
