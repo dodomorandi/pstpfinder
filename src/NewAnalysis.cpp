@@ -207,6 +207,7 @@ NewAnalysis::runPittpi(Gromacs::Gromacs& gromacs,
                        float threshold)
 {
   progress.set_fraction(0);
+  progress.set_pulse_step(0.1);
   while(Main::events_pending())
     Main::iteration();
 
@@ -214,7 +215,11 @@ NewAnalysis::runPittpi(Gromacs::Gromacs& gromacs,
 
   while(not pittpi.isFinished())
   {
-    progress.set_fraction(pittpi.getStatus());
+    float status = pittpi.getStatus();
+    if(status >= 0)
+      progress.set_fraction(status);
+    else
+      progress.pulse();
     while(Main::events_pending())
       Main::iteration();
     pittpi.waitNextStatus();

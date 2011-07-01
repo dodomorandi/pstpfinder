@@ -656,6 +656,7 @@ Pittpi::fillGroups(vector<Group>& groups, const string& sasAnalysisFileName)
 void
 Pittpi::runSadic(const Protein& structure)
 {
+  setStatus(-1);
   py::object sadic = py::import("sadic");
   py::object setting = py::import("sadic.setting");
   py::object viewer = py::import("sadic.viewer");
@@ -694,6 +695,7 @@ Pittpi::runSadic(const Protein& structure)
     model++, imodel++
   )
   {
+    setStatus(-1);
     py::object query = sadic.attr("get_query")(settings, *model);
     py::object prot = sadic.attr("Protein")();
     prot.attr("add_atoms")(*model);
@@ -705,6 +707,7 @@ Pittpi::runSadic(const Protein& structure)
     {
       for(;;)
       {
+        setStatus(-1);
         query.attr("sample")(prot, scheme);
 
         if(settings.attr("radius") !=
@@ -714,6 +717,7 @@ Pittpi::runSadic(const Protein& structure)
         py::stl_input_iterator<py::object> i(query);
         for(;i != iterObjEnd;i++)
         {
+          setStatus(-1);
           if(i->attr("all_inside") != py::object() and
              static_cast<bool>(i->attr("all_inside")))
             break;
@@ -733,6 +737,7 @@ Pittpi::runSadic(const Protein& structure)
   }
 
   file.attr("close")();
+  setStatus(-1);
 
   py::object total_viewers =
     viewer.attr("create_total_viewers")(settings, models_viewers);
@@ -742,6 +747,9 @@ Pittpi::runSadic(const Protein& structure)
     viewers != iterObjEnd;
     viewers++
   )
+  {
     out.attr("output")(*viewers);
+    setStatus(-1);
+  }
 }
 #endif
