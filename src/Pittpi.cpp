@@ -27,9 +27,12 @@
 #include <iomanip>
 
 #include <boost/interprocess/sync/scoped_lock.hpp>
+#include <boost/python.hpp>
+#include <boost/python/stl_iterator.hpp>
 
 using namespace Gromacs;
 using namespace std;
+namespace py = boost::python;
 
 Group::Group(const Residue& refResidue)
 {
@@ -102,6 +105,9 @@ Pittpi::Pittpi(Gromacs& gromacs,
   this->threshold = threshold;
   sync = true;
   __status = 0;
+#ifdef HAVE_PYMOD_SADIC
+  Py_Initialize();
+#endif
 
   pittpiThread = boost::thread(&Pittpi::pittpiRun, boost::ref(*this));
 }
@@ -109,6 +115,9 @@ Pittpi::Pittpi(Gromacs& gromacs,
 Pittpi::~Pittpi()
 {
   join();
+#ifdef HAVE_PYMOD_SADIC
+  Py_Finalize();
+#endif
 }
 
 void
@@ -162,6 +171,7 @@ Pittpi::pittpiRun()
 
   averageStructure = gromacs.getAverageStructure();
   vector<Group> groups = makeGroups(radius);
+  runSadic(averageStructure);
 
   fillGroups(groups, sasAnalysisFileName);
 
@@ -641,3 +651,97 @@ Pittpi::fillGroups(vector<Group>& groups, const string& sasAnalysisFileName)
   delete[] meanSas;
   delete[] sas;
 }
+
+#ifdef HAVE_PYMOD_SADIC
+void
+Pittpi::runSadic(const Protein& structure)
+{
+  py::object sadic = py::import("sadic");
+  py::object setting = py::import("sadic.setting");
+  py::object viewer = py::import("sadic.viewer");
+  py::object cmdline = py::import("sadic.cmdline");
+  py::stl_input_iterator<py::object> iterObjEnd;
+
+  viewer.attr("load_plugin")();
+  py::list queries;
+
+  py::list argv;
+  argv.append("pstpfinder");
+  py::object settings = cmdline.attr("parse_command_line")(argv);
+  structure.dumpPdb("/tmp/sadic_in.pdb");
+  settings.attr("entity_spec") = "/tmp/sadic_in.pdb";
+  settings.attr("all_atoms") = true;
+  settings.attr("file_out") = "/tmp/sadic_out.pdb";
+  settings.attr("output_format") = sadic.attr("consts").attr("OUTPUT_PDB");
+  settings.attr("quiet") = true;
+
+  py::object out = sadic.attr("get_output")(settings);
+  py::object reader = sadic.attr("get_reader")(settings);
+  py::object scheme = sadic.attr("get_sampling_scheme")(settings);
+
+  py::list models_viewers;
+
+  py::list files(sadic.attr("iter_files")(settings));
+  if(py::len(files) == 0)
+    return;
+  py::object file = py::api::getitem(files, 0);
+  py::object models = reader.attr("get_models")(file);
+  unsigned int imodel = 0;
+  for
+  (
+    py::stl_input_iterator<py::object> model(models);
+    model != iterObjEnd;
+    model++, imodel++
+  )
+  {
+    py::object query = sadic.attr("get_query")(settings, *model);
+    py::object prot = sadic.attr("Protein")();
+    prot.attr("add_atoms")(*model);
+
+    py::object viewers = viewer.attr("create_viewers")(settings, query);
+    models_viewers.append(viewers);
+
+    if(imodel == 0)
+    {
+      for(;;)
+      {
+        query.attr("sample")(prot, scheme);
+
+        if(settings.attr("radius") !=
+            sadic.attr("consts").attr("RADIUS_NO_INSIDE"))
+          break;
+
+        py::stl_input_iterator<py::object> i(query);
+        for(;i != iterObjEnd;i++)
+        {
+          if(i->attr("all_inside") != py::object() and
+             static_cast<bool>(i->attr("all_inside")))
+            break;
+        }
+        if(i == iterObjEnd)
+          break;
+
+        float step = py::extract<float>(settings.attr("step"));
+        scheme.attr("grow")(step);
+      }
+    }
+    else
+      query.attr("sample")(prot, scheme);
+
+    out.attr("output")(viewers);
+    queries.append(query);
+  }
+
+  file.attr("close")();
+
+  py::object total_viewers =
+    viewer.attr("create_total_viewers")(settings, models_viewers);
+  for
+  (
+    py::stl_input_iterator<py::object> viewers(total_viewers);
+    viewers != iterObjEnd;
+    viewers++
+  )
+    out.attr("output")(*viewers);
+}
+#endif

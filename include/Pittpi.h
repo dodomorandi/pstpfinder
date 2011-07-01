@@ -20,6 +20,7 @@
 #ifndef _PITTPI_H
 #define _PITTPI_H
 
+#include "config.h"
 #include "Gromacs.h"
 #include <vector>
 #include <boost/thread/thread.hpp>
@@ -94,6 +95,9 @@ namespace Gromacs
     void fillGroups(std::vector<Group>& groups,
                     const string& sasAnalysisFileName);
     void pittpiRun();
+#ifdef HAVE_PYMOD_SADIC
+    void runSadic(const Protein& structure);
+#endif
 
     Gromacs* p_gromacs;
     std::string sasAnalysisFileName;
