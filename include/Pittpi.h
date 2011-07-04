@@ -96,7 +96,7 @@ namespace Gromacs
                     const string& sasAnalysisFileName);
     void pittpiRun();
 #ifdef HAVE_PYMOD_SADIC
-    void runSadic(const Protein& structure);
+    Protein runSadic(const Protein& structure) const;
 #endif
 
     Gromacs* p_gromacs;

@@ -513,6 +513,7 @@ Pittpi::makeGroups(float radius)
   }
 
 //  FIXME: Missing sadic algorithm
+  Protein sadicStructure = runSadic(averageStructure);
 
   return groups;
 }
@@ -652,8 +653,8 @@ Pittpi::fillGroups(vector<Group>& groups, const string& sasAnalysisFileName)
 }
 
 #ifdef HAVE_PYMOD_SADIC
-void
-Pittpi::runSadic(const Protein& structure)
+Protein
+Pittpi::runSadic(const Protein& structure) const
 {
   setStatus(-1);
   py::object sadic = py::import("sadic");
@@ -683,7 +684,7 @@ Pittpi::runSadic(const Protein& structure)
 
   py::list files(sadic.attr("iter_files")(settings));
   if(py::len(files) == 0)
-    return;
+    return Protein(structure);
   py::object file = py::api::getitem(files, 0);
   py::object models = reader.attr("get_models")(file);
   unsigned int imodel = 0;
@@ -750,5 +751,30 @@ Pittpi::runSadic(const Protein& structure)
     out.attr("output")(*viewers);
     setStatus(-1);
   }
+
+  Protein sadicProtein;
+  for
+  (
+    py::stl_input_iterator<py::object> model_viewer(models_viewers);
+    model_viewer != iterObjEnd;
+    model_viewer++
+  )
+  {
+    for
+    (
+      py::stl_input_iterator<py::object> curViewer(*model_viewer);
+      curViewer != iterObjEnd;
+      curViewer++
+    )
+    {
+      string fileName = py::extract<string>
+                          (out.attr("mangle_file_name")(*curViewer));
+      sadicProtein = Protein(fileName);
+      break;
+    }
+    break; // Just the first protein of the first file... for now!
+  }
+
+  return sadicProtein;
 }
 #endif
