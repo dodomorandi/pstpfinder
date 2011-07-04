@@ -86,7 +86,7 @@ namespace Gromacs
     ~Pittpi();
 
     void join();
-    void setStatus(float value);
+    void setStatus(float value) const;
     float getStatus() const;
     void waitNextStatus();
     bool isFinished();
@@ -108,7 +108,7 @@ namespace Gromacs
     mutable boost::interprocess::interprocess_mutex statusMutex;
     mutable boost::interprocess::interprocess_mutex nextStatusMutex;
     mutable boost::interprocess::interprocess_condition nextStatusCondition;
-    float __status;
+    mutable float __status;
     bool sync;
   };
 }

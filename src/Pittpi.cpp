@@ -135,7 +135,7 @@ Pittpi::isFinished()
 }
 
 void
-Pittpi::setStatus(float value)
+Pittpi::setStatus(float value) const
 {
   statusMutex.lock();
   __status = value;
