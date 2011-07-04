@@ -513,7 +513,9 @@ Pittpi::makeGroups(float radius)
   }
 
 //  FIXME: Missing sadic algorithm
+#ifdef HAVE_PYMOD_SADIC
   Protein sadicStructure = runSadic(averageStructure);
+#endif
 
   return groups;
 }
