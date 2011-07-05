@@ -429,7 +429,6 @@ Pittpi::pittpiRun()
 vector<Group>
 Pittpi::makeGroups(float radius)
 {
-  vector<Group> groups;
   vector<Atom> centers;
   const vector<Residue>& residues = averageStructure.residues();
   radius /= 10.0;
@@ -478,9 +477,21 @@ Pittpi::makeGroups(float radius)
               residues.size());
   }
 
+  setStatus(0);
+  vector<Group> groups = makeGroupsByDistance(centers, radius);
+
+//  FIXME: Missing sadic algorithm
+
+  return groups;
+}
+
+vector<Group>
+Pittpi::makeGroupsByDistance(const vector<Atom>& centers, float radius)
+{
+  vector<Group> groups;
+  const vector<Residue>& residues = averageStructure.residues();
   vector<Atom>::const_iterator centersBegin = centers.begin();
 
-  setStatus(0);
   for
   (
     vector<Residue>::const_iterator i = residues.begin();
@@ -511,11 +522,6 @@ Pittpi::makeGroups(float radius)
     setStatus(static_cast<float>(distance(residues.begin(), i) + 1) /
               residues.size());
   }
-
-//  FIXME: Missing sadic algorithm
-#ifdef HAVE_PYMOD_SADIC
-  Protein sadicStructure = runSadic(averageStructure);
-#endif
 
   return groups;
 }
