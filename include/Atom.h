@@ -55,6 +55,16 @@ namespace Gromacs
       return ret;
     }
 
+    Atom operator *(float value)
+    {
+      Atom ret;
+      ret.x = x * value;
+      ret.y = y * value;
+      ret.z = z * value;
+
+      return ret;
+    }
+
     Atom& operator +=(const Atom& value)
     {
       x += value.x;
@@ -69,6 +79,15 @@ namespace Gromacs
       x /= value;
       y /= value;
       z /= value;
+
+      return *this;
+    }
+
+    Atom& operator *=(float value)
+    {
+      x *= value;
+      y *= value;
+      z *= value;
 
       return *this;
     }
