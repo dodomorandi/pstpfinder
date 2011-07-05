@@ -224,6 +224,40 @@ Pittpi::pittpiRun()
 
   sort(meanGroups.begin(), meanGroups.end(), Group::sortByZeros);
 
+  for
+  (
+    vector<Group>::iterator i = meanGroups.begin();
+    i < meanGroups.end();
+    i++
+  )
+  {
+    const Residue& centralRes = i->getCentralRes();
+    const vector<const Residue*>& groupRes = i->getResidues();
+    for
+    (
+      vector<const Residue*>::const_iterator j = groupRes.begin();
+      j < groupRes.end();
+      j++
+    )
+    {
+      if(*j == &centralRes or
+         centralRes.index + 1 == (*j)->index or
+         centralRes.index - 1 == (*j)->index)
+        continue;
+
+      for
+      (
+        vector<Group>::iterator k = i + 1;
+        k < meanGroups.end();
+        k++
+      )
+      {
+        if(&k->getCentralRes() == *j)
+          meanGroups.erase(k--);
+      }
+    }
+  }
+
   unsigned int noZeroPass = threshold / PS_PER_SAS;
   if(noZeroPass < 20)
     noZeroPass = 0;
