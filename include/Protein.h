@@ -149,12 +149,16 @@ namespace Gromacs
       {
         char resName[5], altLoc, chainId, iCode, element[2], charge[2];
         char line[256];
+        char* linePtr;
         int resNdx;
         Aminoacids resType;
         PdbAtom atom;
         int ret;
 
-        fgets(line, 256, pdb);
+        linePtr = fgets(line, 256, pdb);
+        if(linePtr == 0)
+           break;
+
         ret = sscanf(line, "ATOM  %5d %4s%c%3s %c%4d%c   "
                           "%8f%8f%8f%6f%6f%*10c%2s%2s\n",
                           &atom.index, atom.type, &altLoc, resName, &chainId,
