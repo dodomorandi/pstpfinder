@@ -35,7 +35,7 @@ namespace Gromacs
     Atom() { return; }
     Atom(float value) { x = value; y = value; z = value; }
 
-    Atom operator +(const Atom& value)
+    Atom operator +(const Atom& value) const
     {
       Atom ret;
       ret.x = x + value.x;
@@ -45,7 +45,7 @@ namespace Gromacs
       return ret;
     }
 
-    Atom operator /(float value)
+    Atom operator /(float value) const
     {
       Atom ret;
       ret.x = x / value;
@@ -55,7 +55,7 @@ namespace Gromacs
       return ret;
     }
 
-    Atom operator *(float value)
+    Atom operator *(float value) const
     {
       Atom ret;
       ret.x = x * value;
