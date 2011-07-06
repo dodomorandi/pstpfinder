@@ -255,6 +255,9 @@ NewAnalysis::runAnalysis()
 
   set_sensitive(false);
 
+  if(fs::exists(fs::path("/tmp/sas.psf")))
+    fs::remove(fs::path("/tmp/sas.psf"));
+
   progress.set_fraction(0);
   progress.show();
   while(Main::events_pending())
@@ -486,6 +489,8 @@ NewAnalysis::openSessionFile(const string& sessionFileName)
   char* chunk = new char[1024*1024*128];
   unsigned long nChunks = tmpUInt / (1024*1024*128);
   unsigned long remainChunk = tmpUInt % (1024*1024*128);
+  if(fs::exists(fs::path("/tmp/sas.psf")))
+    fs::remove(fs::path("/tmp/sas.psf"));
   std::ofstream streamSas("/tmp/sas.psf",
                           std::ios::trunc | std::ios::out | std::ios::binary);
   for(unsigned long i = 0; i < nChunks; i++)
