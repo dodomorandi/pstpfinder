@@ -246,10 +246,10 @@ namespace Gromacs
     for(vector<atom_id>::const_iterator i = index.begin(); i < index.end(); i++)
       w_rls[*i] = top.atoms.atom[*i].m;
 
-    xav = new double[isize*DIM];
+    xav = new double[isize*DIM]();
     U = new double*[isize];
     for(double** i = U; i < U + isize; i++)
-      *i = new double[DIM*DIM];
+      *i = new double[DIM*DIM]();
     rmsf = new double[isize];
 
     npdbatoms = top.atoms.nr;
@@ -266,7 +266,7 @@ namespace Gromacs
       sub_xcm(x, isize, index.data(), top.atoms.atom, xcm, FALSE);
       do_fit(natoms, w_rls, xtop, x);
 
-      for(int i =0; i < isize; i++)
+      for(int i = 0; i < isize; i++)
       {
         atom_id aid = index[i];
         for(int d = 0; d < DIM; d++)
