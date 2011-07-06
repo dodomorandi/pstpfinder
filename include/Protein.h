@@ -256,13 +256,14 @@ namespace Gromacs
           j++
         )
         {
+          string jType(j->type);
+          jType.erase(jType.begin() + 1, jType.end());
           fprintf(pdb, "ATOM  %5d %-4s %-3s A%4d    %8.3f%8.3f%8.3f%6.2f"
                        "%6.2f            %2s\n", j->index, j->type,
                        aminoacidTriplet[i->type].c_str(), i->index, j->x * 10.,
                        j->y * 10., j->z * 10.,
                        isinf(j->occupancy)? 99.99: j->occupancy,
-                       isinf(j->bFactor)? 99.99: j->bFactor,
-                       j->type);
+                       isinf(j->bFactor)? 99.99: j->bFactor, jType.c_str());
         }
       }
 
