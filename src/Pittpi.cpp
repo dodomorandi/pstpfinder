@@ -480,10 +480,8 @@ Pittpi::makeGroups(float radius)
     Atom center(0);
     const vector<PdbAtom>& atoms = i->atoms;
 
-    if(strcmp(i->getAtomByType("H1").type, "UNK") != 0)
-      continue;
-
-    if(i->type == AA_PRO)
+    if(strcmp(i->getAtomByType("H1").type, "UNK") != 0 or
+       i->type == AA_PRO)
     {
       centers.push_back(center);
       continue;
