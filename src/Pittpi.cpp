@@ -521,6 +521,12 @@ Pittpi::makeGroups(float radius)
     Atom center(0);
     float totalDepth = 0.;
 
+    if(groupRes.size() == 0)
+    {
+      centers.push_back(center);
+      continue;
+    }
+
     for
     (
       vector<const Residue*>::const_iterator j = groupRes.begin();
@@ -572,10 +578,14 @@ Pittpi::makeGroupsByDistance(const vector<Atom>& centers, float radius)
   )
   {
     const PdbAtom& hAtom = i->getAtomByType("H");
-    if(strcmp(hAtom.type, "UNK") == 0)
-      continue;
-
     Group group(*i);
+
+    if(strcmp(hAtom.type, "UNK") == 0)
+    {
+      groups.push_back(group);
+      continue;
+    }
+
     for
     (
       vector<Atom>::const_iterator j = centersBegin;
