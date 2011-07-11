@@ -105,9 +105,6 @@ Pittpi::Pittpi(Gromacs& gromacs,
   this->threshold = threshold;
   sync = true;
   __status = 0;
-#ifdef HAVE_PYMOD_SADIC
-  Py_Initialize();
-#endif
 
   pittpiThread = boost::thread(&Pittpi::pittpiRun, boost::ref(*this));
 }
@@ -115,9 +112,6 @@ Pittpi::Pittpi(Gromacs& gromacs,
 Pittpi::~Pittpi()
 {
   join();
-#ifdef HAVE_PYMOD_SADIC
-  Py_Finalize();
-#endif
 }
 
 void
@@ -742,123 +736,128 @@ Pittpi::fillGroups(vector<Group>& groups, const string& sasAnalysisFileName)
 Protein
 Pittpi::runSadic(const Protein& structure) const
 {
-  setStatus(-1);
-  py::object sadic = py::import("sadic");
-  py::object setting = py::import("sadic.setting");
-  py::object viewer = py::import("sadic.viewer");
-  py::object cmdline = py::import("sadic.cmdline");
-  py::stl_input_iterator<py::object> iterObjEnd;
-
-  viewer.attr("load_plugin")();
-  py::list queries;
-
-  py::list argv;
-  argv.append("pstpfinder");
-  py::object settings = cmdline.attr("parse_command_line")(argv);
-  structure.dumpPdb("/tmp/sadic_in.pdb");
-  settings.attr("entity_spec") = "/tmp/sadic_in.pdb";
-  settings.attr("all_atoms") = true;
-  settings.attr("file_out") = "/tmp/sadic_out.pdb";
-  settings.attr("output_format") = sadic.attr("consts").attr("OUTPUT_PDB");
-  settings.attr("quiet") = true;
-
-  py::object out = sadic.attr("get_output")(settings);
-  py::object reader = sadic.attr("get_reader")(settings);
-  py::object scheme = sadic.attr("get_sampling_scheme")(settings);
-
-  py::list models_viewers;
-
-  py::list files(sadic.attr("iter_files")(settings));
-  if(py::len(files) == 0)
-    return Protein(structure);
-  py::object file = py::api::getitem(files, 0);
-  py::object models = reader.attr("get_models")(file);
-  unsigned int imodel = 0;
-  for
-  (
-    py::stl_input_iterator<py::object> model(models);
-    model != iterObjEnd;
-    model++, imodel++
-  )
-  {
-    setStatus(-1);
-    py::object query = sadic.attr("get_query")(settings, *model);
-    py::object prot = sadic.attr("Protein")();
-    prot.attr("add_atoms")(*model);
-
-    py::object viewers = viewer.attr("create_viewers")(settings, query);
-    models_viewers.append(viewers);
-
-    if(imodel == 0)
-    {
-      for(;;)
-      {
-        setStatus(-1);
-        query.attr("sample")(prot, scheme);
-
-        if(settings.attr("radius") !=
-            sadic.attr("consts").attr("RADIUS_NO_INSIDE"))
-          break;
-
-        py::stl_input_iterator<py::object> i(query);
-        for(;i != iterObjEnd;i++)
-        {
-          setStatus(-1);
-          if(i->attr("all_inside") != py::object() and
-             static_cast<bool>(i->attr("all_inside")))
-            break;
-        }
-        if(i == iterObjEnd)
-          break;
-
-        float step = py::extract<float>(settings.attr("step"));
-        scheme.attr("grow")(step);
-      }
-    }
-    else
-      query.attr("sample")(prot, scheme);
-
-    out.attr("output")(viewers);
-    queries.append(query);
-  }
-
-  file.attr("close")();
-  setStatus(-1);
-
-  py::object total_viewers =
-    viewer.attr("create_total_viewers")(settings, models_viewers);
-  for
-  (
-    py::stl_input_iterator<py::object> viewers(total_viewers);
-    viewers != iterObjEnd;
-    viewers++
-  )
-  {
-    out.attr("output")(*viewers);
-    setStatus(-1);
-  }
-
   Protein sadicProtein;
-  for
-  (
-    py::stl_input_iterator<py::object> model_viewer(models_viewers);
-    model_viewer != iterObjEnd;
-    model_viewer++
-  )
+  Py_Initialize();
+
   {
+    setStatus(-1);
+    py::object sadic = py::import("sadic");
+    py::object setting = py::import("sadic.setting");
+    py::object viewer = py::import("sadic.viewer");
+    py::object cmdline = py::import("sadic.cmdline");
+    py::stl_input_iterator<py::object> iterObjEnd;
+
+    viewer.attr("load_plugin")();
+    py::list queries;
+
+    py::list argv;
+    argv.append("pstpfinder");
+    argv.append("/tmp/sadic_in.pdb");
+    py::object settings = cmdline.attr("parse_command_line")(argv);
+    structure.dumpPdb("/tmp/sadic_in.pdb");
+    settings.attr("entity_spec") = "/tmp/sadic_in.pdb";
+    settings.attr("all_atoms") = true;
+    settings.attr("file_out") = "/tmp/sadic_out.pdb";
+    settings.attr("output_format") = sadic.attr("consts").attr("OUTPUT_PDB");
+    settings.attr("quiet") = true;
+
+    py::object out = sadic.attr("get_output")(settings);
+    py::object reader = sadic.attr("get_reader")(settings);
+    py::object scheme = sadic.attr("get_sampling_scheme")(settings);
+
+    py::list models_viewers;
+
+    py::list files(sadic.attr("iter_files")(settings));
+    if(py::len(files) == 0)
+      return Protein(structure);
+    py::object file = py::api::getitem(files, 0);
+    py::object models = reader.attr("get_models")(file);
+    unsigned int imodel = 0;
     for
     (
-      py::stl_input_iterator<py::object> curViewer(*model_viewer);
-      curViewer != iterObjEnd;
-      curViewer++
+      py::stl_input_iterator<py::object> model(models);
+      model != iterObjEnd;
+      model++, imodel++
     )
     {
-      string fileName = py::extract<string>
-                          (out.attr("mangle_file_name")(*curViewer));
-      sadicProtein = Protein(fileName);
-      break;
+      setStatus(-1);
+      py::object query = sadic.attr("get_query")(settings, *model);
+      py::object prot = sadic.attr("Protein")();
+      prot.attr("add_atoms")(*model);
+
+      py::object viewers = viewer.attr("create_viewers")(settings, query);
+      models_viewers.append(viewers);
+
+      if(imodel == 0)
+      {
+        for(;;)
+        {
+          setStatus(-1);
+          query.attr("sample")(prot, scheme);
+
+          if(settings.attr("radius") !=
+              sadic.attr("consts").attr("RADIUS_NO_INSIDE"))
+            break;
+
+          py::stl_input_iterator<py::object> i(query);
+          for(;i != iterObjEnd;i++)
+          {
+            setStatus(-1);
+            if(i->attr("all_inside") != py::object() and
+               static_cast<bool>(i->attr("all_inside")))
+              break;
+          }
+          if(i == iterObjEnd)
+            break;
+
+          float step = py::extract<float>(settings.attr("step"));
+          scheme.attr("grow")(step);
+        }
+      }
+      else
+        query.attr("sample")(prot, scheme);
+
+      out.attr("output")(viewers);
+      queries.append(query);
     }
-    break; // Just the first protein of the first file... for now!
+
+    file.attr("close")();
+    setStatus(-1);
+
+    py::object total_viewers =
+      viewer.attr("create_total_viewers")(settings, models_viewers);
+    for
+    (
+      py::stl_input_iterator<py::object> viewers(total_viewers);
+      viewers != iterObjEnd;
+      viewers++
+    )
+    {
+      out.attr("output")(*viewers);
+      setStatus(-1);
+    }
+
+    for
+    (
+      py::stl_input_iterator<py::object> model_viewer(models_viewers);
+      model_viewer != iterObjEnd;
+      model_viewer++
+    )
+    {
+      for
+      (
+        py::stl_input_iterator<py::object> curViewer(*model_viewer);
+        curViewer != iterObjEnd;
+        curViewer++
+      )
+      {
+        string fileName = py::extract<string>
+                            (out.attr("mangle_file_name")(*curViewer));
+        sadicProtein = Protein(fileName);
+        break;
+      }
+      break; // Just the first protein of the first file... for now!
+    }
   }
 
   return sadicProtein;
