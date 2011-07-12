@@ -760,16 +760,17 @@ Pittpi::runSadic(const Protein& structure) const
     viewer.attr("load_plugin")();
     py::list queries;
 
+    structure.dumpPdb("/tmp/sadic_in.pdb");
+
     py::list argv;
-    argv.append("pstpfinder");
     argv.append("/tmp/sadic_in.pdb");
     py::object settings = cmdline.attr("parse_command_line")(argv);
-    structure.dumpPdb("/tmp/sadic_in.pdb");
     settings.attr("entity_spec") = "/tmp/sadic_in.pdb";
     settings.attr("all_atoms") = true;
     settings.attr("file_out") = "/tmp/sadic_out.pdb";
     settings.attr("output_format") = sadic.attr("consts").attr("OUTPUT_PDB");
     settings.attr("quiet") = true;
+    settings.attr("atom_name") = py::object();
 
     py::object out = sadic.attr("get_output")(settings);
     py::object reader = sadic.attr("get_reader")(settings);
@@ -777,75 +778,85 @@ Pittpi::runSadic(const Protein& structure) const
 
     py::list models_viewers;
 
-    py::list files(sadic.attr("iter_files")(settings));
-    if(py::len(files) == 0)
-      return Protein(structure);
-    py::object file = py::api::getitem(files, 0);
-    py::object models = reader.attr("get_models")(file);
-    unsigned int imodel = 0;
+    py::object files = sadic.attr("iter_files")(settings);
+
     for
     (
-      py::stl_input_iterator<py::object> model(models);
-      model != iterObjEnd;
-      model++, imodel++
+      py::stl_input_iterator<py::object> file(files);
+      file != iterObjEnd;
+      file++
     )
     {
-      setStatus(-1);
-      py::object query = sadic.attr("get_query")(settings, *model);
-      py::object prot = sadic.attr("Protein")();
-      prot.attr("add_atoms")(*model);
-
-      py::object viewers = viewer.attr("create_viewers")(settings, query);
-      models_viewers.append(viewers);
-
-      if(imodel == 0)
+      py::object models = reader.attr("get_models")(*file);
+      unsigned int imodel = 0;
+      for
+      (
+        py::stl_input_iterator<py::object> model(models);
+        model != iterObjEnd;
+        model++, imodel++
+      )
       {
-        for(;;)
+        setStatus(-1);
+        py::object query = sadic.attr("get_query")(settings, *model);
+        py::object prot = sadic.attr("Protein")();
+        prot.attr("add_atoms")(*model);
+
+        py::object viewers = viewer.attr("create_viewers")(settings, query);
+        models_viewers.append(viewers);
+
+        if(imodel == 0)
         {
-          setStatus(-1);
-          query.attr("sample")(prot, scheme);
-
-          if(settings.attr("radius") !=
-              sadic.attr("consts").attr("RADIUS_NO_INSIDE"))
-            break;
-
-          py::stl_input_iterator<py::object> i(query);
-          for(;i != iterObjEnd;i++)
+          for(;;)
           {
             setStatus(-1);
-            if(i->attr("all_inside") != py::object() and
-               static_cast<bool>(i->attr("all_inside")))
+            query.attr("sample")(prot, scheme);
+
+            if(settings.attr("radius") !=
+                sadic.attr("consts").attr("RADIUS_NO_INSIDE"))
               break;
+
+            py::stl_input_iterator<py::object> i(query);
+            for(;i != iterObjEnd;i++)
+            {
+              setStatus(-1);
+              if(static_cast<bool>(i->attr("all_inside")))
+                break;
+            }
+            if(i == iterObjEnd)
+              break;
+
+            float step = py::extract<float>(settings.attr("step"));
+            scheme.attr("grow")(step);
           }
-          if(i == iterObjEnd)
-            break;
-
-          float step = py::extract<float>(settings.attr("step"));
-          scheme.attr("grow")(step);
         }
+        else
+          query.attr("sample")(prot, scheme);
+
+        out.attr("output")(viewers);
+        queries.append(query);
       }
-      else
-        query.attr("sample")(prot, scheme);
 
-      out.attr("output")(viewers);
-      queries.append(query);
-    }
-
-    file.attr("close")();
-    setStatus(-1);
-
-    py::object total_viewers =
-      viewer.attr("create_total_viewers")(settings, models_viewers);
-    for
-    (
-      py::stl_input_iterator<py::object> viewers(total_viewers);
-      viewers != iterObjEnd;
-      viewers++
-    )
-    {
-      out.attr("output")(*viewers);
+      file->attr("close")();
       setStatus(-1);
+
+      py::object total_viewers =
+        viewer.attr("create_total_viewers")(settings, models_viewers);
+      for
+      (
+        py::stl_input_iterator<py::object> viewers(total_viewers);
+        viewers != iterObjEnd;
+        viewers++
+      )
+      {
+        out.attr("output")(*viewers);
+        setStatus(-1);
+      }
+
+      break;
     }
+
+    if(py::len(models_viewers) == 0)
+      return Protein();
 
     for
     (
