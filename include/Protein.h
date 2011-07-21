@@ -323,6 +323,16 @@ namespace Gromacs
 
       return unkRes;
     }
+
+    Protein& operator =(const Protein& protein)
+    {
+      pResidues = vector<Residue>(protein.pResidues);
+      locked = false;
+      name = protein.name;
+
+      return *this;
+    }
+
   private:
     vector<Residue> pResidues;
     mutable vector<const PdbAtom*> pAtoms;
