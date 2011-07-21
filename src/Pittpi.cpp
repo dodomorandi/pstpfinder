@@ -778,81 +778,71 @@ Pittpi::runSadic(const Protein& structure) const
 
     py::list models_viewers;
 
-    py::object files = sadic.attr("iter_files")(settings);
+    py::object file = sadic.attr("iter_files")(settings).attr("next")();
 
+    py::object models = reader.attr("get_models")(file);
+    unsigned int imodel = 0;
     for
     (
-      py::stl_input_iterator<py::object> file(files);
-      file != iterObjEnd;
-      file++
+      py::stl_input_iterator<py::object> model(models);
+      model != iterObjEnd;
+      model++, imodel++
     )
     {
-      py::object models = reader.attr("get_models")(*file);
-      unsigned int imodel = 0;
-      for
-      (
-        py::stl_input_iterator<py::object> model(models);
-        model != iterObjEnd;
-        model++, imodel++
-      )
+      setStatus(-1);
+      py::object query = sadic.attr("get_query")(settings, *model);
+      py::object prot = sadic.attr("Protein")();
+      prot.attr("add_atoms")(*model);
+
+      py::object viewers = viewer.attr("create_viewers")(settings, query);
+      models_viewers.append(viewers);
+
+      if(imodel == 0)
       {
-        setStatus(-1);
-        py::object query = sadic.attr("get_query")(settings, *model);
-        py::object prot = sadic.attr("Protein")();
-        prot.attr("add_atoms")(*model);
-
-        py::object viewers = viewer.attr("create_viewers")(settings, query);
-        models_viewers.append(viewers);
-
-        if(imodel == 0)
+        for(;;)
         {
-          for(;;)
-          {
-            setStatus(-1);
-            query.attr("sample")(prot, scheme);
-
-            if(settings.attr("radius") !=
-                sadic.attr("consts").attr("RADIUS_NO_INSIDE"))
-              break;
-
-            py::stl_input_iterator<py::object> i(query);
-            for(;i != iterObjEnd;i++)
-            {
-              setStatus(-1);
-              if(static_cast<bool>(i->attr("all_inside")))
-                break;
-            }
-            if(i == iterObjEnd)
-              break;
-
-            float step = py::extract<float>(settings.attr("step"));
-            scheme.attr("grow")(step);
-          }
-        }
-        else
+          setStatus(-1);
           query.attr("sample")(prot, scheme);
 
-        out.attr("output")(viewers);
-        queries.append(query);
-      }
+          if(settings.attr("radius") !=
+              sadic.attr("consts").attr("RADIUS_NO_INSIDE"))
+            break;
 
-      file->attr("close")();
+          py::stl_input_iterator<py::object> i(query);
+          for(;i != iterObjEnd;i++)
+          {
+            setStatus(-1);
+            if(static_cast<bool>(i->attr("all_inside")))
+              break;
+          }
+          if(i == iterObjEnd)
+            break;
+
+          float step = py::extract<float>(settings.attr("step"));
+          scheme.attr("grow")(step);
+        }
+      }
+      else
+        query.attr("sample")(prot, scheme);
+
+      out.attr("output")(viewers);
+      queries.append(query);
+    }
+
+    file.attr("close")();
+    setStatus(-1);
+
+    py::object total_viewers =
+      viewer.attr("create_total_viewers")(settings, models_viewers);
+    for
+    (
+      py::stl_input_iterator<py::object> viewers(total_viewers);
+      viewers != iterObjEnd;
+      viewers++
+    )
+    {
+      out.attr("output")(*viewers);
       setStatus(-1);
-
-      py::object total_viewers =
-        viewer.attr("create_total_viewers")(settings, models_viewers);
-      for
-      (
-        py::stl_input_iterator<py::object> viewers(total_viewers);
-        viewers != iterObjEnd;
-        viewers++
-      )
-      {
-        out.attr("output")(*viewers);
-        setStatus(-1);
-      }
-
-      break;
     }
 
     if(py::len(models_viewers) == 0)
