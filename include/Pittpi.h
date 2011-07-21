@@ -52,7 +52,7 @@ namespace Gromacs
 
   struct Pocket
   {
-    const Group* group;
+    const Group& group;
     unsigned int startFrame;
     float startPs;
     unsigned int endFrame;
@@ -63,6 +63,23 @@ namespace Gromacs
     float averageNearPs;
     unsigned int maxAreaFrame;
     float maxAreaPs;
+
+    Pocket(const Group& group) : group(group) { ; }
+    Pocket& operator =(const Pocket& pocket)
+    {
+      startFrame = pocket.startFrame;
+      startPs = pocket.startPs;
+      endFrame = pocket.endFrame;
+      endPs = pocket.endPs;
+      width = pocket.width;
+      openingFraction = pocket.openingFraction;
+      averageNearFrame = pocket.averageNearFrame;
+      averageNearPs = pocket.averageNearPs;
+      maxAreaFrame = pocket.maxAreaFrame;
+      maxAreaPs = pocket.maxAreaPs;
+
+      return *this;
+    }
   };
 
   /**

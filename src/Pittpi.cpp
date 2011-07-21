@@ -320,8 +320,7 @@ Pittpi::pittpiRun()
           if(static_cast<unsigned int>(distance(startPocket, j) *
             (float)PS_PER_SAS) >= threshold)
           {
-            Pocket pocket;
-            pocket.group = &(*i);
+            Pocket pocket(*i);
             pocket.startFrame = distance(i->sas.begin(), startPocket) *
                                 frameStep + 1;
             pocket.startPs = distance(i->sas.begin(), startPocket) *
@@ -393,7 +392,7 @@ Pittpi::pittpiRun()
       j++
     )
     {
-      if(j->group == &(*i))
+      if(&j->group == &(*i))
       {
         if(not writtenHeader)
         {
@@ -439,11 +438,11 @@ Pittpi::pittpiRun()
 
     if(bestPocket != pockets.end())
     {
-      const Residue& centralRes = bestPocket->group->getCentralRes();
+      const Residue& centralRes = bestPocket->group.getCentralRes();
       stringstream aaRef;
       aaRef << aminoacidTriplet[centralRes.type] << centralRes.index;
 
-      pocketLog << setfill('0') << setw(7) << right << bestPocket->group->zeros
+      pocketLog << setfill('0') << setw(7) << right << bestPocket->group.zeros
                                 << "    ";
       pocketLog << setfill(' ') << setw(11) << left << aaRef.str();
       pocketLog << setfill('0') << setw(7) << right << (int)bestPocket->startPs
@@ -454,7 +453,7 @@ Pittpi::pittpiRun()
                 << "   ";
 
       const vector<const Residue*>& pocketResidues =
-        bestPocket->group->getResidues();
+        bestPocket->group.getResidues();
       for
       (
         vector<const Residue*>::const_iterator k = pocketResidues.begin();
