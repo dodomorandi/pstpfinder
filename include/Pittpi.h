@@ -36,6 +36,7 @@ namespace Gromacs
     Group(const PdbAtom& refAtomH);
     Group(const PdbAtom& refAtomH, const Protein& protein);
     Group& operator <<(const Residue& value);
+    Group& operator =(const Group& group);
     const vector<const Residue*>& getResidues() const;
     const PdbAtom& getCentralH() const;
     const Residue& getCentralRes() const;

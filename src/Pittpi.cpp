@@ -63,6 +63,16 @@ Group::operator <<(const Residue& reference)
   return *this;
 }
 
+Group&
+Group::operator =(const Group& group)
+{
+  sas = vector<float>(group.sas);
+  zeros = group.zeros;
+  residues = vector<const Residue*>(group.residues);
+
+  return *this;
+}
+
 const vector<const Residue*>&
 Group::getResidues() const
 {
