@@ -228,6 +228,14 @@ Pittpi::pittpiRun()
 
   sort(meanGroups.begin(), meanGroups.end(), Group::sortByZeros);
 
+
+  /*
+   * FIXME: This doesn't work! I'm erasing groups with a lower number of zeros,
+   * FIXME: but this doesn't mean that the pocket will be better... Neither
+   * FIXME: with a higher number of zeros... This code need to be rewritten and
+   * FIXME: placed after Pockets search.
+  */
+  /*
   for
   (
     vector<Group>::iterator i = meanGroups.begin();
@@ -261,6 +269,7 @@ Pittpi::pittpiRun()
       }
     }
   }
+  */
 
   unsigned int noZeroPass = threshold / PS_PER_SAS;
   if(noZeroPass < 20)
