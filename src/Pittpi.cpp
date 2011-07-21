@@ -34,24 +34,24 @@ using namespace Gromacs;
 using namespace std;
 namespace py = boost::python;
 
-Group::Group(const Residue& refResidue)
+Group::Group(const Residue& refResidue) :
+  referenceAtom(&refResidue.getAtomByType("H")),
+  referenceRes(&refResidue)
 {
-  referenceRes = &refResidue;
-  referenceAtom = &refResidue.getAtomByType("H");
   zeros = 0;
 }
 
-Group::Group(const PdbAtom& refAtomH)
+Group::Group(const PdbAtom& refAtomH) :
+  referenceAtom(&refAtomH),
+  referenceRes(0)
 {
-  referenceRes = 0;
-  referenceAtom = &refAtomH;
   zeros = 0;
 }
 
-Group::Group(const PdbAtom& refAtomH, const Protein& protein)
+Group::Group(const PdbAtom& refAtomH, const Protein& protein) :
+  referenceAtom(&refAtomH),
+  referenceRes(&protein.getResidueByAtom(refAtomH))
 {
-  referenceRes = &protein.getResidueByAtom(refAtomH);
-  referenceAtom = &refAtomH;
   zeros = 0;
 }
 

@@ -45,8 +45,8 @@ namespace Gromacs
     vector<float> sas;
     unsigned int zeros;
   private:
-    const PdbAtom* referenceAtom;
-    const Residue* referenceRes;
+    const PdbAtom* const referenceAtom;
+    const Residue* const referenceRes;
     vector<const Residue*> residues;
   };
 
