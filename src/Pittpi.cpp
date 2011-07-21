@@ -636,6 +636,8 @@ Pittpi::makeGroupsByDistance(const vector<Atom>& centers, float radius)
   {
     const PdbAtom& hAtom = i->getAtomByType("H");
 
+    if(strcmp(hAtom.type, "UNK") == 0)
+      continue;
     /*
      * NOTE:
      * group(something); group = somethingelse;
