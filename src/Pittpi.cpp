@@ -517,7 +517,7 @@ Pittpi::makeGroups(float radius)
 
 #ifdef HAVE_PYMOD_SADIC
   Protein sadicStructure = runSadic(averageStructure);
-  centers.clear();
+  vector<PdbAtom> newCenters;
 
   setStatus(0);
   for
@@ -528,12 +528,15 @@ Pittpi::makeGroups(float radius)
   )
   {
     const vector<const Residue*>& groupRes = i->getResidues();
-    Atom center(0);
+    PdbAtom center = i->getCentralH();
+    center.x = 0;
+    center.y = 0;
+    center.z = 0;
     float totalDepth = 0.;
 
     if(groupRes.size() == 0)
     {
-      centers.push_back(center);
+      newCenters.push_back(center);
       continue;
     }
 
@@ -562,11 +565,45 @@ Pittpi::makeGroups(float radius)
     }
 
     center /= totalDepth;
-    centers.push_back(center);
+    newCenters.push_back(center);
     setStatus(static_cast<float>(distance(groups.begin(), i) + 1) /
               groups.size());
   }
-  groups = makeGroupsByDistance(centers, radius);
+  groups = makeGroupsByDistance(centers, radius, newCenters);
+
+  cout << endl << endl;
+  for
+  (
+    vector<Atom>::const_iterator i = centers.begin();
+    i < centers.end();
+    i++
+  )
+  {
+    cout << residues[distance(static_cast<vector<Atom>::const_iterator>(centers.begin()),i)].index << ": ";
+    cout << i->x << ", ";
+    cout << i->y << ", ";
+    cout << i->z << endl;
+  }
+  cout << endl << endl;
+
+  for
+  (
+    vector<Group>::const_iterator i = groups.begin();
+    i < groups.end();
+    i++
+  )
+  {
+    cout << i->getCentralRes().index << ": ";
+    vector<const Residue*> ress = i->getResidues();
+    for
+    (
+      vector<const Residue*>::const_iterator j = ress.begin();
+      j < ress.end();
+      j++
+    )
+        cout << (*j)->index << " ";
+    cout << endl;
+  }
 
 #endif
 
@@ -588,34 +625,81 @@ Pittpi::makeGroupsByDistance(const vector<Atom>& centers, float radius)
   )
   {
     const PdbAtom& hAtom = i->getAtomByType("H");
+
+    /*
+     * NOTE:
+     * group(something); group = somethingelse;
+     * is different from
+     * group(somethingelse)
+     * because operator = doesn't change reference residue and/or atom
+     */
     Group group(*i);
-
-    if(strcmp(hAtom.type, "UNK") == 0)
-    {
-      groups.push_back(group);
-      continue;
-    }
-
-    for
-    (
-      vector<Atom>::const_iterator j = centersBegin;
-      j < centers.end();
-      j++
-    )
-    {
-      if(residues[distance(centersBegin, j)].type == AA_PRO)
-        continue;
-
-      if(hAtom.distance(*j) <= radius)
-        group << residues[distance(centersBegin, j)];
-    }
-
+    group = makeGroupByDistance(centers, hAtom, radius);
     groups.push_back(group);
+
     setStatus(static_cast<float>(distance(residues.begin(), i) + 1) /
               residues.size());
   }
 
   return groups;
+}
+
+
+vector<Group>
+Pittpi::makeGroupsByDistance(const vector<Atom>& centers,
+                             float radius,
+                             const vector<PdbAtom>& reference)
+{
+  vector<Group> groups;
+  const vector<Residue>& residues = averageStructure.residues();
+
+  vector<Residue>::const_iterator resIterator;
+  vector<PdbAtom>::const_iterator refIterator;
+  for
+  (
+    resIterator = residues.begin(), refIterator = reference.begin();
+    resIterator < residues.end();
+    resIterator++, refIterator++
+  )
+  {
+    Group group(*resIterator);
+    group = makeGroupByDistance(centers, *refIterator, radius);
+
+    groups.push_back(group);
+    setStatus(static_cast<float>(distance(residues.begin(), resIterator) + 1) /
+              residues.size());
+  }
+
+  return groups;
+}
+
+Group
+Pittpi::makeGroupByDistance(const vector<Atom>& centers,
+                            const PdbAtom& atom,
+                            float radius)
+{
+  const vector<Residue>& residues = averageStructure.residues();
+  Group group(atom);
+
+  if(strcmp(atom.type, "UNK") == 0)
+    return group;
+
+  for
+  (
+    vector<Atom>::const_iterator j = centers.begin();
+    j < centers.end();
+    j++
+  )
+  {
+    const Residue& curResidue = residues[distance(centers.begin(), j)];
+    if(curResidue.type == AA_PRO)
+      continue;
+
+    if(atom.distance(*j) <= radius)
+      group << curResidue;
+  }
+
+  return group;
 }
 
 void

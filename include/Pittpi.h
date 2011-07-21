@@ -97,6 +97,13 @@ namespace Gromacs
                     const string& sasAnalysisFileName);
     std::vector<Group> makeGroupsByDistance(const std::vector<Atom>& centers,
                                             float radius);
+    std::vector<Group> makeGroupsByDistance(
+                                        const std::vector<Atom>& centers,
+                                        float radius,
+                                        const std::vector<PdbAtom>& reference);
+    Group makeGroupByDistance(const std::vector<Atom>& centers,
+                              const PdbAtom& atom,
+                              float radius);
     void pittpiRun();
 #ifdef HAVE_PYMOD_SADIC
     Protein runSadic(const Protein& structure) const;
