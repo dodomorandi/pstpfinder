@@ -326,7 +326,7 @@ namespace Gromacs
 
     Protein& operator =(const Protein& protein)
     {
-      pResidues = vector<Residue>(protein.pResidues);
+      pResidues = protein.pResidues;
       locked = false;
       name = protein.name;
 

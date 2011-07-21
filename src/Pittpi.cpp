@@ -66,9 +66,9 @@ Group::operator <<(const Residue& reference)
 Group&
 Group::operator =(const Group& group)
 {
-  sas = vector<float>(group.sas);
+  sas = group.sas;
   zeros = group.zeros;
-  residues = vector<const Residue*>(group.residues);
+  residues = group.residues;
 
   return *this;
 }
@@ -193,7 +193,7 @@ Pittpi::pittpiRun()
   unsigned int const frames = gromacs.getFramesCount();
   unsigned int const newSasCount = frames / frameStep +
                              ((frames % frameStep == 0) ? 0 : 1);
-  vector<Group> meanGroups = vector<Group>(groups);
+  vector<Group> meanGroups = groups;
 
   setStatus(0);
   for
