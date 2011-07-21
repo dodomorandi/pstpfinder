@@ -228,49 +228,6 @@ Pittpi::pittpiRun()
 
   sort(meanGroups.begin(), meanGroups.end(), Group::sortByZeros);
 
-
-  /*
-   * FIXME: This doesn't work! I'm erasing groups with a lower number of zeros,
-   * FIXME: but this doesn't mean that the pocket will be better... Neither
-   * FIXME: with a higher number of zeros... This code need to be rewritten and
-   * FIXME: placed after Pockets search.
-  */
-  /*
-  for
-  (
-    vector<Group>::iterator i = meanGroups.begin();
-    i < meanGroups.end();
-    i++
-  )
-  {
-    const Residue& centralRes = i->getCentralRes();
-    const vector<const Residue*>& groupRes = i->getResidues();
-    for
-    (
-      vector<const Residue*>::const_iterator j = groupRes.begin();
-      j < groupRes.end();
-      j++
-    )
-    {
-      if(*j == &centralRes or
-         centralRes.index + 1 == (*j)->index or
-         centralRes.index - 1 == (*j)->index)
-        continue;
-
-      for
-      (
-        vector<Group>::iterator k = i + 1;
-        k < meanGroups.end();
-        k++
-      )
-      {
-        if(&k->getCentralRes() == *j)
-          meanGroups.erase(k--);
-      }
-    }
-  }
-  */
-
   unsigned int noZeroPass = threshold / PS_PER_SAS;
   if(noZeroPass < 20)
     noZeroPass = 0;
@@ -363,6 +320,42 @@ Pittpi::pittpiRun()
 
     setStatus(static_cast<float>(distance(meanGroups.begin(), i) + 1)
               / meanGroups.size());
+  }
+
+  sort(pockets.begin(), pockets.end(), Pocket::sortByWidth);
+  for
+  (
+    vector<Pocket>::iterator i = pockets.begin();
+    i < pockets.end();
+    i++
+  )
+  {
+    const Residue& centralRes = i->group.getCentralRes();
+    const vector<const Residue*>& groupRes = i->group.getResidues();
+    for
+    (
+      vector<const Residue*>::const_iterator j = groupRes.begin();
+      j < groupRes.end();
+      j++
+    )
+    {
+      if(*j == &centralRes or
+         centralRes.index + 1 == (*j)->index or
+         centralRes.index - 1 == (*j)->index)
+        continue;
+
+      for
+      (
+        vector<Pocket>::iterator k = i + 1;
+        k < pockets.end();
+        k++
+      )
+      {
+        if(&k->group.getCentralRes() != &centralRes and
+           &k->group.getCentralRes() == *j)
+          pockets.erase(k--);
+      }
+    }
   }
 
   ofstream pocketLog("/tmp/pockets.log", ios::out | ios::trunc);
