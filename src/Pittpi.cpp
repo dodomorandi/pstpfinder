@@ -516,6 +516,7 @@ Pittpi::makeGroups(float radius)
   vector<Group> groups = makeGroupsByDistance(centers, radius);
 
 #ifdef HAVE_PYMOD_SADIC
+#if HAVE_PYMOD_SADIC == 1
   Protein sadicStructure = runSadic(averageStructure);
   vector<PdbAtom> newCenters;
 
@@ -605,6 +606,7 @@ Pittpi::makeGroups(float radius)
     cout << endl;
   }
 
+#endif
 #endif
 
   return groups;
