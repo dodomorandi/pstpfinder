@@ -880,6 +880,7 @@ Pittpi::runSadic(const Protein& structure) const
       break; // Just the first protein of the first file... for now!
     }
   }
+  Py_Finalize();
 
   return sadicProtein;
 }
