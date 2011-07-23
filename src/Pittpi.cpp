@@ -73,6 +73,17 @@ Group::operator <<(const Group& group)
   return *this;
 }
 
+Group&
+Group::operator =(const Group& group)
+{
+  if(this == &group)
+    return *this;
+
+  this->~Group();
+  new (this) Group(group);
+  return *this;
+}
+
 const vector<const Residue*>&
 Group::getResidues() const
 {
