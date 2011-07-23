@@ -64,7 +64,7 @@ Group::operator <<(const Residue& reference)
 }
 
 Group&
-Group::operator =(const Group& group)
+Group::operator <<(const Group& group)
 {
   sas = group.sas;
   zeros = group.zeros;
@@ -633,13 +633,13 @@ Pittpi::makeGroupsByDistance(const vector<Atom>& centers, float radius)
       continue;
     /*
      * NOTE:
-     * group(something); group = somethingelse;
+     * group(something); group << somethingelse;
      * is different from
      * group(somethingelse)
-     * because operator = doesn't change reference residue and/or atom
+     * because operator << doesn't change reference residue and/or atom
      */
     Group group(*i);
-    group = makeGroupByDistance(centers, hAtom, radius);
+    group << makeGroupByDistance(centers, hAtom, radius);
     groups.push_back(group);
 
     setStatus(static_cast<float>(distance(residues.begin(), i) + 1) /
@@ -668,7 +668,7 @@ Pittpi::makeGroupsByDistance(const vector<Atom>& centers,
   )
   {
     Group group(*resIterator);
-    group = makeGroupByDistance(centers, *refIterator, radius);
+    group << makeGroupByDistance(centers, *refIterator, radius);
 
     groups.push_back(group);
     setStatus(static_cast<float>(distance(residues.begin(), resIterator) + 1) /
