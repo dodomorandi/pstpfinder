@@ -678,6 +678,11 @@ Pittpi::makeGroupsByDistance(const vector<Atom>& centers,
     resIterator++, refIterator++
   )
   {
+    if(strcmp(resIterator->getAtomByType("H").type, "UNK") == 0)
+    {
+      refIterator--;
+      continue;
+    }
     Group group(*resIterator);
     group << makeGroupByDistance(centers, *refIterator, radius);
 
