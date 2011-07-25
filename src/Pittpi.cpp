@@ -583,41 +583,6 @@ Pittpi::makeGroups(float radius)
               groups.size());
   }
   groups = makeGroupsByDistance(centers, radius, newCenters);
-
-  cout << endl << endl;
-  for
-  (
-    vector<Atom>::const_iterator i = centers.begin();
-    i < centers.end();
-    i++
-  )
-  {
-    cout << residues[distance(static_cast<vector<Atom>::const_iterator>(centers.begin()),i)].index << ": ";
-    cout << i->x << ", ";
-    cout << i->y << ", ";
-    cout << i->z << endl;
-  }
-  cout << endl << endl;
-
-  for
-  (
-    vector<Group>::const_iterator i = groups.begin();
-    i < groups.end();
-    i++
-  )
-  {
-    cout << i->getCentralRes().index << ": ";
-    vector<const Residue*> ress = i->getResidues();
-    for
-    (
-      vector<const Residue*>::const_iterator j = ress.begin();
-      j < ress.end();
-      j++
-    )
-        cout << (*j)->index << " ";
-    cout << endl;
-  }
-
 #endif
 #endif
 
