@@ -366,7 +366,7 @@ NewAnalysis::runAnalysis()
 void
 NewAnalysis::chooserTrajectoryClicked()
 {
-  if(not fs::exists(fs::path(trjChooser.get_filename())))
+  if(not fs::exists(fs::path(static_cast<string>(trjChooser.get_filename()))))
   {
     spinBegin.set_sensitive(false);
     spinEnd.set_sensitive(false);
@@ -413,8 +413,8 @@ NewAnalysis::update_limits()
 void
 NewAnalysis::checkParameters()
 {
-  if(fs::exists(fs::path(tprChooser.get_filename())) and
-     fs::exists(fs::path(trjChooser.get_filename())))
+  if(fs::exists(fs::path(static_cast<string>(tprChooser.get_filename()))) and
+     fs::exists(fs::path(static_cast<string>(trjChooser.get_filename()))))
     buttonRun.set_sensitive(true);
   else
     buttonRun.set_sensitive(false);
