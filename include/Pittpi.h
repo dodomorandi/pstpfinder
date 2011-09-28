@@ -116,7 +116,8 @@ namespace Gromacs
   private:
     std::vector<Group> makeGroups(float radius);
     void fillGroups(std::vector<Group>& groups,
-                    const string& sasAnalysisFileName);
+                    const string& sasAnalysisFileName,
+                    unsigned int timeStep);
     std::vector<Group> makeGroupsByDistance(const std::vector<Atom>& centers,
                                             float radius);
     std::vector<Group> makeGroupsByDistance(

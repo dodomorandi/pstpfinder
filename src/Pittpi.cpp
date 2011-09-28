@@ -187,57 +187,11 @@ Pittpi::pittpiRun()
   averageStructure = gromacs.getAverageStructure();
   vector<Group> groups = makeGroups(radius);
 
-  fillGroups(groups, sasAnalysisFileName);
-
-  /*
-   * This part is a "legacy" method. It have been implemented in perl time ago
-   * and needs refactory. The main problem is math related, because we have to
-   * find a good solution to take "consecutively opened pocked" above a certain
-   * threshold. With every frame (and every SAS value) it could be not so easy
-   * to develop a GOOD alghorithm. For now we implement only the old method used
-   * until now.
-   * -- Edoardo Morandi
-   */
-
 #define PS_PER_SAS 5
   unsigned int const frameStep = float(PS_PER_SAS) / gromacs.getTimeStep();
-  unsigned int const frames = gromacs.getFramesCount();
-  unsigned int const newSasCount = frames / frameStep +
-                             ((frames % frameStep == 0) ? 0 : 1);
-  vector<Group> meanGroups = groups;
+  fillGroups(groups, sasAnalysisFileName, frameStep);
 
-  setStatus(0);
-  for
-  (
-    vector<Group>::iterator i = meanGroups.begin(), j = groups.begin();
-    j < groups.end();
-    i++, j++
-  )
-  {
-    i->sas.clear();
-    i->zeros /= frameStep;
-
-    i->sas.reserve(newSasCount);
-    for(vector<float>::iterator k = j->sas.begin(); k < j->sas.end(); k++)
-    {
-      float mean = 0;
-
-      vector<float>::iterator end = k + frameStep;
-      if(end > j->sas.end())
-        end = j->sas.end();
-
-      for(; k < end; k++)
-        mean += *k;
-
-      mean /= frameStep;
-      i->sas.push_back(mean);
-    }
-
-    setStatus(static_cast<float>(distance(groups.begin(), j) + 1)
-              / groups.size());
-  }
-
-  sort(meanGroups.begin(), meanGroups.end(), Group::sortByZeros);
+  sort(groups.begin(), groups.end(), Group::sortByZeros);
 
   unsigned int noZeroPass = threshold / PS_PER_SAS;
   if(noZeroPass < 20)
@@ -253,8 +207,8 @@ Pittpi::pittpiRun()
   vector<Pocket> pockets;
   for
   (
-    vector<Group>::iterator i = meanGroups.begin();
-    i < meanGroups.end();
+    vector<Group>::iterator i = groups.begin();
+    i < groups.end();
     i++
   )
   {
@@ -303,7 +257,7 @@ Pittpi::pittpiRun()
                                (maxFrame - &(*i->sas.begin())) * PS_PER_SAS;
             pocket.openingFraction = static_cast<float>
                                      (distance(startPocket, j)) /
-                                     (newSasCount - i->zeros);
+                                     (i->sas.size() - i->zeros);
 
             mean /=  distance(startPocket, j);
             vector<float>::iterator nearToAverage = startPocket;
@@ -329,8 +283,8 @@ Pittpi::pittpiRun()
       }
     }
 
-    setStatus(static_cast<float>(distance(meanGroups.begin(), i) + 1)
-              / meanGroups.size());
+    setStatus(static_cast<float>(distance(groups.begin(), i) + 1)
+              / groups.size());
   }
 
   sort(pockets.begin(), pockets.end(), Pocket::sortByWidth);
@@ -381,8 +335,8 @@ Pittpi::pittpiRun()
 
   for
   (
-    vector<Group>::const_iterator i = meanGroups.begin();
-    i < meanGroups.end();
+    vector<Group>::const_iterator i = groups.begin();
+    i < groups.end();
     i++
   )
   {
@@ -689,7 +643,8 @@ Pittpi::makeGroupByDistance(const vector<Atom>& centers,
 }
 
 void
-Pittpi::fillGroups(vector<Group>& groups, const string& sasAnalysisFileName)
+Pittpi::fillGroups(vector<Group>& groups, const string& sasAnalysisFileName,
+                   unsigned int timeStep)
 {
   float* sas;
   float* meanSas;
@@ -719,11 +674,7 @@ Pittpi::fillGroups(vector<Group>& groups, const string& sasAnalysisFileName)
     SasAtom* atom;
 
     for(atom = sasAtoms, ptr = notZero; atom < m_end; atom++, fIndex++, ptr++)
-    {
       *fIndex += atom->sas;
-      //if(atom->sas >= 0.000001)
-      (*ptr)++;
-    }
 
     counter++;
     setStatus(static_cast<float>(counter) / gromacs.getFramesCount());
@@ -738,8 +689,7 @@ Pittpi::fillGroups(vector<Group>& groups, const string& sasAnalysisFileName)
       fIndex < meanSas + nAtoms;
       fIndex++, ptr++
     )
-      if(*ptr != 0)
-        *fIndex /= *ptr;
+      *fIndex /= counter;
   }
 
   delete[] notZero;
@@ -756,12 +706,34 @@ Pittpi::fillGroups(vector<Group>& groups, const string& sasAnalysisFileName)
 
   /* Now we have to normalize values and store results per group */
   sas = new float[protein.size()];
+  float* sasCounter = new float[protein.size()];
   setStatus(0);
   counter = 0;
   sasAnalysis = new SasAnalysis(gromacs, sasAnalysisFileName, false);
   (*sasAnalysis) >> sasAtoms;
   while(sasAtoms != 0)
   {
+
+    /*
+     * This part is a "legacy" method. It have been implemented in perl time ago
+     * and needs refactoring. The main problem is math related, because we have to
+     * find a good solution to take "consecutively opened pocket" above a certain
+     * threshold. With every frame (and every SAS value) it could be not so easy
+     * to develop a GOOD algorithm. For now we implement only the old method used
+     * until now.
+     *
+     * 28 sep 2011: Only now I understand that I need data binning to obtain the
+     * same results as the original algorithm. This must be done BEFORE
+     * normalization!
+     * -- Edoardo Morandi
+     */
+
+    if(counter % timeStep == 0)
+    {
+      for(float* i = sasCounter; i < sasCounter + protein.size(); i++)
+        *i = 0.0;
+    }
+
     fIndex = sas;
     for
     (
@@ -770,6 +742,68 @@ Pittpi::fillGroups(vector<Group>& groups, const string& sasAnalysisFileName)
       atom++, fIndex++
     )
       *fIndex = atom->sas;
+
+    {
+      float* i;
+      float* j;
+      for(i = sasCounter, j = sas; i < sasCounter + protein.size(); i++, j++)
+        *i += *j;
+    }
+
+    if((counter + 1) % timeStep == 0)
+    {
+      for(float* i = sasCounter; i < sasCounter + protein.size(); i++)
+        *i /= timeStep;
+
+      for
+      (
+        vector<Group>::iterator i = groups.begin();
+        i < groups.end();
+        i++
+      )
+      {
+        i->sas.push_back(0);
+        float& curFrame = i->sas.back();
+
+        if(sasCounter[i->getCentralH().index - 1] < 0.000001)
+        {
+          i->zeros++;
+          continue;
+        }
+
+        const vector<const Residue*>& residues = i->getResidues();
+        for
+        (
+          vector<const Residue*>::const_iterator j = residues.begin();
+          j < residues.end();
+          j++
+        )
+        {
+          const PdbAtom& atomH = (*j)->getAtomByType("H");
+          if(strcmp(atomH.type, "UNK") == 0)
+            continue;
+
+          if(meanSas[atomH.index - 1] != 0)
+            curFrame += sasCounter[atomH.index - 1] / meanSas[atomH.index - 1];
+        }
+
+        curFrame /= i->getResidues().size();
+
+        if(curFrame < 0.000001)
+          i->zeros++;
+
+      }
+    }
+
+    counter++;
+    setStatus(static_cast<float>(counter) / gromacs.getFramesCount());
+    (*sasAnalysis) >> sasAtoms;
+  }
+
+  if(counter % timeStep != 0)
+  {
+    for(float* i = sasCounter; i < sasCounter + protein.size(); i++)
+      *i /= (counter % timeStep);
 
     for
     (
@@ -781,42 +815,36 @@ Pittpi::fillGroups(vector<Group>& groups, const string& sasAnalysisFileName)
       i->sas.push_back(0);
       float& curFrame = i->sas.back();
 
-      if(sas[i->getCentralH().index - 1] < 0.000001)
+      if(sasCounter[i->getCentralH().index - 1] < 0.000001)
       {
         i->zeros++;
         continue;
       }
 
       const vector<const Residue*>& residues = i->getResidues();
-      float meanGroup = 0;
       for
       (
         vector<const Residue*>::const_iterator j = residues.begin();
         j < residues.end();
         j++
       )
-        for
-        (
-          vector<PdbAtom>::const_iterator k = (*j)->atoms.begin();
-          k < (*j)->atoms.end();
-          k++
-        )
-          if(k->type[0] == 'H')
-          {
-            if(meanSas[k->index - 1] != 0)
-              curFrame += sas[k->index - 1];
-            meanGroup += meanSas[k->index -1];
-          }
+      {
+        const PdbAtom& atomH = (*j)->getAtomByType("H");
+        if(strcmp(atomH.type, "UNK") == 0)
+          continue;
 
-      curFrame /= meanGroup;
+        if(meanSas[atomH.index - 1] != 0)
+          curFrame += sasCounter[atomH.index - 1] / meanSas[atomH.index - 1];
+      }
+
+      curFrame /= i->getResidues().size();
+
       if(curFrame < 0.000001)
         i->zeros++;
     }
-
-    counter++;
-    setStatus(static_cast<float>(counter) / gromacs.getFramesCount());
-    (*sasAnalysis) >> sasAtoms;
   }
+
+  delete[] sasCounter;
   delete sasAnalysis;
   delete[] meanSas;
   delete[] sas;
