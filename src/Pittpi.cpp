@@ -247,8 +247,10 @@ Pittpi::pittpiRun()
                                 frameStep + 1;
             pocket.startPs = distance(i->sas.begin(), startPocket) *
                                 PS_PER_SAS;
-            pocket.endFrame = distance(i->sas.begin(), j) * frameStep + 1;
-            pocket.endPs = distance(i->sas.begin(), j) * PS_PER_SAS;
+            pocket.endFrame = (distance(i->sas.begin(), j) - notOpenCounter - 1)
+                              * frameStep + 1;
+            pocket.endPs = (distance(i->sas.begin(), j) - notOpenCounter - 1)
+                           * PS_PER_SAS;
             pocket.width = pocket.endPs - pocket.startPs;
             pocket.maxAreaFrame = static_cast<int>
                                   (maxFrame - &(*i->sas.begin())) * frameStep
@@ -256,7 +258,7 @@ Pittpi::pittpiRun()
             pocket.maxAreaPs = static_cast<float>
                                (maxFrame - &(*i->sas.begin())) * PS_PER_SAS;
             pocket.openingFraction = static_cast<float>
-                                     (distance(startPocket, j)) /
+                                     (distance(startPocket, j) - notOpenCounter - 1) /
                                      (i->sas.size() - i->zeros);
 
             mean /=  distance(startPocket, j);
