@@ -68,6 +68,12 @@ namespace Gromacs
     Pocket(const Group& group) : group(group) { ; }
     Pocket& operator =(const Pocket& pocket)
     {
+      if(&pocket == this)
+        return *this;
+
+      this->~Pocket();
+      new (this) Pocket(pocket.group);
+
       startFrame = pocket.startFrame;
       startPs = pocket.startPs;
       endFrame = pocket.endFrame;
