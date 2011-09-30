@@ -58,6 +58,10 @@ SasAnalysis::init(string filename, bool savingMode)
     mode = MODE_OPEN;
   }
 
+  std::streampos currentPos = fileIO.seek(0, ios_base::cur);
+  fileStreamEnd = fileIO.seek(0, ios_base::end);
+  fileIO.seek(currentPos, ios_base::beg);
+
   maxBytes = 134217728;
   maxChunk = 16777216;
 
@@ -254,8 +258,12 @@ SasAnalysis::open()
     return false;
 
   inFilter.peek();
-  if(inFilter.eof())
+  if(inFilter.eof() or fileIO.seek(0, ios_base::cur) >= fileStreamEnd)
+  {
+    if(fileIO.is_open())
+      fileIO.seek(fileStreamEnd, ios_base::beg);
     return false;
+  }
 
   chunks.push_back(loadChunk(*inArchive));
 

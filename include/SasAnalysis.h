@@ -74,6 +74,7 @@ namespace Gromacs
       unsigned int nAtoms;
       std::string filename;
       boost::iostreams::file_descriptor fileIO;
+      std::streampos fileStreamEnd;
       const Gromacs* gromacs;
       unsigned long maxFrames, maxBytes, maxChunk;
       mutable boost::interprocess::interprocess_semaphore* bufferSemaphore;
