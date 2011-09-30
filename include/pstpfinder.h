@@ -22,6 +22,7 @@
 
 #include <gtkmm.h>
 
-bool closeApplication(GdkEventAny* event);
+bool
+closeApplication(GdkEventAny* event);
 
 #endif

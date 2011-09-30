@@ -31,66 +31,79 @@ namespace Gromacs
 {
   class Group
   {
-  public:
-    Group(const Residue& refResidue);
-    Group(const PdbAtom& refAtomH);
-    Group(const PdbAtom& refAtomH, const Protein& protein);
-    Group& operator <<(const Residue& value);
-    Group& operator <<(const Group& group);
-    Group& operator =(const Group& group);
-    const vector<const Residue*>& getResidues() const;
-    const PdbAtom& getCentralH() const;
-    const Residue& getCentralRes() const;
-    static bool sortByZeros(const Group& a, const Group& b);
+    public:
+      Group(const Residue& refResidue);
+      Group(const PdbAtom& refAtomH);
+      Group(const PdbAtom& refAtomH, const Protein& protein);
+      Group&
+      operator <<(const Residue& value);
+      Group&
+      operator <<(const Group& group);
+      Group&
+      operator =(const Group& group);
+      const vector<const Residue*>&
+      getResidues() const;
+      const PdbAtom&
+      getCentralH() const;
+      const Residue&
+      getCentralRes() const;
+      static bool
+      sortByZeros(const Group& a, const Group& b);
 
-    vector<float> sas;
-    unsigned int zeros;
-  private:
-    const PdbAtom* const referenceAtom;
-    const Residue* const referenceRes;
-    vector<const Residue*> residues;
+      vector<float> sas;
+      unsigned int zeros;
+    private:
+      const PdbAtom* const referenceAtom;
+      const Residue* const referenceRes;
+      vector<const Residue*> residues;
   };
 
   struct Pocket
   {
-    const Group& group;
-    unsigned int startFrame;
-    float startPs;
-    unsigned int endFrame;
-    float endPs;
-    unsigned int width;
-    float openingFraction;
-    unsigned int averageNearFrame;
-    float averageNearPs;
-    unsigned int maxAreaFrame;
-    float maxAreaPs;
+      const Group& group;
+      unsigned int startFrame;
+      float startPs;
+      unsigned int endFrame;
+      float endPs;
+      unsigned int width;
+      float openingFraction;
+      unsigned int averageNearFrame;
+      float averageNearPs;
+      unsigned int maxAreaFrame;
+      float maxAreaPs;
 
-    Pocket(const Group& group) : group(group) { ; }
-    Pocket& operator =(const Pocket& pocket)
-    {
-      if(&pocket == this)
+      Pocket(const Group& group) :
+        group(group)
+      {
+        ;
+      }
+      Pocket&
+      operator =(const Pocket& pocket)
+      {
+        if(&pocket == this)
+          return *this;
+
+        this->~Pocket();
+        new (this) Pocket(pocket.group);
+
+        startFrame = pocket.startFrame;
+        startPs = pocket.startPs;
+        endFrame = pocket.endFrame;
+        endPs = pocket.endPs;
+        width = pocket.width;
+        openingFraction = pocket.openingFraction;
+        averageNearFrame = pocket.averageNearFrame;
+        averageNearPs = pocket.averageNearPs;
+        maxAreaFrame = pocket.maxAreaFrame;
+        maxAreaPs = pocket.maxAreaPs;
+
         return *this;
-
-      this->~Pocket();
-      new (this) Pocket(pocket.group);
-
-      startFrame = pocket.startFrame;
-      startPs = pocket.startPs;
-      endFrame = pocket.endFrame;
-      endPs = pocket.endPs;
-      width = pocket.width;
-      openingFraction = pocket.openingFraction;
-      averageNearFrame = pocket.averageNearFrame;
-      averageNearPs = pocket.averageNearPs;
-      maxAreaFrame = pocket.maxAreaFrame;
-      maxAreaPs = pocket.maxAreaPs;
-
-      return *this;
-    }
-    static bool sortByWidth(const Pocket& first, const Pocket& second)
-    {
-      return (first.width > second.width);
-    }
+      }
+      static bool
+      sortByWidth(const Pocket& first, const Pocket& second)
+      {
+        return (first.width > second.width);
+      }
   };
 
   /**
@@ -107,48 +120,53 @@ namespace Gromacs
    */
   class Pittpi
   {
-  public:
-    Pittpi(Gromacs& gromacs,
-           const std::string& sasAnalysisFileName,
-           float radius,
-           unsigned long threshold);
-    ~Pittpi();
+    public:
+      Pittpi(Gromacs& gromacs, const std::string& sasAnalysisFileName,
+             float radius, unsigned long threshold);
+      ~Pittpi();
 
-    void join();
-    void setStatus(float value) const;
-    float getStatus() const;
-    void waitNextStatus();
-    bool isFinished();
-  private:
-    std::vector<Group> makeGroups(float radius);
-    void fillGroups(std::vector<Group>& groups,
-                    const string& sasAnalysisFileName,
-                    unsigned int timeStep);
-    std::vector<Group> makeGroupsByDistance(const std::vector<Atom>& centers,
-                                            float radius);
-    std::vector<Group> makeGroupsByDistance(
-                                        const std::vector<Atom>& centers,
-                                        float radius,
-                                        const std::vector<PdbAtom>& reference);
-    Group makeGroupByDistance(const std::vector<Atom>& centers,
-                              const PdbAtom& atom,
-                              float radius);
-    void pittpiRun();
+      void
+      join();
+      void
+      setStatus(float value) const;
+      float
+      getStatus() const;
+      void
+      waitNextStatus();
+      bool
+      isFinished();
+    private:
+      std::vector<Group>
+      makeGroups(float radius);
+      void
+      fillGroups(std::vector<Group>& groups, const string& sasAnalysisFileName,
+                 unsigned int timeStep);
+      std::vector<Group>
+      makeGroupsByDistance(const std::vector<Atom>& centers, float radius);
+      std::vector<Group>
+      makeGroupsByDistance(const std::vector<Atom>& centers, float radius,
+                           const std::vector<PdbAtom>& reference);
+      Group
+      makeGroupByDistance(const std::vector<Atom>& centers,
+                          const PdbAtom& atom, float radius);
+      void
+      pittpiRun();
 #ifdef HAVE_PYMOD_SADIC
-    Protein runSadic(const Protein& structure) const;
+      Protein
+      runSadic(const Protein& structure) const;
 #endif
 
-    Gromacs* p_gromacs;
-    std::string sasAnalysisFileName;
-    float radius;
-    unsigned long threshold;
-    Protein averageStructure;
-    boost::thread pittpiThread;
-    mutable boost::interprocess::interprocess_mutex statusMutex;
-    mutable boost::interprocess::interprocess_mutex nextStatusMutex;
-    mutable boost::interprocess::interprocess_condition nextStatusCondition;
-    mutable float __status;
-    bool sync;
+      Gromacs* p_gromacs;
+      std::string sasAnalysisFileName;
+      float radius;
+      unsigned long threshold;
+      Protein averageStructure;
+      boost::thread pittpiThread;
+      mutable boost::interprocess::interprocess_mutex statusMutex;
+      mutable boost::interprocess::interprocess_mutex nextStatusMutex;
+      mutable boost::interprocess::interprocess_condition nextStatusCondition;
+      mutable float __status;
+      bool sync;
   };
 }
 

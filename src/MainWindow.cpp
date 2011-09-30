@@ -45,21 +45,25 @@ MainWindow::init()
 {
   set_title("PSTP-finder");
   buttonNew.set_label("New analysis");
-  buttonNew.signal_clicked().
-    connect(sigc::mem_fun(*this, &MainWindow::createNewAnalysis));
+  buttonNew.signal_clicked(). connect(
+                                      sigc::mem_fun(
+                                                    *this,
+                                                    &MainWindow::createNewAnalysis));
   buttonOpen.set_label("Open analysis...");
-  buttonOpen.signal_clicked().
-    connect(sigc::mem_fun(*this, &MainWindow::buttonOpenClicked));
-  
-  buttonBox.add((Widget&)buttonNew);
+  buttonOpen.signal_clicked(). connect(
+                                       sigc::mem_fun(
+                                                     *this,
+                                                     &MainWindow::buttonOpenClicked));
+
+  buttonBox.add((Widget&) buttonNew);
   buttonBox.add(buttonOpen);
   buttonBox.set_layout(BUTTONBOX_SPREAD);
   buttonBox.set_spacing(10);
   buttonBox.set_border_width(10);
   buttonBox.set_child_min_height(40);
-  
+
   add(buttonBox);
-  
+
   newAnalysis = 0;
   signal_delete_event().connect(sigc::ptr_fun(&closeApplication));
 }
@@ -71,8 +75,10 @@ MainWindow::createNewAnalysis()
   {
     newAnalysis = new NewAnalysis(*this);
     newAnalysis->set_position(WIN_POS_CENTER_ON_PARENT);
-    newAnalysis->signal_unmap().
-      connect(sigc::mem_fun(*this, &MainWindow::destroyNewAnalysis));
+    newAnalysis->signal_unmap(). connect(
+                                         sigc::mem_fun(
+                                                       *this,
+                                                       &MainWindow::destroyNewAnalysis));
     hide();
   }
 }
@@ -83,7 +89,7 @@ MainWindow::destroyNewAnalysis()
   if(newAnalysis != 0)
   {
     newAnalysis->hide();
-    delete(newAnalysis);
+    delete (newAnalysis);
     newAnalysis = 0;
     show();
   }
@@ -109,18 +115,18 @@ MainWindow::buttonOpenClicked()
   }
 
   switch(response)
-  {
-    case RESPONSE_OK:
     {
+    case RESPONSE_OK:
       if(fs::exists(fs::path(filename)) and newAnalysis == 0)
       {
         hide();
         newAnalysis = new NewAnalysis(*this);
         newAnalysis->set_position(WIN_POS_CENTER_ON_PARENT);
-        newAnalysis->signal_unmap().
-          connect(sigc::mem_fun(*this, &MainWindow::destroyNewAnalysis));
+        newAnalysis->signal_unmap(). connect(
+                                             sigc::mem_fun(
+                                                           *this,
+                                                           &MainWindow::destroyNewAnalysis));
         newAnalysis->openSessionFile(filename);
       }
     }
-  }
 }

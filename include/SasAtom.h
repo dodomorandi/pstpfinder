@@ -24,29 +24,31 @@
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
 
-extern "C" {
-   #include <typedefs.h>
+extern "C"
+{
+#include <typedefs.h>
 }
 
 namespace Gromacs
 {
-  struct SasAtom: public Atom
+  struct SasAtom :
+      public Atom
   {
-    real sas;
+      real sas;
 
-  private:
-    friend class boost::serialization::access;
+    private:
+      friend class boost::serialization::access;
 
-    template <typename Archive>
-    void
-    serialize(Archive& ar, const unsigned int version)
-    {
-      ar & x;
-      ar & y;
-      ar & z;
-      ar & sas;
-    }
+      template<typename Archive>
+        void
+        serialize(Archive& ar, const unsigned int version)
+        {
+          ar & x;
+          ar & y;
+          ar & z;
+          ar & sas;
+        }
   };
-};
+}
 
 #endif

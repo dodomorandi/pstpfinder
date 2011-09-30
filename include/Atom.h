@@ -22,83 +22,99 @@
 
 #include <cmath>
 
-extern "C" {
-  #include <typedefs.h>
+extern "C"
+{
+#include <typedefs.h>
 }
 
 namespace Gromacs
 {
   struct Atom
   {
-    real x, y, z;
+      real x, y, z;
 
-    Atom() { return; }
-    Atom(float value) { x = value; y = value; z = value; }
+      Atom()
+      {
+        ;
+      }
 
-    Atom operator +(const Atom& value) const
-    {
-      Atom ret;
-      ret.x = x + value.x;
-      ret.y = y + value.y;
-      ret.z = z + value.z;
+      Atom(float value)
+      {
+        x = value;
+        y = value;
+        z = value;
+      }
 
-      return ret;
-    }
+      Atom
+      operator +(const Atom& value) const
+      {
+        Atom ret;
+        ret.x = x + value.x;
+        ret.y = y + value.y;
+        ret.z = z + value.z;
 
-    Atom operator /(float value) const
-    {
-      Atom ret;
-      ret.x = x / value;
-      ret.y = y / value;
-      ret.z = z / value;
+        return ret;
+      }
 
-      return ret;
-    }
+      Atom
+      operator /(float value) const
+      {
+        Atom ret;
+        ret.x = x / value;
+        ret.y = y / value;
+        ret.z = z / value;
 
-    Atom operator *(float value) const
-    {
-      Atom ret;
-      ret.x = x * value;
-      ret.y = y * value;
-      ret.z = z * value;
+        return ret;
+      }
 
-      return ret;
-    }
+      Atom
+      operator *(float value) const
+      {
+        Atom ret;
+        ret.x = x * value;
+        ret.y = y * value;
+        ret.z = z * value;
 
-    Atom& operator +=(const Atom& value)
-    {
-      x += value.x;
-      y += value.y;
-      z += value.z;
+        return ret;
+      }
 
-      return *this;
-    }
+      Atom&
+      operator +=(const Atom& value)
+      {
+        x += value.x;
+        y += value.y;
+        z += value.z;
 
-    Atom& operator /=(float value)
-    {
-      x /= value;
-      y /= value;
-      z /= value;
+        return *this;
+      }
 
-      return *this;
-    }
+      Atom&
+      operator /=(float value)
+      {
+        x /= value;
+        y /= value;
+        z /= value;
 
-    Atom& operator *=(float value)
-    {
-      x *= value;
-      y *= value;
-      z *= value;
+        return *this;
+      }
 
-      return *this;
-    }
+      Atom&
+      operator *=(float value)
+      {
+        x *= value;
+        y *= value;
+        z *= value;
 
-    float distance(const Atom& atom) const
-    {
-      return std::sqrt(std::pow(x - atom.x, 2) +
-                       std::pow(y - atom.y, 2) +
-                       std::pow(z - atom.z, 2));
-    }
+        return *this;
+      }
+
+      float
+      distance(const Atom& atom) const
+      {
+        return std::sqrt(std::pow(x - atom.x, 2) + std::pow(y - atom.y, 2)
+            + std::pow(z - atom.z, 2));
+      }
   };
-};
+}
 
 #endif

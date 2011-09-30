@@ -22,15 +22,17 @@
 
 #include <csignal>
 
-void __CExceptionHandler_handler(int signum);
+void
+__CExceptionHandler_handler(int signum);
 
 class CExceptionHandler
 {
-public:
-  CExceptionHandler();
-  ~CExceptionHandler();
-private:
-  void handler(int signum);
+  public:
+    CExceptionHandler();
+    ~CExceptionHandler();
+  private:
+    void
+    handler(int signum);
 };
 
 #endif

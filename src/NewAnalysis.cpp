@@ -50,8 +50,8 @@ NewAnalysis::init()
 {
   signal_start_spin.connect(sigc::mem_fun(*this, &NewAnalysis::start_spin));
   signal_stop_spin.connect(sigc::mem_fun(*this, &NewAnalysis::stop_spin));
-  signal_update_limits.
-    connect(sigc::mem_fun(*this, &NewAnalysis::update_limits));
+  signal_update_limits. connect(sigc::mem_fun(*this,
+                                              &NewAnalysis::update_limits));
 
   set_title("PSTP-finder");
 
@@ -61,26 +61,30 @@ NewAnalysis::init()
   trjFilter.add_pattern("*.trj");
   trjChooser.add_filter(trjFilter);
   trjChooser.signal_file_set().connect(
-    sigc::mem_fun(*this, &NewAnalysis::chooserTrajectoryClicked));
+                                       sigc::mem_fun(
+                                                     *this,
+                                                     &NewAnalysis::chooserTrajectoryClicked));
   trjChooser.set_size_request(150, -1);
-  
+
   labelTrajectory.set_label("Trajectory file:");
-  
+
   hboxTrajectory.pack_start(labelTrajectory, PACK_SHRINK);
   hboxTrajectory.pack_start(trjChooser);
   hboxTrajectory.set_homogeneous(false);
   hboxTrajectory.set_spacing(10);
-  
+
   FileFilter tprFilter;
   tprFilter.set_name("Topology files");
   tprFilter.add_pattern("*.tpr");
   tprChooser.add_filter(tprFilter);
   tprChooser.set_size_request(150, -1);
   tprChooser.signal_file_set().connect(
-    sigc::mem_fun(*this, &NewAnalysis::checkParameters));
-  
+                                       sigc::mem_fun(
+                                                     *this,
+                                                     &NewAnalysis::checkParameters));
+
   labelTopology.set_label("Topology file:");
-  
+
   hboxTopology.pack_start(labelTopology, PACK_SHRINK);
   hboxTopology.pack_start(tprChooser);
   hboxTopology.set_homogeneous(false);
@@ -141,7 +145,9 @@ NewAnalysis::init()
   labelSessionFile.set_label("Session file:");
   buttonBrowseFile.set_label("Browse...");
   buttonBrowseFile.signal_clicked().connect(
-    sigc::mem_fun(*this, &NewAnalysis::buttonBrowseFileClicked));
+                                            sigc::mem_fun(
+                                                          *this,
+                                                          &NewAnalysis::buttonBrowseFileClicked));
   hboxSession.set_spacing(10);
   hboxSession.set_homogeneous(false);
   hboxSession.pack_start(labelSessionFile, PACK_SHRINK);
@@ -161,11 +167,11 @@ NewAnalysis::init()
 
   mainFrame.set_label("Main files");
   mainFrame.add(hboxFrame);
-  
+
   buttonRun.set_label("Run!");
   buttonRun.set_sensitive(false);
-  buttonRun.signal_clicked().
-    connect(sigc::mem_fun(*this, &NewAnalysis::runAnalysis));
+  buttonRun.signal_clicked(). connect(sigc::mem_fun(*this,
+                                                    &NewAnalysis::runAnalysis));
   buttonBoxRun.set_layout(BUTTONBOX_END);
   buttonBoxRun.pack_end(buttonRun);
 
@@ -202,8 +208,7 @@ NewAnalysis::stop_spin()
 
 void
 NewAnalysis::runPittpi(Gromacs::Gromacs& gromacs,
-                       const string& analysisFileName,
-                       float radius,
+                       const string& analysisFileName, float radius,
                        float threshold)
 {
   progress.set_fraction(0);
@@ -233,8 +238,8 @@ NewAnalysis::runAnalysis()
   std::locale oldLocale;
   std::locale::global(std::locale("C"));
 
-  Gromacs::Gromacs gromacs( trjChooser.get_filename(),
-                            tprChooser.get_filename());
+  Gromacs::Gromacs
+      gromacs(trjChooser.get_filename(), tprChooser.get_filename());
 
   gromacs.setBegin(spinBegin.get_value());
   gromacs.setEnd(spinEnd.get_value());
@@ -269,8 +274,8 @@ NewAnalysis::runAnalysis()
   std::ofstream sessionFile;
   if(writeSession)
   {
-    sessionFile.open(entrySessionFile.get_text().c_str(),
-                     std::ios::trunc | std::ios::out | std::ios::binary);
+    sessionFile.open(entrySessionFile.get_text().c_str(), std::ios::trunc
+        | std::ios::out | std::ios::binary);
 
     sessionFile << trjChooser.get_filename() << endl;
     sessionFile << tprChooser.get_filename() << endl;
@@ -292,7 +297,7 @@ NewAnalysis::runAnalysis()
 
   while((currentFrame = gromacs.getCurrentFrame()) < count)
   {
-    progress.set_fraction(static_cast<float>(currentFrame) / count);
+    progress.set_fraction(static_cast<float> (currentFrame) / count);
     while(Main::events_pending())
       Main::iteration();
     gromacs.waitNextFrame();
@@ -321,7 +326,7 @@ NewAnalysis::runAnalysis()
 
   while((currentFrame = gromacs.getCurrentFrame()) < count)
   {
-    progress.set_fraction(static_cast<float>(currentFrame) / count);
+    progress.set_fraction(static_cast<float> (currentFrame) / count);
     while(Main::events_pending())
       Main::iteration();
     gromacs.waitNextFrame();
@@ -330,7 +335,6 @@ NewAnalysis::runAnalysis()
   gromacs.waitOperation();
   while(Main::events_pending())
     Main::iteration();
-
 
   gromacs.getAverageStructure().dumpPdb("/tmp/aver.pdb");
 
@@ -359,14 +363,14 @@ NewAnalysis::runAnalysis()
   std::locale::global(oldLocale);
 
   MessageDialog msg("Two log files have been written in /tmp/pockets.log and "
-                    "/tmp/pockets_details.log");
+    "/tmp/pockets_details.log");
   msg.run();
 }
 
 void
 NewAnalysis::chooserTrajectoryClicked()
 {
-  if(not fs::exists(fs::path(static_cast<string>(trjChooser.get_filename()))))
+  if(not fs::exists(fs::path(static_cast<string> (trjChooser.get_filename()))))
   {
     spinBegin.set_sensitive(false);
     spinEnd.set_sensitive(false);
@@ -374,8 +378,9 @@ NewAnalysis::chooserTrajectoryClicked()
     hScaleEnd.set_sensitive(false);
   }
   else
-    Glib::Thread::create(
-      sigc::mem_fun(*this, &NewAnalysis::threadTrajectoryClicked), false);
+    Glib::Thread::create(sigc::mem_fun(*this,
+                                       &NewAnalysis::threadTrajectoryClicked),
+                         false);
 
   checkParameters();
 }
@@ -413,8 +418,8 @@ NewAnalysis::update_limits()
 void
 NewAnalysis::checkParameters()
 {
-  if(fs::exists(fs::path(static_cast<string>(tprChooser.get_filename()))) and
-     fs::exists(fs::path(static_cast<string>(trjChooser.get_filename()))))
+  if(fs::exists(fs::path(static_cast<string> (tprChooser.get_filename())))
+      and fs::exists(fs::path(static_cast<string> (trjChooser.get_filename()))))
     buttonRun.set_sensitive(true);
   else
     buttonRun.set_sensitive(false);
@@ -435,17 +440,17 @@ NewAnalysis::buttonBrowseFileClicked()
   int response = chooser.run();
 
   switch(response)
-  {
-    case RESPONSE_OK:
     {
-      string filename = chooser.get_filename();
-      if(fs::extension(fs::path(filename)) != ".csf")
-        filename = fs::change_extension(fs::path(filename), ".csf").string();
+    case RESPONSE_OK:
+      {
+        string filename = chooser.get_filename();
+        if(fs::extension(fs::path(filename)) != ".csf")
+          filename = fs::change_extension(fs::path(filename), ".csf").string();
 
-      entrySessionFile.set_text(filename);
-      break;
+        entrySessionFile.set_text(filename);
+        break;
+      }
     }
-  }
 }
 
 void
@@ -459,7 +464,8 @@ NewAnalysis::openSessionFile(const string& sessionFileName)
   while(Main::events_pending())
     Main::iteration();
 
-  std::ifstream sessionFile(sessionFileName.c_str(), std::ios::in | std::ios::binary);
+  std::ifstream sessionFile(sessionFileName.c_str(), std::ios::in
+      | std::ios::binary);
   std::string tmpString;
   double tmpDouble;
   unsigned int tmpUInt;
@@ -486,21 +492,21 @@ NewAnalysis::openSessionFile(const string& sessionFileName)
   sessionFile >> tmpUInt;
   if(sessionFile.peek() == '\n')
     sessionFile.get();
-  char* chunk = new char[1024*1024*128];
-  unsigned long nChunks = tmpUInt / (1024*1024*128);
-  unsigned long remainChunk = tmpUInt % (1024*1024*128);
+  char* chunk = new char[1024 * 1024 * 128];
+  unsigned long nChunks = tmpUInt / (1024 * 1024 * 128);
+  unsigned long remainChunk = tmpUInt % (1024 * 1024 * 128);
   if(fs::exists(fs::path("/tmp/sas.psf")))
     fs::remove(fs::path("/tmp/sas.psf"));
-  std::ofstream streamSas("/tmp/sas.psf",
-                          std::ios::trunc | std::ios::out | std::ios::binary);
+  std::ofstream streamSas("/tmp/sas.psf", std::ios::trunc | std::ios::out
+      | std::ios::binary);
   for(unsigned long i = 0; i < nChunks; i++)
   {
     while(Main::events_pending())
       Main::iteration();
-    sessionFile.read(chunk, 1024*1024*128);
+    sessionFile.read(chunk, 1024 * 1024 * 128);
     while(Main::events_pending())
       Main::iteration();
-    streamSas.write(chunk, 1024*1024*128);
+    streamSas.write(chunk, 1024 * 1024 * 128);
   }
 
   if(remainChunk != 0)
@@ -518,18 +524,18 @@ NewAnalysis::openSessionFile(const string& sessionFileName)
   sessionFile >> tmpUInt;
   if(sessionFile.peek() == '\n')
     sessionFile.get();
-  nChunks = tmpUInt / (1024*1024*128);
-  remainChunk = tmpUInt % (1024*1024*128);
-  std::ofstream streamPdb("/tmp/aver.pdb",
-                          std::ios::trunc | std::ios::out | std::ios::binary);
+  nChunks = tmpUInt / (1024 * 1024 * 128);
+  remainChunk = tmpUInt % (1024 * 1024 * 128);
+  std::ofstream streamPdb("/tmp/aver.pdb", std::ios::trunc | std::ios::out
+      | std::ios::binary);
   for(unsigned long i = 0; i < nChunks; i++)
   {
     while(Main::events_pending())
       Main::iteration();
-    sessionFile.read(chunk, 1024*1024*128);
+    sessionFile.read(chunk, 1024 * 1024 * 128);
     while(Main::events_pending())
       Main::iteration();
-    streamPdb.write(chunk, 1024*1024*128);
+    streamPdb.write(chunk, 1024 * 1024 * 128);
   }
 
   if(remainChunk != 0)
@@ -547,7 +553,8 @@ NewAnalysis::openSessionFile(const string& sessionFileName)
 
   delete[] chunk;
 
-  Gromacs::Gromacs gromacs(trjChooser.get_filename(), tprChooser.get_filename());
+  Gromacs::Gromacs
+      gromacs(trjChooser.get_filename(), tprChooser.get_filename());
   __timeStep = gromacs.getTimeStep();
   __frames = gromacs.getFramesCount();
   gromacs.setBegin(beginTime);
@@ -578,7 +585,7 @@ NewAnalysis::openSessionFile(const string& sessionFileName)
     Main::iteration();
 
   runPittpi(gromacs, "/tmp/sas.psf", spinRadius.get_value(),
-                         spinPocketThreshold.get_value());
+            spinPocketThreshold.get_value());
 
   progress.hide();
   fs::remove(fs::path("/tmp/sas.psf"));
@@ -594,6 +601,6 @@ NewAnalysis::openSessionFile(const string& sessionFileName)
     Main::iteration();
 
   MessageDialog msg("Two log files have been written in /tmp/pockets.log and "
-                    "/tmp/pockets_details.log");
+    "/tmp/pockets_details.log");
   msg.run();
 }

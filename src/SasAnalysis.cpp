@@ -25,8 +25,7 @@ namespace io = boost::iostreams;
 namespace ip = boost::interprocess;
 namespace fs = boost::filesystem;
 
-SasAnalysis::SasAnalysis(unsigned int nAtoms,
-                         std::string filename,
+SasAnalysis::SasAnalysis(unsigned int nAtoms, std::string filename,
                          bool savingMode)
 {
   this->nAtoms = nAtoms;
@@ -34,8 +33,7 @@ SasAnalysis::SasAnalysis(unsigned int nAtoms,
   init(filename, savingMode);
 }
 
-SasAnalysis::SasAnalysis(const Gromacs& gromacs,
-                         std::string filename,
+SasAnalysis::SasAnalysis(const Gromacs& gromacs, std::string filename,
                          bool savingMode)
 {
   nAtoms = gromacs.getGroup("Protein").size();
@@ -51,7 +49,7 @@ SasAnalysis::init(string filename, bool savingMode)
   if(savingMode)
   {
     fileIO = io::file_descriptor(filename, BOOST_IOS::trunc | BOOST_IOS::out |
-                                           BOOST_IOS::binary);
+    BOOST_IOS::binary);
     mode = MODE_SAVE;
   }
   else
@@ -87,7 +85,7 @@ SasAnalysis::~SasAnalysis()
 
     delete inArchive;
   }
-    
+
   delete bufferSemaphore;
 }
 
@@ -201,7 +199,7 @@ SasAnalysis::flush()
   frames.clear();
   operationThread->wakeUp();
   bufferMutex.unlock();
-  
+
 }
 
 bool
@@ -210,9 +208,9 @@ SasAnalysis::save(const std::string& filename)
   if(mode != MODE_SAVE)
     return false;
 
-  if (this->filename == filename)
+  if(this->filename == filename)
     return true;
-  
+
   std::string old_filename = this->filename;
   fs::copy_file(old_filename, filename);
   if(not fs::exists(filename))
@@ -220,18 +218,18 @@ SasAnalysis::save(const std::string& filename)
 
   this->filename = filename;
   fileIO = io::file_descriptor(filename, BOOST_IOS::trunc | BOOST_IOS::out |
-                                         BOOST_IOS::binary);
-  
+  BOOST_IOS::binary);
+
   if(not save())
   {
     fileIO.close();
     boost::filesystem::remove(filename);
     this->filename = old_filename;
     fileIO = io::file_descriptor(old_filename, BOOST_IOS::app | BOOST_IOS::out |
-                                               BOOST_IOS::binary);
+        BOOST_IOS::binary);
     return false;
   }
-  
+
   return true;
 }
 
@@ -240,7 +238,7 @@ SasAnalysis::save()
 {
   if(mode != MODE_SAVE)
     return false;
-  
+
   if(chunks.empty())
     return false;
 
@@ -271,20 +269,10 @@ SasAnalysis::dumpChunk(const std::vector<SasAtom*>& chunk,
   unsigned int size = chunk.size();
   out << size;
 
-  for
-  (
-    std::vector<SasAtom*>::const_iterator i = chunk.begin();
-    i < chunk.end();
-    i++
-  )
+  for(std::vector<SasAtom*>::const_iterator i = chunk.begin(); i < chunk.end(); i++)
   {
     const SasAtom* end = *i + nAtoms;
-    for
-    (
-      SasAtom* j = *i;
-      j < end;
-      j++
-    )
+    for(SasAtom* j = *i; j < end; j++)
       out << *j;
   }
 }
@@ -333,11 +321,13 @@ SasAnalysis::OperationThread::OperationThread(SasAnalysis& parent)
   this->parent = &parent;
   isStopped = false;
   if(parent.mode == SasAnalysis::MODE_SAVE)
-    thread = boost::thread(boost::bind(
-                &SasAnalysis::OperationThread::threadSave, boost::ref(*this)));
+    thread
+        = boost::thread(boost::bind(&SasAnalysis::OperationThread::threadSave,
+                                    boost::ref(*this)));
   else
-    thread = boost::thread(boost::bind(
-                &SasAnalysis::OperationThread::threadOpen, boost::ref(*this)));
+    thread
+        = boost::thread(boost::bind(&SasAnalysis::OperationThread::threadOpen,
+                                    boost::ref(*this)));
 }
 
 SasAnalysis::OperationThread::~OperationThread()
@@ -349,17 +339,17 @@ void
 SasAnalysis::OperationThread::threadSave()
 {
   bool cond;
-  
+
   while(not isStopped)
   {
     parent->bufferMutex.lock();
-    cond = (parent->bufferSemaphoreCount == parent->bufferSemaphoreMax - 1 and
-       not isStopped);
-    
+    cond = (parent->bufferSemaphoreCount == parent->bufferSemaphoreMax - 1
+        and not isStopped);
+
     if(cond)
     {
       parent->bufferMutex.unlock();
-      ip::scoped_lock<ip::interprocess_mutex> lock(wakeMutex);      
+      ip::scoped_lock<ip::interprocess_mutex> lock(wakeMutex);
       wakeCondition.wait(lock);
       parent->bufferMutex.lock();
     }
@@ -368,16 +358,12 @@ SasAnalysis::OperationThread::threadSave()
       parent->bufferMutex.unlock();
       break;
     }
-    
+
     if(parent->save())
     {
       vector<SasAtom*>& curChunk = parent->chunks.front();
-      for
-      (
-        std::vector<SasAtom*>::iterator i = curChunk.begin();
-        i < curChunk.end();
-        i++
-      )
+      for(std::vector<SasAtom*>::iterator i = curChunk.begin(); i
+          < curChunk.end(); i++)
         delete[] *i;
       curChunk.clear();
 
@@ -385,17 +371,17 @@ SasAnalysis::OperationThread::threadSave()
       parent->bufferSemaphore->post();
       parent->bufferSemaphoreCount++;
     }
-    
+
     parent->bufferMutex.unlock();
   }
-  
+
   parent->bufferMutex.lock();
   while(parent->bufferSemaphoreCount < parent->bufferSemaphoreMax - 1)
   {
     parent->save();
     parent->chunks.pop_front();
     parent->bufferSemaphore->post();
-    parent->bufferSemaphoreCount++;    
+    parent->bufferSemaphoreCount++;
   }
   parent->bufferMutex.unlock();
 }
@@ -408,8 +394,8 @@ SasAnalysis::OperationThread::threadOpen()
   while(not isStopped)
   {
     parent->bufferMutex.lock();
-    cond = (parent->bufferSemaphoreCount == parent->bufferSemaphoreMax - 1 and
-            not isStopped);
+    cond = (parent->bufferSemaphoreCount == parent->bufferSemaphoreMax - 1
+        and not isStopped);
 
     if(cond)
     {
@@ -452,12 +438,12 @@ SasAnalysis::OperationThread::stop()
     thread.join();
     return;
   }
-  
+
   parent->bufferMutex.lock();
   isStopped = true;
   wakeCondition.notify_one();
   parent->bufferMutex.unlock();
-  
+
   thread.join();
 }
 
@@ -503,7 +489,7 @@ SasAnalysis::updateChunks()
   if(not changeable)
     return;
 
-  unsigned int numFrames =  maxBytes / sizeof(SasAtom) / nAtoms;
+  unsigned int numFrames = maxBytes / sizeof(SasAtom) / nAtoms;
 
   bufferSemaphoreMax = numFrames * nAtoms * sizeof(SasAtom) / maxChunk;
   maxFrames = numFrames / bufferSemaphoreMax;

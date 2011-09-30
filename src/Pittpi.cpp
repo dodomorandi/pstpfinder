@@ -35,22 +35,19 @@ using namespace std;
 namespace py = boost::python;
 
 Group::Group(const Residue& refResidue) :
-  referenceAtom(&refResidue.getAtomByType("H")),
-  referenceRes(&refResidue)
+  referenceAtom(&refResidue.getAtomByType("H")), referenceRes(&refResidue)
 {
   zeros = 0;
 }
 
 Group::Group(const PdbAtom& refAtomH) :
-  referenceAtom(&refAtomH),
-  referenceRes(0)
+  referenceAtom(&refAtomH), referenceRes(0)
 {
   zeros = 0;
 }
 
 Group::Group(const PdbAtom& refAtomH, const Protein& protein) :
-  referenceAtom(&refAtomH),
-  referenceRes(&protein.getResidueByAtom(refAtomH))
+  referenceAtom(&refAtomH), referenceRes(&protein.getResidueByAtom(refAtomH))
 {
   zeros = 0;
 }
@@ -115,10 +112,8 @@ Group::sortByZeros(const Group& a, const Group& b)
   return (a.zeros > b.zeros);
 }
 
-Pittpi::Pittpi(Gromacs& gromacs,
-               const std::string& sasAnalysisFileName,
-               float radius,
-               unsigned long threshold)
+Pittpi::Pittpi(Gromacs& gromacs, const std::string& sasAnalysisFileName,
+               float radius, unsigned long threshold)
 {
   this->p_gromacs = &gromacs;
   this->sasAnalysisFileName = sasAnalysisFileName;
@@ -175,7 +170,7 @@ Pittpi::waitNextStatus()
     return;
 
   boost::interprocess::scoped_lock<boost::interprocess::interprocess_mutex>
-                                                     lock(nextStatusMutex);
+      lock(nextStatusMutex);
   nextStatusCondition.wait(lock);
 }
 
@@ -205,24 +200,14 @@ Pittpi::pittpiRun()
 
   setStatus(0);
   vector<Pocket> pockets;
-  for
-  (
-    vector<Group>::iterator i = groups.begin();
-    i < groups.end();
-    i++
-  )
+  for(vector<Group>::iterator i = groups.begin(); i < groups.end(); i++)
   {
     vector<float>::iterator startPocket = i->sas.end();
     unsigned int notOpenCounter = 0;
     float* maxFrame = 0;
     float mean = 0;
 
-    for
-    (
-      vector<float>::iterator j = i->sas.begin();
-      j < i->sas.end();
-      j++
-    )
+    for(vector<float>::iterator j = i->sas.begin(); j < i->sas.end(); j++)
     {
       if(startPocket == i->sas.end() and *j > 1)
       {
@@ -239,37 +224,37 @@ Pittpi::pittpiRun()
         }
         else
         {
-          if(static_cast<unsigned int>(distance(startPocket, j) *
-            (float)PS_PER_SAS) >= threshold)
+          if(static_cast<unsigned int> (distance(startPocket, j)
+              *
+              (float) PS_PER_SAS) >= threshold)
           {
             Pocket pocket(*i);
-            pocket.startFrame = distance(i->sas.begin(), startPocket) *
-                                frameStep + 1;
-            pocket.startPs = distance(i->sas.begin(), startPocket) *
-                                PS_PER_SAS;
-            pocket.endFrame = (distance(i->sas.begin(), j) - notOpenCounter - 1)
-                              * frameStep + 1;
+            pocket.startFrame = distance(i->sas.begin(), startPocket)
+                * frameStep + 1;
+            pocket.startPs = distance(i->sas.begin(), startPocket) * PS_PER_SAS;
+            pocket.endFrame
+                = (distance(i->sas.begin(), j) - notOpenCounter - 1)
+                    * frameStep + 1;
             pocket.endPs = (distance(i->sas.begin(), j) - notOpenCounter - 1)
-                           * PS_PER_SAS;
+                * PS_PER_SAS;
             pocket.width = pocket.endPs - pocket.startPs;
-            pocket.maxAreaFrame = static_cast<int>
-                                  (maxFrame - &(*i->sas.begin())) * frameStep
-                                  + 1;
-            pocket.maxAreaPs = static_cast<float>
-                               (maxFrame - &(*i->sas.begin())) * PS_PER_SAS;
-            pocket.openingFraction = static_cast<float>
-                                     (distance(startPocket, j) - notOpenCounter - 1) /
-                                     (i->sas.size() - i->zeros);
+            pocket.maxAreaFrame = static_cast<int> (maxFrame
+                - &(*i->sas.begin())) * frameStep + 1;
+            pocket.maxAreaPs = static_cast<float> (maxFrame
+                - &(*i->sas.begin())) * PS_PER_SAS;
+            pocket.openingFraction = static_cast<float> (distance(startPocket,
+                                                                  j)
+                - notOpenCounter - 1) / (i->sas.size() - i->zeros);
 
-            mean /=  distance(startPocket, j);
+            mean /= distance(startPocket, j);
             vector<float>::iterator nearToAverage = startPocket;
             for(vector<float>::iterator k = startPocket + 1; k < j; k++)
               if(abs(mean - *nearToAverage) > abs(mean - *k))
                 nearToAverage = k;
-            pocket.averageNearFrame = distance(i->sas.begin(), nearToAverage) *
-                          frameStep + 1;
-            pocket.averageNearPs = distance(i->sas.begin(), nearToAverage) *
-                                      PS_PER_SAS;
+            pocket.averageNearFrame = distance(i->sas.begin(), nearToAverage)
+                * frameStep + 1;
+            pocket.averageNearPs = distance(i->sas.begin(), nearToAverage)
+                * PS_PER_SAS;
 
             pockets.push_back(pocket);
           }
@@ -285,41 +270,26 @@ Pittpi::pittpiRun()
       }
     }
 
-    setStatus(static_cast<float>(distance(groups.begin(), i) + 1)
-              / groups.size());
+    setStatus(static_cast<float> (distance(groups.begin(), i) + 1)
+        / groups.size());
   }
 
   sort(pockets.begin(), pockets.end(), Pocket::sortByWidth);
-  for
-  (
-    vector<Pocket>::iterator i = pockets.begin();
-    i < pockets.end();
-    i++
-  )
+  for(vector<Pocket>::iterator i = pockets.begin(); i < pockets.end(); i++)
   {
     const Residue& centralRes = i->group.getCentralRes();
     const vector<const Residue*>& groupRes = i->group.getResidues();
-    for
-    (
-      vector<const Residue*>::const_iterator j = groupRes.begin();
-      j < groupRes.end();
-      j++
-    )
+    for(vector<const Residue*>::const_iterator j = groupRes.begin(); j
+        < groupRes.end(); j++)
     {
-      if(*j == &centralRes or
-         centralRes.index + 1 == (*j)->index or
-         centralRes.index - 1 == (*j)->index)
+      if(*j == &centralRes or centralRes.index + 1 == (*j)->index
+          or centralRes.index - 1 == (*j)->index)
         continue;
 
-      for
-      (
-        vector<Pocket>::iterator k = i + 1;
-        k < pockets.end();
-        k++
-      )
+      for(vector<Pocket>::iterator k = i + 1; k < pockets.end(); k++)
       {
-        if(&k->group.getCentralRes() != &centralRes and
-           &k->group.getCentralRes() == *j)
+        if(&k->group.getCentralRes() != &centralRes
+            and &k->group.getCentralRes() == *j)
           pockets.erase(k--);
       }
     }
@@ -335,36 +305,22 @@ Pittpi::pittpiRun()
   pocketLog << setfill(' ') << setw(11) << left << "duration";
   pocketLog << "group members" << endl;
 
-  for
-  (
-    vector<Group>::const_iterator i = groups.begin();
-    i < groups.end();
-    i++
-  )
+  for(vector<Group>::const_iterator i = groups.begin(); i < groups.end(); i++)
   {
     vector<Pocket>::const_iterator bestPocket = pockets.end();
     bool writtenHeader = false;
 
-    for
-    (
-      vector<Pocket>::const_iterator j = pockets.begin();
-      j < pockets.end();
-      j++
-    )
+    for(vector<Pocket>::const_iterator j = pockets.begin(); j < pockets.end(); j++)
     {
       if(&j->group == &(*i))
       {
         if(not writtenHeader)
         {
           pocketDetailLog << "Pocket centered on "
-                          << aminoacidTriplet[i->getCentralRes().type]
-                          << i->getCentralRes().index << ":";
-          for
-          (
-            vector<const Residue*>::const_iterator k = i->getResidues().begin();
-            k < i->getResidues().end();
-            k++
-          )
+              << aminoacidTriplet[i->getCentralRes().type]
+              << i->getCentralRes().index << ":";
+          for(vector<const Residue*>::const_iterator k =
+              i->getResidues().begin(); k < i->getResidues().end(); k++)
             pocketDetailLog << " " << (*k)->index;
           pocketDetailLog << endl << endl;
 
@@ -381,15 +337,15 @@ Pittpi::pittpiRun()
           bestPocket = j;
 
         stringstream perc;
-        perc << static_cast<int>(j->openingFraction * 100) << "%";
-        pocketDetailLog << setfill('0') << setw(7) << right << (int)j->startPs
-                        << "    ";
-        pocketDetailLog << setfill('0') << setw(7) << right << (int)j->width
-                        << "    ";
-        pocketDetailLog << setfill('0') << setw(7) << right << (int)j->maxAreaPs
-                        << "     ";
+        perc << static_cast<int> (j->openingFraction * 100) << "%";
+        pocketDetailLog << setfill('0') << setw(7) << right << (int) j->startPs
+            << "    ";
+        pocketDetailLog << setfill('0') << setw(7) << right << (int) j->width
+            << "    ";
         pocketDetailLog << setfill('0') << setw(7) << right
-                        << (int)j->averageNearPs << "    ";
+            << (int) j->maxAreaPs << "     ";
+        pocketDetailLog << setfill('0') << setw(7) << right
+            << (int) j->averageNearPs << "    ";
         pocketDetailLog << perc.str();
 
         pocketDetailLog << endl;
@@ -403,23 +359,19 @@ Pittpi::pittpiRun()
       aaRef << aminoacidTriplet[centralRes.type] << centralRes.index;
 
       pocketLog << setfill('0') << setw(7) << right << bestPocket->group.zeros
-                                << "    ";
+          << "    ";
       pocketLog << setfill(' ') << setw(11) << left << aaRef.str();
-      pocketLog << setfill('0') << setw(7) << right << (int)bestPocket->startPs
-                << "    ";
-      pocketLog << setfill('0') << setw(7) << right << (int)bestPocket->endPs
-                << "    ";
-      pocketLog << setfill('0') << setw(7) << right << (int)bestPocket->width
-                << "   ";
+      pocketLog << setfill('0') << setw(7) << right
+          << (int) bestPocket->startPs << "    ";
+      pocketLog << setfill('0') << setw(7) << right << (int) bestPocket->endPs
+          << "    ";
+      pocketLog << setfill('0') << setw(7) << right << (int) bestPocket->width
+          << "   ";
 
       const vector<const Residue*>& pocketResidues =
-        bestPocket->group.getResidues();
-      for
-      (
-        vector<const Residue*>::const_iterator k = pocketResidues.begin();
-        k < pocketResidues.end();
-        k++
-      )
+          bestPocket->group.getResidues();
+      for(vector<const Residue*>::const_iterator k = pocketResidues.begin(); k
+          < pocketResidues.end(); k++)
         pocketLog << " " << (*k)->index;
 
       pocketLog << endl;
@@ -442,18 +394,12 @@ Pittpi::makeGroups(float radius)
   // Calculate the center for every sidechain (excluding PRO)
   setStatus(0);
   centers.reserve(residues.size());
-  for
-  (
-    vector<Residue>::const_iterator i = residues.begin();
-    i < residues.end();
-    i++
-  )
+  for(vector<Residue>::const_iterator i = residues.begin(); i < residues.end(); i++)
   {
     Atom center(0);
     const vector<PdbAtom>& atoms = i->atoms;
 
-    if(strcmp(i->getAtomByType("H1").type, "UNK") != 0 or
-       i->type == AA_PRO)
+    if(strcmp(i->getAtomByType("H1").type, "UNK") != 0 or i->type == AA_PRO)
     {
       centers.push_back(center);
       continue;
@@ -466,19 +412,19 @@ Pittpi::makeGroups(float radius)
     unsigned int count = 0;
     for(vector<PdbAtom>::const_iterator j = atoms.begin(); j < atoms.end(); j++)
     {
-      if(strcmp(j->type, "N") != 0 and strcmp(j->type, "CA") != 0 and
-         strcmp(j->type, "H") != 0 and strcmp(j->type, "C") != 0 and
-         strcmp(j->type, "O") != 0 and strcmp(j->type, "HA") != 0)
+      if(strcmp(j->type, "N") != 0 and strcmp(j->type, "CA") != 0
+          and strcmp(j->type, "H") != 0 and strcmp(j->type, "C") != 0
+          and strcmp(j->type, "O") != 0 and strcmp(j->type, "HA") != 0)
       {
         center += *j;
         count++;
       }
     }
-    center /= (float)count;
+    center /= (float) count;
 
     centers.push_back(center);
-    setStatus(static_cast<float>(distance(residues.begin(), i) + 1) /
-              residues.size());
+    setStatus(static_cast<float> (distance(residues.begin(), i) + 1)
+        / residues.size());
   }
 
   vector<Group> groups = makeGroupsByDistance(centers, radius);
@@ -489,12 +435,7 @@ Pittpi::makeGroups(float radius)
   vector<PdbAtom> newCenters;
 
   setStatus(0);
-  for
-  (
-    vector<Group>::iterator i = groups.begin();
-    i < groups.end();
-    i++
-  )
+  for(vector<Group>::iterator i = groups.begin(); i < groups.end(); i++)
   {
     const vector<const Residue*>& groupRes = i->getResidues();
     PdbAtom center = i->getCentralH();
@@ -509,24 +450,15 @@ Pittpi::makeGroups(float radius)
       continue;
     }
 
-    for
-    (
-      vector<const Residue*>::const_iterator j = groupRes.begin();
-      j < groupRes.end();
-      j++
-    )
+    for(vector<const Residue*>::const_iterator j = groupRes.begin(); j
+        < groupRes.end(); j++)
     {
       const vector<PdbAtom>& atoms = (*j)->atoms;
 
       if((*j)->type == AA_PRO)
         continue;
 
-      for
-      (
-        vector<PdbAtom>::const_iterator k = atoms.begin();
-        k < atoms.end();
-        k++
-      )
+      for(vector<PdbAtom>::const_iterator k = atoms.begin(); k < atoms.end(); k++)
       {
         center += (*k) * sadicStructure.getAtomByIndex(k->index).bFactor;
         totalDepth += sadicStructure.getAtomByIndex(k->index).bFactor;
@@ -535,8 +467,8 @@ Pittpi::makeGroups(float radius)
 
     center /= totalDepth;
     newCenters.push_back(center);
-    setStatus(static_cast<float>(distance(groups.begin(), i) + 1) /
-              groups.size());
+    setStatus(static_cast<float> (distance(groups.begin(), i) + 1)
+        / groups.size());
   }
   groups = makeGroupsByDistance(centers, radius, newCenters);
 #endif
@@ -552,12 +484,7 @@ Pittpi::makeGroupsByDistance(const vector<Atom>& centers, float radius)
   const vector<Residue>& residues = averageStructure.residues();
   vector<Atom>::const_iterator centersBegin = centers.begin();
 
-  for
-  (
-    vector<Residue>::const_iterator i = residues.begin();
-    i < residues.end();
-    i++
-  )
+  for(vector<Residue>::const_iterator i = residues.begin(); i < residues.end(); i++)
   {
     const PdbAtom& hAtom = i->getAtomByType("H");
 
@@ -574,17 +501,15 @@ Pittpi::makeGroupsByDistance(const vector<Atom>& centers, float radius)
     group << makeGroupByDistance(centers, hAtom, radius);
     groups.push_back(group);
 
-    setStatus(static_cast<float>(distance(residues.begin(), i) + 1) /
-              residues.size());
+    setStatus(static_cast<float> (distance(residues.begin(), i) + 1)
+        / residues.size());
   }
 
   return groups;
 }
 
-
 vector<Group>
-Pittpi::makeGroupsByDistance(const vector<Atom>& centers,
-                             float radius,
+Pittpi::makeGroupsByDistance(const vector<Atom>& centers, float radius,
                              const vector<PdbAtom>& reference)
 {
   vector<Group> groups;
@@ -592,12 +517,8 @@ Pittpi::makeGroupsByDistance(const vector<Atom>& centers,
 
   vector<Residue>::const_iterator resIterator;
   vector<PdbAtom>::const_iterator refIterator;
-  for
-  (
-    resIterator = residues.begin(), refIterator = reference.begin();
-    resIterator < residues.end();
-    resIterator++, refIterator++
-  )
+  for(resIterator = residues.begin(), refIterator = reference.begin(); resIterator
+      < residues.end(); resIterator++, refIterator++)
   {
     if(strcmp(resIterator->getAtomByType("H").type, "UNK") == 0)
     {
@@ -608,16 +529,15 @@ Pittpi::makeGroupsByDistance(const vector<Atom>& centers,
     group << makeGroupByDistance(centers, *refIterator, radius);
 
     groups.push_back(group);
-    setStatus(static_cast<float>(distance(residues.begin(), resIterator) + 1) /
-              residues.size());
+    setStatus(static_cast<float> (distance(residues.begin(), resIterator) + 1)
+        / residues.size());
   }
 
   return groups;
 }
 
 Group
-Pittpi::makeGroupByDistance(const vector<Atom>& centers,
-                            const PdbAtom& atom,
+Pittpi::makeGroupByDistance(const vector<Atom>& centers, const PdbAtom& atom,
                             float radius)
 {
   const vector<Residue>& residues = averageStructure.residues();
@@ -626,12 +546,7 @@ Pittpi::makeGroupByDistance(const vector<Atom>& centers,
   if(strcmp(atom.type, "UNK") == 0)
     return group;
 
-  for
-  (
-    vector<Atom>::const_iterator j = centers.begin();
-    j < centers.end();
-    j++
-  )
+  for(vector<Atom>::const_iterator j = centers.begin(); j < centers.end(); j++)
   {
     const Residue& curResidue = residues[distance(centers.begin(), j)];
     if(curResidue.type == AA_PRO)
@@ -679,18 +594,13 @@ Pittpi::fillGroups(vector<Group>& groups, const string& sasAnalysisFileName,
       *fIndex += atom->sas;
 
     counter++;
-    setStatus(static_cast<float>(counter) / gromacs.getFramesCount());
+    setStatus(static_cast<float> (counter) / gromacs.getFramesCount());
     (*sasAnalysis) >> sasAtoms;
   }
 
   {
     unsigned int* ptr;
-    for
-    (
-      fIndex = meanSas, ptr = notZero;
-      fIndex < meanSas + nAtoms;
-      fIndex++, ptr++
-    )
+    for(fIndex = meanSas, ptr = notZero; fIndex < meanSas + nAtoms; fIndex++, ptr++)
       *fIndex /= counter;
   }
 
@@ -698,12 +608,7 @@ Pittpi::fillGroups(vector<Group>& groups, const string& sasAnalysisFileName,
   delete sasAnalysis;
 
   /* Let's prepare groups sas vectors */
-  for
-  (
-    vector<Group>::iterator i = groups.begin();
-    i < groups.end();
-    i++
-  )
+  for(vector<Group>::iterator i = groups.begin(); i < groups.end(); i++)
     i->sas.reserve(frames);
 
   /* Now we have to normalize values and store results per group */
@@ -737,12 +642,7 @@ Pittpi::fillGroups(vector<Group>& groups, const string& sasAnalysisFileName,
     }
 
     fIndex = sas;
-    for
-    (
-      SasAtom* atom = sasAtoms;
-      atom < sasAtoms + protein.size();
-      atom++, fIndex++
-    )
+    for(SasAtom* atom = sasAtoms; atom < sasAtoms + protein.size(); atom++, fIndex++)
       *fIndex = atom->sas;
 
     {
@@ -757,12 +657,7 @@ Pittpi::fillGroups(vector<Group>& groups, const string& sasAnalysisFileName,
       for(float* i = sasCounter; i < sasCounter + protein.size(); i++)
         *i /= timeStep;
 
-      for
-      (
-        vector<Group>::iterator i = groups.begin();
-        i < groups.end();
-        i++
-      )
+      for(vector<Group>::iterator i = groups.begin(); i < groups.end(); i++)
       {
         i->sas.push_back(0);
         float& curFrame = i->sas.back();
@@ -774,12 +669,8 @@ Pittpi::fillGroups(vector<Group>& groups, const string& sasAnalysisFileName,
         }
 
         const vector<const Residue*>& residues = i->getResidues();
-        for
-        (
-          vector<const Residue*>::const_iterator j = residues.begin();
-          j < residues.end();
-          j++
-        )
+        for(vector<const Residue*>::const_iterator j = residues.begin(); j
+            < residues.end(); j++)
         {
           const PdbAtom& atomH = (*j)->getAtomByType("H");
           if(strcmp(atomH.type, "UNK") == 0)
@@ -798,7 +689,7 @@ Pittpi::fillGroups(vector<Group>& groups, const string& sasAnalysisFileName,
     }
 
     counter++;
-    setStatus(static_cast<float>(counter) / gromacs.getFramesCount());
+    setStatus(static_cast<float> (counter) / gromacs.getFramesCount());
     (*sasAnalysis) >> sasAtoms;
   }
 
@@ -807,12 +698,7 @@ Pittpi::fillGroups(vector<Group>& groups, const string& sasAnalysisFileName,
     for(float* i = sasCounter; i < sasCounter + protein.size(); i++)
       *i /= (counter % timeStep);
 
-    for
-    (
-      vector<Group>::iterator i = groups.begin();
-      i < groups.end();
-      i++
-    )
+    for(vector<Group>::iterator i = groups.begin(); i < groups.end(); i++)
     {
       i->sas.push_back(0);
       float& curFrame = i->sas.back();
@@ -824,12 +710,8 @@ Pittpi::fillGroups(vector<Group>& groups, const string& sasAnalysisFileName,
       }
 
       const vector<const Residue*>& residues = i->getResidues();
-      for
-      (
-        vector<const Residue*>::const_iterator j = residues.begin();
-        j < residues.end();
-        j++
-      )
+      for(vector<const Residue*>::const_iterator j = residues.begin(); j
+          < residues.end(); j++)
       {
         const PdbAtom& atomH = (*j)->getAtomByType("H");
         if(strcmp(atomH.type, "UNK") == 0)
@@ -892,12 +774,7 @@ Pittpi::runSadic(const Protein& structure) const
 
     py::object models = reader.attr("get_models")(file);
     unsigned int imodel = 0;
-    for
-    (
-      py::stl_input_iterator<py::object> model(models);
-      model != iterObjEnd;
-      model++, imodel++
-    )
+    for(py::stl_input_iterator<py::object> model(models); model != iterObjEnd; model++, imodel++)
     {
       setStatus(-1);
       py::object query = sadic.attr("get_query")(settings, *model);
@@ -914,15 +791,15 @@ Pittpi::runSadic(const Protein& structure) const
           setStatus(-1);
           query.attr("sample")(prot, scheme);
 
-          if(settings.attr("radius") !=
-              sadic.attr("consts").attr("RADIUS_NO_INSIDE"))
+          if(settings.attr("radius")
+              != sadic.attr("consts").attr("RADIUS_NO_INSIDE"))
             break;
 
           py::stl_input_iterator<py::object> i(query);
-          for(;i != iterObjEnd;i++)
+          for(; i != iterObjEnd; i++)
           {
             setStatus(-1);
-            if(static_cast<bool>(i->attr("all_inside")))
+            if(static_cast<bool> (i->attr("all_inside")))
               break;
           }
           if(i == iterObjEnd)
@@ -943,13 +820,9 @@ Pittpi::runSadic(const Protein& structure) const
     setStatus(-1);
 
     py::object total_viewers =
-      viewer.attr("create_total_viewers")(settings, models_viewers);
-    for
-    (
-      py::stl_input_iterator<py::object> viewers(total_viewers);
-      viewers != iterObjEnd;
-      viewers++
-    )
+        viewer.attr("create_total_viewers")(settings, models_viewers);
+    for(py::stl_input_iterator<py::object> viewers(total_viewers); viewers
+        != iterObjEnd; viewers++)
     {
       out.attr("output")(*viewers);
       setStatus(-1);
@@ -958,22 +831,14 @@ Pittpi::runSadic(const Protein& structure) const
     if(py::len(models_viewers) == 0)
       return Protein();
 
-    for
-    (
-      py::stl_input_iterator<py::object> model_viewer(models_viewers);
-      model_viewer != iterObjEnd;
-      model_viewer++
-    )
+    for(py::stl_input_iterator<py::object> model_viewer(models_viewers); model_viewer
+        != iterObjEnd; model_viewer++)
     {
-      for
-      (
-        py::stl_input_iterator<py::object> curViewer(*model_viewer);
-        curViewer != iterObjEnd;
-        curViewer++
-      )
+      for(py::stl_input_iterator<py::object> curViewer(*model_viewer); curViewer
+          != iterObjEnd; curViewer++)
       {
-        string fileName = py::extract<string>
-                            (out.attr("mangle_file_name")(*curViewer));
+        string fileName =
+            py::extract<string>(out.attr("mangle_file_name")(*curViewer));
         sadicProtein = Protein(fileName);
         break;
       }
