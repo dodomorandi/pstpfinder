@@ -33,6 +33,8 @@ namespace Gromacs
     public:
       MetaStream(const string& fileName, streampos begin = 0,
                  streampos end = -1);
+      MetaStream(ifstream& modifiableStream, streampos begin = -1,
+                 streampos end = -1);
 
       MetaStream& operator >>(string& out);
       MetaStream& operator >>(bool& out);

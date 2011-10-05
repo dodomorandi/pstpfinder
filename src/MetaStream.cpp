@@ -40,6 +40,26 @@ namespace Gromacs
     this->inputStream.seekg(streamBegin, ios_base::beg);
   }
 
+  MetaStream::MetaStream(ifstream& modifiableStream, streampos begin,
+                         streampos end) :
+      copyStream(), inputStream(modifiableStream)
+  {
+    if(begin == -1)
+      streamBegin = inputStream.tellg();
+    else
+      streamBegin = begin;
+
+    if(end == -1)
+    {
+      inputStream.seekg(0, ios_base::end);
+      streamEnd = inputStream.tellg();
+    }
+    else
+      streamEnd = end;
+
+    inputStream.seekg(streamBegin, ios_base::beg);
+  }
+
   bool
   MetaStream::eof() const
   {
