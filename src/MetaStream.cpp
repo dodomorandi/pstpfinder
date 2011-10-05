@@ -27,7 +27,14 @@ namespace Gromacs
       inputStream(fileName.c_str(), ios_base::in | ios_base::binary)
   {
     streamBegin = begin;
-    streamEnd = end;
+
+    if(end == -1)
+    {
+      inputStream.seekg(0, ios_base::end);
+      streamEnd = inputStream.tellg();
+    }
+    else
+      streamEnd = end;
 
     this->inputStream.seekg(streamBegin, ios_base::beg);
   }
