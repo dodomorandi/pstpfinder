@@ -25,7 +25,8 @@ namespace Gromacs
 {
   MetaStream::MetaStream(const string& fileName, streampos begin, streampos end) :
       copyStream(fileName.c_str(), ios_base::in | ios_base::binary),
-      inputStream(copyStream)
+      inputStream(copyStream),
+      valid(true)
   {
     streamBegin = begin;
 
@@ -42,7 +43,7 @@ namespace Gromacs
 
   MetaStream::MetaStream(ifstream& modifiableStream, streampos begin,
                          streampos end) :
-      copyStream(), inputStream(modifiableStream)
+      copyStream(), inputStream(modifiableStream), valid(true)
   {
     if(begin == -1)
       streamBegin = inputStream.tellg();
@@ -73,7 +74,7 @@ namespace Gromacs
     void
     MetaStream::getFromStream(T& out)
     {
-      if(eof())
+      if(not valid or eof())
         throw;
 
       inputStream >> out;

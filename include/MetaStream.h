@@ -63,6 +63,7 @@ namespace Gromacs
       streampos streamBegin;
       streampos streamEnd;
       streampos currentPosition;
+      const bool valid;
 
       template<typename T> void getFromStream(T& out);
   };
