@@ -20,11 +20,39 @@
 #ifndef SESSION_H_
 #define SESSION_H_
 
+#include <string>
+#include <fstream>
+
+using namespace std;
+
 namespace Gromacs
 {
-
   class Session
   {
+    public:
+      Session(const string& fileName);
+      string getTrajectoryFileName() const;
+      string getTopologyFileName() const;
+      unsigned long getBeginTime() const;
+      unsigned long getEndTime() const;
+      double getRadius() const;
+      double getPocketThreshold() const;
+
+    private:
+      ifstream sessionFile;
+      string trajectoryFileName;
+      string topologyFileName;
+      unsigned long beginTime;
+      unsigned long endTime;
+      double radius;
+      double pocketThreshold;
+      streampos sasDataStart;
+      streampos sasDataEnd;
+      streampos pdbDataStart;
+      streampos pdbDataEnd;
+
+      void
+      readSession(const string& fileName);
   };
 
 } /* namespace Gromacs */

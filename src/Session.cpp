@@ -18,8 +18,81 @@
  */
 
 #include "Session.h"
+#include <fstream>
+
+using namespace std;
 
 namespace Gromacs
 {
 
-} /* namespace Gromacs */
+  Session::Session(const string & fileName) :
+      sessionFile(fileName.c_str(), ios::in | ios::binary)
+  {
+    readSession(fileName);
+  }
+
+  string
+  Session::getTrajectoryFileName() const
+  {
+    return trajectoryFileName;
+  }
+
+  string
+  Session::getTopologyFileName() const
+  {
+    return topologyFileName;
+  }
+
+  unsigned long
+  Session::getBeginTime() const
+  {
+    return beginTime;
+  }
+
+  unsigned long
+  Session::getEndTime() const
+  {
+    return endTime;
+  }
+
+  double
+  Session::getRadius() const
+  {
+    return radius;
+  }
+
+  double
+  Session::getPocketThreshold() const
+  {
+    return pocketThreshold;
+  }
+
+  void
+  Session::readSession(const string & fileName)
+  {
+    unsigned int dataUInt;
+    sessionFile.seekg(0);
+    getline(sessionFile, trajectoryFileName);
+    getline(sessionFile, topologyFileName);
+    sessionFile >> beginTime;
+    sessionFile >> endTime;
+    sessionFile >> radius;
+    sessionFile >> pocketThreshold;
+    sessionFile >> dataUInt;
+    if(sessionFile.peek() == '\n')
+      (void) (sessionFile.get());
+
+    sasDataStart = sessionFile.tellg();
+    sessionFile.seekg(dataUInt, ios::cur);
+    sasDataEnd = sessionFile.tellg();
+    sessionFile >> dataUInt;
+    if(sessionFile.peek() == '\n')
+      (void) (sessionFile.get());
+
+    pdbDataStart = sessionFile.tellg();
+    sessionFile.seekg(dataUInt, ios::cur);
+    pdbDataEnd = sessionFile.tellg();
+  }
+/* namespace Gromacs */
+}
+
