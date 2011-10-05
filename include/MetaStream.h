@@ -56,7 +56,8 @@ namespace Gromacs
       bool eof() const;
 
     private:
-      ifstream inputStream;
+      ifstream copyStream;
+      ifstream& inputStream;
       streampos streamBegin;
       streampos streamEnd;
       streampos currentPosition;

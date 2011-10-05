@@ -24,7 +24,8 @@ using namespace std;
 namespace Gromacs
 {
   MetaStream::MetaStream(const string& fileName, streampos begin, streampos end) :
-      inputStream(fileName.c_str(), ios_base::in | ios_base::binary)
+      copyStream(fileName.c_str(), ios_base::in | ios_base::binary),
+      inputStream(copyStream)
   {
     streamBegin = begin;
 
