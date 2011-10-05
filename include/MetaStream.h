@@ -20,11 +20,49 @@
 #ifndef METASTREAM_H_
 #define METASTREAM_H_
 
+#include <string>
+#include <fstream>
+
+using namespace std;
+
 namespace Gromacs
 {
 
   class MetaStream
   {
+    public:
+      MetaStream(const string& fileName, streampos begin = 0,
+                 streampos end = -1);
+
+      MetaStream& operator >>(string& out);
+      MetaStream& operator >>(bool& out);
+      MetaStream& operator >>(char& out);
+      MetaStream& operator >>(unsigned char& out);
+      MetaStream& operator >>(short& out);
+      MetaStream& operator >>(unsigned short& out);
+      MetaStream& operator >>(int& out);
+      MetaStream& operator >>(unsigned int& out);
+      MetaStream& operator >>(long& out);
+      MetaStream& operator >>(unsigned long& out);
+      MetaStream& operator >>(void*& out);
+      MetaStream& operator >>(float& out);
+      MetaStream& operator >>(double& out);
+      MetaStream& operator >>(long double& out);
+
+      MetaStream& seekg(long pos);
+      MetaStream& seekg(long off, ios_base::seek_dir way);
+
+      long tellg();
+      bool eof() const;
+
+    private:
+      ifstream inputStream;
+      streampos streamBegin;
+      streampos streamEnd;
+      streampos currentPosition;
+
+      void checkEof() const;
+      template<typename T> void getFromStream(T& out);
   };
 
 } /* namespace Gromacs */

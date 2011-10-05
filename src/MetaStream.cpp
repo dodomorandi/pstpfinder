@@ -19,7 +19,176 @@
 
 #include "MetaStream.h"
 
+using namespace std;
+
 namespace Gromacs
 {
+  MetaStream::MetaStream(const string& fileName, streampos begin, streampos end) :
+      inputStream(fileName.c_str(), ios_base::in | ios_base::binary)
+  {
+    streamBegin = begin;
+    streamEnd = end;
 
+    this->inputStream.seekg(streamBegin, ios_base::beg);
+  }
+
+  bool
+  MetaStream::eof() const
+  {
+    if(currentPosition < streamEnd and currentPosition >= streamBegin)
+      return true;
+    else
+      return false;
+  }
+
+  void
+  MetaStream::checkEof() const
+  {
+    if(eof())
+      throw;
+  }
+
+  template<typename T>
+    void
+    MetaStream::getFromStream(T& out)
+    {
+      checkEof();
+      inputStream >> out;
+      currentPosition += sizeof(T);
+
+      if(currentPosition > streamEnd)
+      {
+        inputStream.seekg(streamEnd);
+        currentPosition = streamEnd;
+      }
+      else if(currentPosition < streamBegin)
+      {
+        inputStream.seekg(streamBegin);
+        currentPosition = streamBegin;
+      }
+    }
+
+  MetaStream&
+  MetaStream::operator >>(string& out)
+  {
+    getFromStream<string>(out);
+    return *this;
+  }
+
+  MetaStream&
+  MetaStream::operator >>(bool& out)
+  {
+    getFromStream<bool>(out);
+    return *this;
+  }
+
+  MetaStream&
+  MetaStream::operator >>(char& out)
+  {
+    getFromStream<char>(out);
+    return *this;
+  }
+
+  MetaStream&
+  MetaStream::operator >>(unsigned char& out)
+  {
+    getFromStream<unsigned char>(out);
+    return *this;
+  }
+
+  MetaStream&
+  MetaStream::operator >>(short& out)
+  {
+    getFromStream<short>(out);
+    return *this;
+  }
+
+  MetaStream&
+  MetaStream::operator >>(unsigned short& out)
+  {
+    getFromStream<unsigned short>(out);
+    return *this;
+  }
+
+  MetaStream&
+  MetaStream::operator >>(int& out)
+  {
+    getFromStream<int>(out);
+    return *this;
+  }
+
+  MetaStream&
+  MetaStream::operator >>(unsigned int& out)
+  {
+    getFromStream<unsigned int>(out);
+    return *this;
+  }
+
+  MetaStream&
+  MetaStream::operator >>(long& out)
+  {
+    getFromStream<long>(out);
+    return *this;
+  }
+
+  MetaStream&
+  MetaStream::operator >>(unsigned long& out)
+  {
+    getFromStream<unsigned long>(out);
+    return *this;
+  }
+
+  MetaStream&
+  MetaStream::operator >>(void*& out)
+  {
+    getFromStream<void*>(out);
+    return *this;
+  }
+
+  MetaStream&
+  MetaStream::operator >>(float& out)
+  {
+    getFromStream<float>(out);
+    return *this;
+  }
+
+  MetaStream&
+  MetaStream::operator >>(double& out)
+  {
+    getFromStream<double>(out);
+    return *this;
+  }
+
+  MetaStream&
+  MetaStream::operator >>(long double& out)
+  {
+    getFromStream<long double>(out);
+    return *this;
+  }
+
+  MetaStream&
+  MetaStream::seekg(long pos)
+  {
+    inputStream.seekg(streamBegin + pos);
+    return *this;
+  }
+
+  MetaStream&
+  MetaStream::seekg(long off, ios_base::seek_dir way)
+  {
+    if(way == ios_base::beg)
+      inputStream.seekg(streamBegin + off);
+    else if(way == ios_base::end)
+      inputStream.seekg(streamEnd - off);
+    else
+      inputStream.seekg(off);
+
+    return *this;
+  }
+
+  long
+  MetaStream::tellg()
+  {
+    return inputStream.tellg() - streamBegin;
+  }
 } /* namespace Gromacs */
