@@ -23,6 +23,12 @@ using namespace std;
 
 namespace Gromacs
 {
+  MetaStream::MetaStream() :
+      copyStream(), inputStream(copyStream), valid(false)
+  {
+    ;
+  }
+
   MetaStream::MetaStream(const string& fileName, streampos begin, streampos end) :
       copyStream(fileName.c_str(), ios_base::in | ios_base::binary),
       inputStream(copyStream),

@@ -31,6 +31,7 @@ namespace Gromacs
   class MetaStream
   {
     public:
+      MetaStream();
       MetaStream(const string& fileName, streampos begin = 0,
                  streampos end = -1);
       MetaStream(ifstream& modifiableStream, streampos begin = -1,
