@@ -64,7 +64,6 @@ namespace Gromacs
       streampos streamEnd;
       streampos currentPosition;
 
-      void checkEof() const;
       template<typename T> void getFromStream(T& out);
   };
 

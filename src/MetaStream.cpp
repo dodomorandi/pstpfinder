@@ -69,18 +69,13 @@ namespace Gromacs
       return false;
   }
 
-  void
-  MetaStream::checkEof() const
-  {
-    if(eof())
-      throw;
-  }
-
   template<typename T>
     void
     MetaStream::getFromStream(T& out)
     {
-      checkEof();
+      if(eof())
+        throw;
+
       inputStream >> out;
       currentPosition += sizeof(T);
 
