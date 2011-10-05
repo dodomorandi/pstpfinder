@@ -20,6 +20,7 @@
 #ifndef SESSION_H_
 #define SESSION_H_
 
+#include "MetaStream.h"
 #include <string>
 #include <fstream>
 
@@ -37,9 +38,13 @@ namespace Gromacs
       unsigned long getEndTime() const;
       double getRadius() const;
       double getPocketThreshold() const;
+      MetaStream& getSasStream();
+      MetaStream& getPdbStream();
 
     private:
       ifstream sessionFile;
+      ifstream sasStream;
+      ifstream pdbStream;
       string trajectoryFileName;
       string topologyFileName;
       unsigned long beginTime;
@@ -50,6 +55,8 @@ namespace Gromacs
       streampos sasDataEnd;
       streampos pdbDataStart;
       streampos pdbDataEnd;
+      MetaStream sasMetaStream;
+      MetaStream pdbMetaStream;
 
       void
       readSession(const string& fileName);

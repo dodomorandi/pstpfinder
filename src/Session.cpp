@@ -26,7 +26,9 @@ namespace Gromacs
 {
 
   Session::Session(const string & fileName) :
-      sessionFile(fileName.c_str(), ios::in | ios::binary)
+      sessionFile(fileName.c_str(), ios::in | ios::binary),
+      sasStream(fileName.c_str(), ios::in | ios::binary),
+      pdbStream(fileName.c_str(), ios::in | ios::binary)
   {
     readSession(fileName);
   }
@@ -67,6 +69,18 @@ namespace Gromacs
     return pocketThreshold;
   }
 
+  MetaStream&
+  Session::getSasStream()
+  {
+    return sasMetaStream;
+  }
+
+  MetaStream&
+  Session::getPdbStream()
+  {
+    return pdbMetaStream;
+  }
+
   void
   Session::readSession(const string & fileName)
   {
@@ -78,20 +92,22 @@ namespace Gromacs
     sessionFile >> endTime;
     sessionFile >> radius;
     sessionFile >> pocketThreshold;
+
     sessionFile >> dataUInt;
     if(sessionFile.peek() == '\n')
       (void) (sessionFile.get());
-
     sasDataStart = sessionFile.tellg();
     sessionFile.seekg(dataUInt, ios::cur);
     sasDataEnd = sessionFile.tellg();
+    sasMetaStream = MetaStream(sasStream, sasDataStart, sasDataEnd);
+
     sessionFile >> dataUInt;
     if(sessionFile.peek() == '\n')
       (void) (sessionFile.get());
-
     pdbDataStart = sessionFile.tellg();
     sessionFile.seekg(dataUInt, ios::cur);
     pdbDataEnd = sessionFile.tellg();
+    pdbMetaStream = MetaStream(pdbStream, pdbDataStart, pdbDataEnd);
   }
 /* namespace Gromacs */
 }
