@@ -84,6 +84,9 @@ namespace Gromacs
   void
   Session::readSession(const string & fileName)
   {
+    std::locale oldLocale;
+    std::locale::global(std::locale("C"));
+
     unsigned int dataUInt;
     sessionFile.seekg(0);
     getline(sessionFile, trajectoryFileName);
@@ -108,6 +111,8 @@ namespace Gromacs
     sessionFile.seekg(dataUInt, ios::cur);
     pdbDataEnd = sessionFile.tellg();
     pdbMetaStream = MetaStream(pdbStream, pdbDataStart, pdbDataEnd);
+
+    std::locale::global(oldLocale);
   }
 /* namespace Gromacs */
 }
