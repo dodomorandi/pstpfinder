@@ -52,6 +52,8 @@ namespace Gromacs
       MetaStream& operator >>(double& out);
       MetaStream& operator >>(long double& out);
 
+      MetaStream& operator =(const MetaStream& metaStream);
+
       MetaStream& seekg(long pos);
       MetaStream& seekg(long off, ios_base::seek_dir way);
 

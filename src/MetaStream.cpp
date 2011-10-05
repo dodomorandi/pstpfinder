@@ -197,6 +197,18 @@ namespace Gromacs
   }
 
   MetaStream&
+  MetaStream::operator =(const MetaStream& metaStream)
+  {
+    if(&metaStream == this)
+      return *this;
+
+    this->~MetaStream();
+    new (this) MetaStream(metaStream.inputStream, metaStream.streamBegin,
+                          metaStream.streamEnd);
+    return *this;
+  }
+
+  MetaStream&
   MetaStream::seekg(long pos)
   {
     inputStream.seekg(streamBegin + pos);
