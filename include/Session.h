@@ -39,7 +39,9 @@ namespace PstpFinder
       double getRadius() const;
       double getPocketThreshold() const;
       MetaStream& getSasStream();
+      unsigned long getSasSize() const;
       MetaStream& getPdbStream();
+      unsigned long getPdbSize() const;
 
     private:
       ifstream sessionFile;

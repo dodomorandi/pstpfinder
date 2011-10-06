@@ -75,10 +75,22 @@ namespace PstpFinder
     return sasMetaStream;
   }
 
+  unsigned long
+  Session::getSasSize() const
+  {
+    return sasDataEnd - sasDataStart;
+  }
+
   MetaStream&
   Session::getPdbStream()
   {
     return pdbMetaStream;
+  }
+
+  unsigned long
+  Session::getPdbSize() const
+  {
+    return pdbDataEnd - pdbDataStart;
   }
 
   void
