@@ -22,7 +22,7 @@
 
 using namespace std;
 
-namespace Gromacs
+namespace PstpFinder
 {
 
   Session::Session(const string & fileName) :
@@ -114,6 +114,6 @@ namespace Gromacs
 
     std::locale::global(oldLocale);
   }
-/* namespace Gromacs */
+/* namespace PstpFinder */
 }
 
