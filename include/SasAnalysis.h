@@ -43,7 +43,7 @@
 #include <iostream>
 #include <sstream>
 
-namespace Gromacs
+namespace PstpFinder
 {
   class SasAnalysis
   {
@@ -51,20 +51,26 @@ namespace Gromacs
       SasAnalysis(unsigned int nAtoms, std::string filename = "/tmp/sas.psf",
                   bool savingMode = true);
 
-          SasAnalysis(const Gromacs& gromacs, std::string filename =
-              "/tmp/sas.psf", bool savingMode = true);
+      SasAnalysis(const Gromacs& gromacs, std::string filename = "/tmp/sas.psf",
+                  bool savingMode = true);
 
       ~SasAnalysis();
+
       const SasAnalysis&
       operator <<(SasAtom* sasAtoms);
+
       SasAnalysis&
       operator >>(SasAtom*& sasAtom);
+
       bool
       setMaxBytes(unsigned long bytes);
+
       unsigned long
       getMaxBytes();
+
       bool
       setMaxChunkSize(unsigned long bytes);
+
       unsigned long
       getMaxChunkSize();
 
@@ -89,7 +95,8 @@ namespace Gromacs
 
       enum
       {
-        MODE_OPEN, MODE_SAVE
+        MODE_OPEN,
+        MODE_SAVE
       } mode;
 
       class OperationThread
@@ -97,14 +104,19 @@ namespace Gromacs
         public:
           OperationThread(SasAnalysis& parent);
           ~OperationThread();
+
           void
           wakeUp();
+
           void
           stop();
+
           void
           threadSave();
+
           void
           threadOpen();
+
         private:
           SasAnalysis* parent;
           bool isStopped;
@@ -118,17 +130,23 @@ namespace Gromacs
 
       void
       init(string saveFile, bool savingMode = true);
+
       void
       dumpChunk(const std::vector<SasAtom*>& chunk,
                 boost::archive::binary_oarchive& out) const;
+
       std::vector<SasAtom*>
       loadChunk(boost::archive::binary_iarchive& in);
+
       void
       flush();
+
       bool
       save(const std::string& filename);
+
       bool
       save();
+
       bool
       open();
 

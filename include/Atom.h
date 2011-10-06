@@ -27,7 +27,7 @@ extern "C"
 #include <typedefs.h>
 }
 
-namespace Gromacs
+namespace PstpFinder
 {
   struct Atom
   {

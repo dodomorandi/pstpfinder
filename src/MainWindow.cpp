@@ -29,104 +29,101 @@
 using namespace Gtk;
 namespace fs = boost::filesystem;
 
-MainWindow::MainWindow()
+namespace PstpFinder
 {
-  init();
-  show_all();
-}
 
-MainWindow::~MainWindow()
-{
-  destroyNewAnalysis();
-}
-
-void
-MainWindow::init()
-{
-  set_title("PSTP-finder");
-  buttonNew.set_label("New analysis");
-  buttonNew.signal_clicked(). connect(
-                                      sigc::mem_fun(
-                                                    *this,
-                                                    &MainWindow::createNewAnalysis));
-  buttonOpen.set_label("Open analysis...");
-  buttonOpen.signal_clicked(). connect(
-                                       sigc::mem_fun(
-                                                     *this,
-                                                     &MainWindow::buttonOpenClicked));
-
-  buttonBox.add((Widget&) buttonNew);
-  buttonBox.add(buttonOpen);
-  buttonBox.set_layout(BUTTONBOX_SPREAD);
-  buttonBox.set_spacing(10);
-  buttonBox.set_border_width(10);
-  buttonBox.set_child_min_height(40);
-
-  add(buttonBox);
-
-  newAnalysis = 0;
-  signal_delete_event().connect(sigc::ptr_fun(&closeApplication));
-}
-
-void
-MainWindow::createNewAnalysis()
-{
-  if(newAnalysis == 0)
+  MainWindow::MainWindow()
   {
-    newAnalysis = new NewAnalysis(*this);
-    newAnalysis->set_position(WIN_POS_CENTER_ON_PARENT);
-    newAnalysis->signal_unmap(). connect(
-                                         sigc::mem_fun(
-                                                       *this,
-                                                       &MainWindow::destroyNewAnalysis));
-    hide();
+    init();
+    show_all();
   }
-}
 
-void
-MainWindow::destroyNewAnalysis()
-{
-  if(newAnalysis != 0)
+  MainWindow::~MainWindow()
   {
-    newAnalysis->hide();
-    delete (newAnalysis);
+    destroyNewAnalysis();
+  }
+
+  void
+  MainWindow::init()
+  {
+    set_title("PSTP-finder");
+    buttonNew.set_label("New analysis");
+    buttonNew.signal_clicked().connect(
+        sigc::mem_fun(*this, &MainWindow::createNewAnalysis));
+    buttonOpen.set_label("Open analysis...");
+    buttonOpen.signal_clicked().connect(
+        sigc::mem_fun(*this, &MainWindow::buttonOpenClicked));
+
+    buttonBox.add((Widget&) buttonNew);
+    buttonBox.add(buttonOpen);
+    buttonBox.set_layout(BUTTONBOX_SPREAD);
+    buttonBox.set_spacing(10);
+    buttonBox.set_border_width(10);
+    buttonBox.set_child_min_height(40);
+
+    add(buttonBox);
+
     newAnalysis = 0;
-    show();
+    signal_delete_event().connect(sigc::ptr_fun(&closeApplication));
   }
-}
 
-void
-MainWindow::buttonOpenClicked()
-{
-  int response;
-  string filename;
+  void
+  MainWindow::createNewAnalysis()
   {
-    FileFilter filter;
-    filter.add_pattern("*.csf");
-    filter.set_name("PSTP-filter compressed session file");
-
-    FileChooserDialog chooser("Choose a saving file for this session",
-                              FILE_CHOOSER_ACTION_OPEN);
-    chooser.add_filter(filter);
-    chooser.add_button(Stock::CANCEL, RESPONSE_CANCEL);
-    chooser.add_button(Stock::OPEN, RESPONSE_OK);
-    response = chooser.run();
-    filename = chooser.get_filename();
+    if(newAnalysis == 0)
+    {
+      newAnalysis = new NewAnalysis(*this);
+      newAnalysis->set_position(WIN_POS_CENTER_ON_PARENT);
+      newAnalysis->signal_unmap().connect(
+          sigc::mem_fun(*this, &MainWindow::destroyNewAnalysis));
+      hide();
+    }
   }
 
-  switch(response)
+  void
+  MainWindow::destroyNewAnalysis()
+  {
+    if(newAnalysis != 0)
     {
-    case RESPONSE_OK:
-      if(fs::exists(fs::path(filename)) and newAnalysis == 0)
-      {
-        hide();
-        newAnalysis = new NewAnalysis(*this);
-        newAnalysis->set_position(WIN_POS_CENTER_ON_PARENT);
-        newAnalysis->signal_unmap(). connect(
-                                             sigc::mem_fun(
-                                                           *this,
-                                                           &MainWindow::destroyNewAnalysis));
-        newAnalysis->openSessionFile(filename);
-      }
+      newAnalysis->hide();
+      delete (newAnalysis);
+      newAnalysis = 0;
+      show();
     }
+  }
+
+  void
+  MainWindow::buttonOpenClicked()
+  {
+    int response;
+    string filename;
+    {
+      FileFilter filter;
+      filter.add_pattern("*.csf");
+      filter.set_name("PSTP-filter compressed session file");
+
+      FileChooserDialog chooser("Choose a saving file for this session",
+                                FILE_CHOOSER_ACTION_OPEN);
+      chooser.add_filter(filter);
+      chooser.add_button(Stock::CANCEL, RESPONSE_CANCEL);
+      chooser.add_button(Stock::OPEN, RESPONSE_OK);
+      response = chooser.run();
+      filename = chooser.get_filename();
+    }
+
+    switch(response)
+    {
+      case RESPONSE_OK:
+        if(fs::exists(fs::path(filename)) and newAnalysis == 0)
+        {
+          hide();
+          newAnalysis = new NewAnalysis(*this);
+          newAnalysis->set_position(WIN_POS_CENTER_ON_PARENT);
+          newAnalysis->signal_unmap().connect(
+              sigc::mem_fun(*this, &MainWindow::destroyNewAnalysis));
+          newAnalysis->openSessionFile(filename);
+        }
+    }
+  }
+
 }

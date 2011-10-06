@@ -25,7 +25,7 @@
 
 using namespace std;
 
-namespace Gromacs
+namespace PstpFinder
 {
 
   class MetaStream
@@ -71,5 +71,5 @@ namespace Gromacs
       template<typename T> void getFromStream(T& out);
   };
 
-} /* namespace Gromacs */
+} /* namespace PstpFinder */
 #endif /* METASTREAM_H_ */

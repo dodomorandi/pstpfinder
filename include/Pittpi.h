@@ -22,12 +22,13 @@
 
 #include "config.h"
 #include "Gromacs.h"
+#include "Protein.h"
 #include <vector>
 #include <boost/thread/thread.hpp>
 #include <boost/interprocess/sync/interprocess_mutex.hpp>
 #include <boost/interprocess/sync/interprocess_condition.hpp>
 
-namespace Gromacs
+namespace PstpFinder
 {
   class Group
   {

@@ -22,7 +22,10 @@
 
 #include <gtkmm.h>
 
-bool
-closeApplication(GdkEventAny* event);
+namespace PstpFinder
+{
+  bool
+  closeApplication(GdkEventAny* event);
+}
 
 #endif

@@ -30,7 +30,7 @@
 
 using namespace std;
 
-namespace Gromacs
+namespace PstpFinder
 {
   enum Aminoacids
   {

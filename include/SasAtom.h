@@ -29,10 +29,9 @@ extern "C"
 #include <typedefs.h>
 }
 
-namespace Gromacs
+namespace PstpFinder
 {
-  struct SasAtom :
-      public Atom
+  struct SasAtom : public Atom
   {
       real sas;
 

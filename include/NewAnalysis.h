@@ -27,62 +27,65 @@
 
 using namespace Gtk;
 
-class NewAnalysis :
-    public Window
+namespace PstpFinder
 {
-  public:
-    enum parallelOperation
-    {
-      OPERATION_WAIT
-    };
+  class NewAnalysis :
+      public Window
+  {
+    public:
+      enum parallelOperation
+      {
+        OPERATION_WAIT
+      };
 
-    NewAnalysis();
-    NewAnalysis(Window& parent);
-    void
-    openSessionFile(const string& sessionFileName);
-    Glib::Dispatcher signal_start_spin;
-    Glib::Dispatcher signal_stop_spin;
-    Glib::Dispatcher signal_update_limits;
-  private:
-    Frame mainFrame;
-    VBox vboxFrame1, vboxFrame2, vboxMain;
-    FileChooserButton trjChooser, tprChooser;
-    Label labelTrajectory, labelTopology, labelBegin, labelEnd, labelRadius,
-        labelPocketThreshold, labelPs, labelAngstrom, labelSessionFile;
-    HBox hboxTrajectory, hboxTopology, hboxBegin, hboxEnd, hboxFrame,
-        hboxRadius, hboxPocketThreshold, hboxSession;
-    Entry entrySessionFile;
-    HButtonBox buttonBoxRun;
-    Button buttonRun, buttonBrowseFile;
-    ProgressBar progress;
-    SpinButton spinBegin, spinEnd, spinRadius, spinPocketThreshold;
-    HScale hScaleBegin, hScaleEnd;
-    Spinner spinnerWait;
-    VSeparator vSeparator;
-    int __frames;
-    float __timeStep;
+      NewAnalysis();
+      NewAnalysis(Window& parent);
+      void
+      openSessionFile(const string& sessionFileName);
+      Glib::Dispatcher signal_start_spin;
+      Glib::Dispatcher signal_stop_spin;
+      Glib::Dispatcher signal_update_limits;
+    private:
+      Frame mainFrame;
+      VBox vboxFrame1, vboxFrame2, vboxMain;
+      FileChooserButton trjChooser, tprChooser;
+      Label labelTrajectory, labelTopology, labelBegin, labelEnd, labelRadius,
+          labelPocketThreshold, labelPs, labelAngstrom, labelSessionFile;
+      HBox hboxTrajectory, hboxTopology, hboxBegin, hboxEnd, hboxFrame,
+          hboxRadius, hboxPocketThreshold, hboxSession;
+      Entry entrySessionFile;
+      HButtonBox buttonBoxRun;
+      Button buttonRun, buttonBrowseFile;
+      ProgressBar progress;
+      SpinButton spinBegin, spinEnd, spinRadius, spinPocketThreshold;
+      HScale hScaleBegin, hScaleEnd;
+      Spinner spinnerWait;
+      VSeparator vSeparator;
+      int __frames;
+      float __timeStep;
 
-    void
-    init();
-    void
-    runAnalysis();
-    void
-    chooserTrajectoryClicked();
-    void
-    threadTrajectoryClicked();
-    void
-    start_spin();
-    void
-    stop_spin();
-    void
-    checkParameters();
-    void
-    buttonBrowseFileClicked();
-    void
-    update_limits();
-    void
-    runPittpi(Gromacs::Gromacs& gromacs, const string& analysisFileName,
-              float radius, float threshold);
-};
+      void
+      init();
+      void
+      runAnalysis();
+      void
+      chooserTrajectoryClicked();
+      void
+      threadTrajectoryClicked();
+      void
+      start_spin();
+      void
+      stop_spin();
+      void
+      checkParameters();
+      void
+      buttonBrowseFileClicked();
+      void
+      update_limits();
+      void
+      runPittpi(Gromacs& gromacs, const string& analysisFileName,
+                float radius, float threshold);
+  };
+}
 
 #endif

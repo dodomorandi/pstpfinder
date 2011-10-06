@@ -21,7 +21,7 @@
 
 using namespace std;
 
-namespace Gromacs
+namespace PstpFinder
 {
   MetaStream::MetaStream() :
       copyStream(), inputStream(copyStream), valid(false)

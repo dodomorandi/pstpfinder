@@ -24,24 +24,29 @@
 
 using namespace Gtk;
 
-static Main* kit;
-
-int
-main(int argc, char* argv[])
+namespace PstpFinder
 {
-  kit = new Main(argc, argv);
 
-  MainWindow win;
-  kit->run();
+  static Main* kit;
 
-  delete kit;
+  int
+  main(int argc, char* argv[])
+  {
+    kit = new Main(argc, argv);
 
-  return 0;
-}
+    MainWindow win;
+    kit->run();
 
-bool
-closeApplication(GdkEventAny* event)
-{
-  kit->quit();
-  return false;
+    delete kit;
+
+    return 0;
+  }
+
+  bool
+  closeApplication(GdkEventAny* event)
+  {
+    kit->quit();
+    return false;
+  }
+
 }

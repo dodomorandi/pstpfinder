@@ -26,7 +26,7 @@
 
 using namespace std;
 
-namespace Gromacs
+namespace PstpFinder
 {
   class Session
   {
@@ -62,5 +62,5 @@ namespace Gromacs
       readSession(const string& fileName);
   };
 
-} /* namespace Gromacs */
+} /* namespace PstpFinder */
 #endif /* SESSION_H_ */

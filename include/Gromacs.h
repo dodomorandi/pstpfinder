@@ -45,7 +45,7 @@ extern "C" int
 
 using namespace std;
 
-namespace Gromacs
+namespace PstpFinder
 {
   class Gromacs
   {

@@ -42,7 +42,7 @@
 
 using namespace std;
 
-namespace Gromacs
+namespace PstpFinder
 {
   Gromacs::Gromacs(float solventSize)
   {
