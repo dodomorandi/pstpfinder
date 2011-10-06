@@ -21,6 +21,7 @@
 #include "NewAnalysis.h"
 #include "Gromacs.h"
 #include "Pittpi.h"
+#include "Session.h"
 
 #include <gtkmm.h>
 #include <glibmm.h>
@@ -458,24 +459,18 @@ namespace PstpFinder
     while(Main::events_pending())
       Main::iteration();
 
-    std::ifstream sessionFile(sessionFileName.c_str(),
-                              std::ios::in | std::ios::binary);
+    Session sessionFile(sessionFileName);
     std::string tmpString;
     double tmpDouble;
     unsigned int tmpUInt;
 
-    std::getline(sessionFile, tmpString);
-    trjChooser.set_filename(tmpString);
-    std::getline(sessionFile, tmpString);
-    tprChooser.set_filename(tmpString);
+    trjChooser.set_filename(sessionFile.getTrajectoryFileName());
+    tprChooser.set_filename(sessionFile.getTopologyFileName());
 
-    sessionFile >> beginTime;
-    sessionFile >> endTime;
-
-    sessionFile >> tmpDouble;
-    spinRadius.set_value(tmpDouble);
-    sessionFile >> tmpDouble;
-    spinPocketThreshold.set_value(tmpDouble);
+    beginTime = sessionFile.getBeginTime();
+    endTime = sessionFile.getEndTime();
+    spinRadius.set_value(sessionFile.getRadius());
+    spinPocketThreshold.set_value(sessionFile.getPocketThreshold());
     entrySessionFile.set_text(sessionFileName);
 
     set_sensitive(false);
@@ -483,12 +478,10 @@ namespace PstpFinder
     while(Main::events_pending())
       Main::iteration();
 
-    sessionFile >> tmpUInt;
-    if(sessionFile.peek() == '\n')
-      sessionFile.get();
+    MetaStream& sasStream = sessionFile.getSasStream();
     char* chunk = new char[1024 * 1024 * 128];
-    unsigned long nChunks = tmpUInt / (1024 * 1024 * 128);
-    unsigned long remainChunk = tmpUInt % (1024 * 1024 * 128);
+    unsigned long nChunks = sessionFile.getSasSize() / (1024 * 1024 * 128);
+    unsigned long remainChunk = sessionFile.getSasSize() % (1024 * 1024 * 128);
     if(fs::exists(fs::path("/tmp/sas.psf")))
       fs::remove(fs::path("/tmp/sas.psf"));
     std::ofstream streamSas("/tmp/sas.psf",
@@ -497,7 +490,7 @@ namespace PstpFinder
     {
       while(Main::events_pending())
         Main::iteration();
-      sessionFile.read(chunk, 1024 * 1024 * 128);
+      sasStream.read(chunk, 1024 * 1024 * 128);
       while(Main::events_pending())
         Main::iteration();
       streamSas.write(chunk, 1024 * 1024 * 128);
@@ -507,7 +500,7 @@ namespace PstpFinder
     {
       while(Main::events_pending())
         Main::iteration();
-      sessionFile.read(chunk, remainChunk);
+      sasStream.read(chunk, remainChunk);
       while(Main::events_pending())
         Main::iteration();
       streamSas.write(chunk, remainChunk);
@@ -515,18 +508,16 @@ namespace PstpFinder
     streamSas.flush();
     streamSas.close();
 
-    sessionFile >> tmpUInt;
-    if(sessionFile.peek() == '\n')
-      sessionFile.get();
-    nChunks = tmpUInt / (1024 * 1024 * 128);
-    remainChunk = tmpUInt % (1024 * 1024 * 128);
+    MetaStream& pdbStream = sessionFile.getPdbStream();
+    nChunks = sessionFile.getPdbSize() / (1024 * 1024 * 128);
+    remainChunk = sessionFile.getPdbSize() % (1024 * 1024 * 128);
     std::ofstream streamPdb("/tmp/aver.pdb",
                             std::ios::trunc | std::ios::out | std::ios::binary);
     for(unsigned long i = 0; i < nChunks; i++)
     {
       while(Main::events_pending())
         Main::iteration();
-      sessionFile.read(chunk, 1024 * 1024 * 128);
+      pdbStream.read(chunk, 1024 * 1024 * 128);
       while(Main::events_pending())
         Main::iteration();
       streamPdb.write(chunk, 1024 * 1024 * 128);
@@ -536,14 +527,13 @@ namespace PstpFinder
     {
       while(Main::events_pending())
         Main::iteration();
-      sessionFile.read(chunk, remainChunk);
+      pdbStream.read(chunk, remainChunk);
       while(Main::events_pending())
         Main::iteration();
       streamPdb.write(chunk, remainChunk);
     }
     streamPdb.flush();
     streamPdb.close();
-    sessionFile >> tmpString;
 
     delete[] chunk;
 
