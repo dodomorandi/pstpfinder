@@ -216,6 +216,23 @@ namespace PstpFinder
   }
 
   MetaStream&
+  MetaStream::read(char* data, unsigned long length)
+  {
+    if(currentPosition + length > streamEnd)
+    {
+      inputStream.read(data, streamEnd - currentPosition);
+      currentPosition = streamEnd;
+    }
+    else
+    {
+      inputStream.read(data, length);
+      currentPosition += length;
+    }
+
+    return *this;
+  }
+
+  MetaStream&
   MetaStream::seekg(long off, ios_base::seek_dir way)
   {
     if(way == ios_base::beg)
