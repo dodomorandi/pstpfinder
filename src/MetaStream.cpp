@@ -24,14 +24,14 @@ using namespace std;
 namespace PstpFinder
 {
   MetaStream::MetaStream() :
-      copyStream(), inputStream(copyStream), valid(false)
+      inputStream(nullStream), valid(false)
   {
     ;
   }
 
   MetaStream::MetaStream(ifstream& modifiableStream, streampos begin,
                          streampos end) :
-      copyStream(), inputStream(modifiableStream), valid(true)
+      inputStream(modifiableStream), valid(true)
   {
     if(begin == -1)
       streamBegin = inputStream.tellg();
@@ -47,6 +47,15 @@ namespace PstpFinder
       streamEnd = end;
 
     inputStream.seekg(streamBegin, ios_base::beg);
+  }
+
+  MetaStream::MetaStream(const MetaStream& metaStream) :
+      inputStream(metaStream.inputStream),
+      valid(metaStream.valid)
+  {
+    streamBegin = metaStream.streamBegin;
+    streamEnd = metaStream.streamEnd;
+    currentPosition = metaStream.currentPosition;
   }
 
   bool

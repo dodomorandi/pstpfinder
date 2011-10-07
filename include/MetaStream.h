@@ -34,6 +34,7 @@ namespace PstpFinder
       MetaStream();
       MetaStream(ifstream& modifiableStream, streampos begin = -1,
                  streampos end = -1);
+      MetaStream(const MetaStream& metaStream);
 
       MetaStream& operator >>(string& out);
       MetaStream& operator >>(bool& out);
@@ -60,8 +61,8 @@ namespace PstpFinder
       bool eof() const;
 
     private:
-      ifstream copyStream;
       ifstream& inputStream;
+      ifstream nullStream;
       streampos streamBegin;
       streampos streamEnd;
       streampos currentPosition;
