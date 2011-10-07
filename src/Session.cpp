@@ -44,60 +44,80 @@ namespace PstpFinder
   string
   Session::getTrajectoryFileName() const
   {
+    if(not ready)
+      throw;
     return trajectoryFileName;
   }
 
   string
   Session::getTopologyFileName() const
   {
+    if(not ready)
+      throw;
     return topologyFileName;
   }
 
   unsigned long
   Session::getBeginTime() const
   {
+    if(not ready)
+      throw;
     return beginTime;
   }
 
   unsigned long
   Session::getEndTime() const
   {
+    if(not ready)
+      throw;
     return endTime;
   }
 
   double
   Session::getRadius() const
   {
+    if(not ready)
+      throw;
     return radius;
   }
 
   double
   Session::getPocketThreshold() const
   {
+    if(not ready)
+      throw;
     return pocketThreshold;
   }
 
   MetaStream&
   Session::getSasStream()
   {
+    if(not ready)
+      throw;
     return sasMetaStream;
   }
 
   unsigned long
   Session::getSasSize() const
   {
+    if(not ready)
+      throw;
     return sasDataEnd - sasDataStart;
   }
 
   MetaStream&
   Session::getPdbStream()
   {
+    if(not ready)
+      throw;
     return pdbMetaStream;
   }
 
   unsigned long
   Session::getPdbSize() const
   {
+    if(not ready)
+      throw;
     return pdbDataEnd - pdbDataStart;
   }
 
