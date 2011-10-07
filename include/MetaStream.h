@@ -22,8 +22,11 @@
 
 #include <string>
 #include <fstream>
+#include <iosfwd>
+#include <boost/iostreams/categories.hpp>
 
 using namespace std;
+namespace io = boost::iostreams;
 
 namespace PstpFinder
 {
@@ -31,6 +34,9 @@ namespace PstpFinder
   class MetaStream
   {
     public:
+      typedef char char_type;
+      typedef io::source_tag category;
+
       MetaStream();
       MetaStream(ifstream& modifiableStream, streampos begin = -1,
                  streampos end = -1);
