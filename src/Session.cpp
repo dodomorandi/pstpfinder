@@ -26,6 +26,7 @@ namespace PstpFinder
 {
 
   Session::Session(const string & fileName) :
+      sessionFileName(fileName),
       sessionFile(fileName.c_str(), ios::in | ios::binary),
       sasStream(fileName.c_str(), ios::in | ios::binary),
       pdbStream(fileName.c_str(), ios::in | ios::binary)

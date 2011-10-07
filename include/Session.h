@@ -44,6 +44,7 @@ namespace PstpFinder
       unsigned long getPdbSize() const;
 
     private:
+      const string sessionFileName;
       ifstream sessionFile;
       ifstream sasStream;
       ifstream pdbStream;
