@@ -200,31 +200,35 @@ namespace PstpFinder
   }
 
   MetaStream&
-  MetaStream::seekg(long pos)
+  MetaStream::seekg(streamsize pos)
   {
     inputStream.seekg(streamBegin + pos);
     return *this;
   }
 
-  MetaStream&
-  MetaStream::read(char* data, unsigned long length)
+  streamsize
+  MetaStream::read(char* data, streamsize length)
   {
+    streamsize size;
+
     if(currentPosition + length > streamEnd)
     {
       inputStream.read(data, streamEnd - currentPosition);
+      size = streamEnd - currentPosition;
       currentPosition = streamEnd;
     }
     else
     {
       inputStream.read(data, length);
+      size = length;
       currentPosition += length;
     }
 
-    return *this;
+    return size;
   }
 
   MetaStream&
-  MetaStream::seekg(long off, ios_base::seek_dir way)
+  MetaStream::seekg(streamsize off, ios_base::seek_dir way)
   {
     if(way == ios_base::beg)
       inputStream.seekg(streamBegin + off);
@@ -236,8 +240,8 @@ namespace PstpFinder
     return *this;
   }
 
-  long
-  MetaStream::tellg()
+  streamsize
+  MetaStream::tellg() const
   {
     return inputStream.tellg() - streamBegin;
   }

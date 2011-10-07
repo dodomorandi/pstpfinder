@@ -53,11 +53,11 @@ namespace PstpFinder
 
       MetaStream& operator =(const MetaStream& metaStream);
 
-      MetaStream& read(char* data, unsigned long length);
-      MetaStream& seekg(long pos);
-      MetaStream& seekg(long off, ios_base::seek_dir way);
+      streamsize read(char* data, streamsize length);
+      MetaStream& seekg(streamsize pos);
+      MetaStream& seekg(streamsize off, ios_base::seek_dir way);
 
-      long tellg();
+      streamsize tellg() const;
       bool eof() const;
 
     private:
