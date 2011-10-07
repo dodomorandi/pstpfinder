@@ -44,6 +44,8 @@ namespace PstpFinder
       MetaStream& getPdbStream();
       unsigned long getPdbSize() const;
 
+      Session& operator =(const Session& session);
+
     private:
       const bool ready;
       const string sessionFileName;

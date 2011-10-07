@@ -121,6 +121,25 @@ namespace PstpFinder
     return pdbDataEnd - pdbDataStart;
   }
 
+  Session&
+  Session::operator =(const Session& session)
+  {
+    if(&session == this)
+      return *this;
+
+    this->~Session();
+    if(session.sessionFileName == "")
+      new (this) Session();
+    else
+    {
+      new (this) Session(session.sessionFileName);
+      sasMetaStream.seekg(session.sasMetaStream.tellg());
+      pdbMetaStream.seekg(session.pdbMetaStream.tellg());
+    }
+
+    return *this;
+  }
+
   void
   Session::readSession(const string & fileName)
   {
