@@ -24,8 +24,15 @@ using namespace std;
 
 namespace PstpFinder
 {
+  Session::Session() :
+      ready(false),
+      sessionFileName()
+  {
+    ;
+  }
 
   Session::Session(const string & fileName) :
+      ready(true),
       sessionFileName(fileName),
       sessionFile(fileName.c_str(), ios::in | ios::binary),
       sasStream(fileName.c_str(), ios::in | ios::binary),

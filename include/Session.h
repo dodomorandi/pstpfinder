@@ -31,6 +31,7 @@ namespace PstpFinder
   class Session
   {
     public:
+      Session();
       Session(const string& fileName);
       string getTrajectoryFileName() const;
       string getTopologyFileName() const;
@@ -44,6 +45,7 @@ namespace PstpFinder
       unsigned long getPdbSize() const;
 
     private:
+      const bool ready;
       const string sessionFileName;
       ifstream sessionFile;
       ifstream sasStream;
