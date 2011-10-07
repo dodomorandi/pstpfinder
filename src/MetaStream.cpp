@@ -29,24 +29,6 @@ namespace PstpFinder
     ;
   }
 
-  MetaStream::MetaStream(const string& fileName, streampos begin, streampos end) :
-      copyStream(fileName.c_str(), ios_base::in | ios_base::binary),
-      inputStream(copyStream),
-      valid(true)
-  {
-    streamBegin = begin;
-
-    if(end == -1)
-    {
-      inputStream.seekg(0, ios_base::end);
-      streamEnd = inputStream.tellg();
-    }
-    else
-      streamEnd = end;
-
-    this->inputStream.seekg(streamBegin, ios_base::beg);
-  }
-
   MetaStream::MetaStream(ifstream& modifiableStream, streampos begin,
                          streampos end) :
       copyStream(), inputStream(modifiableStream), valid(true)
