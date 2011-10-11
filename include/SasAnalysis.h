@@ -22,6 +22,7 @@
 
 #include "SasAtom.h"
 #include "Gromacs.h"
+#include "Session.h"
 
 #include <boost/thread.hpp>
 #include <boost/circular_buffer.hpp>
@@ -80,6 +81,7 @@ namespace PstpFinder
       unsigned int nAtoms;
       std::string filename;
       boost::iostreams::file_descriptor fileIO;
+      Session sessionFile;
       std::streampos fileStreamEnd;
       const Gromacs* gromacs;
       unsigned long maxFrames, maxBytes, maxChunk;

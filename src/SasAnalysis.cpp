@@ -50,19 +50,16 @@ namespace PstpFinder
     this->filename = filename;
     if(savingMode)
     {
-      fileIO = io::file_descriptor(filename, BOOST_IOS::trunc | BOOST_IOS::out |
-      BOOST_IOS::binary);
+      fileIO = io::file_descriptor(filename, BOOST_IOS::trunc |
+                                             BOOST_IOS::out |
+                                             BOOST_IOS::binary);
       mode = MODE_SAVE;
     }
     else
     {
-      fileIO = io::file_descriptor(filename, BOOST_IOS::in | BOOST_IOS::binary);
+      sessionFile = Session(filename);
       mode = MODE_OPEN;
     }
-
-    std::streampos currentPos = fileIO.seek(0, ios_base::cur);
-    fileStreamEnd = fileIO.seek(0, ios_base::end);
-    fileIO.seek(currentPos, ios_base::beg);
 
     maxBytes = 134217728;
     maxChunk = 16777216;
@@ -130,7 +127,7 @@ namespace PstpFinder
       bufferSemaphore = new ip::interprocess_semaphore(0);
 
       //inFilter.push(io::zlib_decompressor());
-      inFilter.push(fileIO);
+      inFilter.push(sessionFile.getSasStream());
       inArchive = new archive::binary_iarchive(inFilter);
 
       operationThread = new OperationThread(*this);
@@ -260,12 +257,8 @@ namespace PstpFinder
       return false;
 
     inFilter.peek();
-    if(inFilter.eof() or fileIO.seek(0, ios_base::cur) >= fileStreamEnd)
-    {
-      if(fileIO.is_open())
-        fileIO.seek(fileStreamEnd, ios_base::beg);
+    if(inFilter.eof())
       return false;
-    }
 
     chunks.push_back(loadChunk(*inArchive));
 
