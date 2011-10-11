@@ -19,20 +19,21 @@
 
 #include "Session.h"
 #include <fstream>
+#include <boost/filesystem.hpp>
 
 using namespace std;
 
 namespace PstpFinder
 {
   Session::Session() :
-      ready(false),
-      sessionFileName()
+      ready(false), rawSasSession(false), sessionFileName()
   {
     ;
   }
 
   Session::Session(const string & fileName) :
       ready(true),
+      rawSasSession(false),
       sessionFileName(fileName),
       sessionFile(fileName.c_str(), ios::in | ios::binary),
       sasStream(fileName.c_str(), ios::in | ios::binary),
@@ -44,7 +45,7 @@ namespace PstpFinder
   string
   Session::getTrajectoryFileName() const
   {
-    if(not ready)
+    if(not ready or rawSasSession)
       throw;
     return trajectoryFileName;
   }
@@ -52,7 +53,7 @@ namespace PstpFinder
   string
   Session::getTopologyFileName() const
   {
-    if(not ready)
+    if(not ready or rawSasSession)
       throw;
     return topologyFileName;
   }
@@ -60,7 +61,7 @@ namespace PstpFinder
   unsigned long
   Session::getBeginTime() const
   {
-    if(not ready)
+    if(not ready or rawSasSession)
       throw;
     return beginTime;
   }
@@ -68,7 +69,7 @@ namespace PstpFinder
   unsigned long
   Session::getEndTime() const
   {
-    if(not ready)
+    if(not ready or rawSasSession)
       throw;
     return endTime;
   }
@@ -76,7 +77,7 @@ namespace PstpFinder
   double
   Session::getRadius() const
   {
-    if(not ready)
+    if(not ready or rawSasSession)
       throw;
     return radius;
   }
@@ -84,7 +85,7 @@ namespace PstpFinder
   double
   Session::getPocketThreshold() const
   {
-    if(not ready)
+    if(not ready or rawSasSession)
       throw;
     return pocketThreshold;
   }
@@ -105,10 +106,16 @@ namespace PstpFinder
     return sasDataEnd - sasDataStart;
   }
 
+  const bool
+  Session::isRawSasSession() const
+  {
+    return(rawSasSession);
+  }
+
   MetaStream&
   Session::getPdbStream()
   {
-    if(not ready)
+    if(not ready or rawSasSession)
       throw;
     return pdbMetaStream;
   }
@@ -116,7 +123,7 @@ namespace PstpFinder
   unsigned long
   Session::getPdbSize() const
   {
-    if(not ready)
+    if(not ready or rawSasSession)
       throw;
     return pdbDataEnd - pdbDataStart;
   }
@@ -149,27 +156,39 @@ namespace PstpFinder
     unsigned int dataUInt;
     sessionFile.seekg(0);
     getline(sessionFile, trajectoryFileName);
-    getline(sessionFile, topologyFileName);
-    sessionFile >> beginTime;
-    sessionFile >> endTime;
-    sessionFile >> radius;
-    sessionFile >> pocketThreshold;
+    if(boost::filesystem::exists(boost::filesystem::path(trajectoryFileName)))
+    {
+      getline(sessionFile, topologyFileName);
+      sessionFile >> beginTime;
+      sessionFile >> endTime;
+      sessionFile >> radius;
+      sessionFile >> pocketThreshold;
 
-    sessionFile >> dataUInt;
-    if(sessionFile.peek() == '\n')
-      (void) (sessionFile.get());
-    sasDataStart = sessionFile.tellg();
-    sessionFile.seekg(dataUInt, ios::cur);
-    sasDataEnd = sessionFile.tellg();
-    sasMetaStream = MetaStream(sasStream, sasDataStart, sasDataEnd);
+      sessionFile >> dataUInt;
+      if(sessionFile.peek() == '\n')
+        (void) (sessionFile.get());
+      sasDataStart = sessionFile.tellg();
+      sessionFile.seekg(dataUInt, ios::cur);
+      sasDataEnd = sessionFile.tellg();
+      sasMetaStream = MetaStream(sasStream, sasDataStart, sasDataEnd);
 
-    sessionFile >> dataUInt;
-    if(sessionFile.peek() == '\n')
-      (void) (sessionFile.get());
-    pdbDataStart = sessionFile.tellg();
-    sessionFile.seekg(dataUInt, ios::cur);
-    pdbDataEnd = sessionFile.tellg();
-    pdbMetaStream = MetaStream(pdbStream, pdbDataStart, pdbDataEnd);
+      sessionFile >> dataUInt;
+      if(sessionFile.peek() == '\n')
+        (void) (sessionFile.get());
+      pdbDataStart = sessionFile.tellg();
+      sessionFile.seekg(dataUInt, ios::cur);
+      pdbDataEnd = sessionFile.tellg();
+      pdbMetaStream = MetaStream(pdbStream, pdbDataStart, pdbDataEnd);
+    }
+    else
+    {
+      rawSasSession = true;
+      sessionFile.seekg(0);
+      sasDataStart = sessionFile.tellg();
+      sessionFile.seekg(0, ios_base::end);
+      sasDataEnd = sessionFile.tellg();
+      sasMetaStream = MetaStream(sasStream, sasDataStart, sasDataEnd);
+    }
 
     std::locale::global(oldLocale);
   }

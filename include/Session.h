@@ -41,6 +41,7 @@ namespace PstpFinder
       double getPocketThreshold() const;
       MetaStream& getSasStream();
       unsigned long getSasSize() const;
+      const bool isRawSasSession() const;
       MetaStream& getPdbStream();
       unsigned long getPdbSize() const;
 
@@ -48,6 +49,7 @@ namespace PstpFinder
 
     private:
       const bool ready;
+      bool rawSasSession;
       const string sessionFileName;
       ifstream sessionFile;
       ifstream sasStream;
