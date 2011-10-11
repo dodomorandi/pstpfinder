@@ -123,6 +123,7 @@ namespace PstpFinder
               sigc::mem_fun(*this, &MainWindow::destroyNewAnalysis));
           newAnalysis->openSessionFile(filename);
         }
+        break;
     }
   }
 
