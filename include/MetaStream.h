@@ -73,6 +73,7 @@ namespace PstpFinder
       streampos streamEnd;
       streampos currentPosition;
       const bool valid;
+      bool eofTrigger;
 
       template<typename T> void getFromStream(T& out);
   };

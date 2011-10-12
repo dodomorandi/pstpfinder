@@ -24,14 +24,14 @@ using namespace std;
 namespace PstpFinder
 {
   MetaStream::MetaStream() :
-      inputStream(nullStream), valid(false)
+      inputStream(nullStream), valid(false), eofTrigger(false)
   {
     ;
   }
 
   MetaStream::MetaStream(ifstream& modifiableStream, streampos begin,
                          streampos end) :
-      inputStream(modifiableStream), valid(true)
+      inputStream(modifiableStream), valid(true), eofTrigger(false)
   {
     if(begin == -1)
       streamBegin = inputStream.tellg();
@@ -51,31 +51,33 @@ namespace PstpFinder
 
   MetaStream::MetaStream(const MetaStream& metaStream) :
       inputStream(metaStream.inputStream),
-      valid(metaStream.valid)
+      valid(metaStream.valid),
+      eofTrigger(false)
   {
     streamBegin = metaStream.streamBegin;
     streamEnd = metaStream.streamEnd;
-    currentPosition = metaStream.currentPosition;
   }
 
   bool
   MetaStream::eof() const
   {
     if(currentPosition < streamEnd and currentPosition >= streamBegin)
-      return true;
-    else
       return false;
+    else
+      return true;
   }
 
   template<typename T>
     void
     MetaStream::getFromStream(T& out)
     {
-      if(not valid or eof())
+      if(not valid or eofTrigger)
         throw;
 
       inputStream >> out;
       currentPosition += sizeof(T);
+      if(eof())
+        eofTrigger = true;
 
       if(currentPosition > streamEnd)
       {
@@ -203,6 +205,7 @@ namespace PstpFinder
   MetaStream::seekg(streamsize pos)
   {
     inputStream.seekg(streamBegin + pos);
+    eofTrigger = false;
     return *this;
   }
 
@@ -210,6 +213,8 @@ namespace PstpFinder
   MetaStream::read(char* data, streamsize length)
   {
     streamsize size;
+    if(not valid or eofTrigger)
+      throw;
 
     if(currentPosition + length > streamEnd)
     {
@@ -223,6 +228,8 @@ namespace PstpFinder
       size = length;
       currentPosition += length;
     }
+    if(eof())
+      eofTrigger = true;
 
     return size;
   }
@@ -237,6 +244,7 @@ namespace PstpFinder
     else
       inputStream.seekg(off);
 
+    eofTrigger = false;
     return *this;
   }
 
