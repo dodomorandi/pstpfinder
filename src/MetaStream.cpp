@@ -220,8 +220,6 @@ namespace PstpFinder
       inputStream.read(data, length);
       size = length;
     }
-    if(eof())
-      eofTrigger = true;
 
     return size;
   }
