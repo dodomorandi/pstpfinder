@@ -47,8 +47,13 @@ namespace PstpFinder
     if(ready)
     {
       delete sasMetaStream;
+      sasStream.close();
       if(not rawSasSession)
+      {
         delete pdbMetaStream;
+        pdbStream.close();
+      }
+      sessionFile.close();
     }
   }
 
