@@ -122,7 +122,7 @@ namespace PstpFinder
   class Pittpi
   {
     public:
-      Pittpi(Gromacs& gromacs, const std::string& sasAnalysisFileName,
+      Pittpi(Gromacs& gromacs, const std::string& sessionFileName,
              float radius, unsigned long threshold);
       ~Pittpi();
 
@@ -140,7 +140,7 @@ namespace PstpFinder
       std::vector<Group>
       makeGroups(float radius);
       void
-      fillGroups(std::vector<Group>& groups, const string& sasAnalysisFileName,
+      fillGroups(std::vector<Group>& groups, const string& sessionFileName,
                  unsigned int timeStep);
       std::vector<Group>
       makeGroupsByDistance(const std::vector<Atom>& centers, float radius);
@@ -158,7 +158,7 @@ namespace PstpFinder
 #endif
 
       Gromacs* p_gromacs;
-      std::string sasAnalysisFileName;
+      std::string sessionFileName;
       float radius;
       unsigned long threshold;
       Protein averageStructure;

@@ -115,11 +115,11 @@ namespace PstpFinder
     return (a.zeros > b.zeros);
   }
 
-  Pittpi::Pittpi(Gromacs& gromacs, const std::string& sasAnalysisFileName,
+  Pittpi::Pittpi(Gromacs& gromacs, const std::string& sessionFileName,
                  float radius, unsigned long threshold)
   {
     this->p_gromacs = &gromacs;
-    this->sasAnalysisFileName = sasAnalysisFileName;
+    this->sessionFileName = sessionFileName;
     this->radius = radius;
     this->threshold = threshold;
     sync = true;
@@ -187,7 +187,7 @@ namespace PstpFinder
 
 #define PS_PER_SAS 5
     unsigned int const frameStep = float(PS_PER_SAS) / gromacs.getTimeStep();
-    fillGroups(groups, sasAnalysisFileName, frameStep);
+    fillGroups(groups, sessionFileName, frameStep);
 
     sort(groups.begin(), groups.end(), Group::sortByZeros);
 
@@ -584,7 +584,7 @@ namespace PstpFinder
   }
 
   void
-  Pittpi::fillGroups(vector<Group>& groups, const string& sasAnalysisFileName,
+  Pittpi::fillGroups(vector<Group>& groups, const string& sessionFileName,
                      unsigned int timeStep)
   {
     float* sas;
@@ -605,7 +605,7 @@ namespace PstpFinder
 
     /* First of all we need to calculate SAS means */
     setStatus(0);
-    sasAnalysis = new SasAnalysis(gromacs, sasAnalysisFileName, false);
+    sasAnalysis = new SasAnalysis(gromacs, sessionFileName, false);
     (*sasAnalysis) >> sasAtoms;
     while(sasAtoms != 0)
     {
@@ -641,7 +641,7 @@ namespace PstpFinder
     float* sasCounter = new float[protein.size()];
     setStatus(0);
     counter = 0;
-    sasAnalysis = new SasAnalysis(gromacs, sasAnalysisFileName, false);
+    sasAnalysis = new SasAnalysis(gromacs, sessionFileName, false);
     (*sasAnalysis) >> sasAtoms;
     while(sasAtoms != 0)
     {

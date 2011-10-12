@@ -83,7 +83,7 @@ namespace PstpFinder
       void
       update_limits();
       void
-      runPittpi(Gromacs& gromacs, const string& analysisFileName,
+      runPittpi(Gromacs& gromacs, const string& SessionFileName,
                 float radius, float threshold);
   };
 }

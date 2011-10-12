@@ -205,7 +205,7 @@ namespace PstpFinder
   }
 
   void
-  NewAnalysis::runPittpi(Gromacs& gromacs, const string& analysisFileName,
+  NewAnalysis::runPittpi(Gromacs& gromacs, const string& SessionFileName,
                          float radius, float threshold)
   {
     progress.set_fraction(0);
@@ -213,7 +213,7 @@ namespace PstpFinder
     while(Main::events_pending())
       Main::iteration();
 
-    Pittpi pittpi(gromacs, analysisFileName, radius, threshold);
+    Pittpi pittpi(gromacs, SessionFileName, radius, threshold);
 
     while(not pittpi.isFinished())
     {
@@ -567,7 +567,7 @@ namespace PstpFinder
     while(Main::events_pending())
       Main::iteration();
 
-    runPittpi(gromacs, "/tmp/sas.psf", spinRadius.get_value(),
+    runPittpi(gromacs, sessionFileName, spinRadius.get_value(),
               spinPocketThreshold.get_value());
 
     progress.hide();
