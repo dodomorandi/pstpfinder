@@ -242,7 +242,7 @@ namespace PstpFinder
     else if(way == ios_base::end)
       inputStream.seekg(streamEnd - off);
     else
-      inputStream.seekg(off);
+      inputStream.seekg(off, ios_base::cur);
 
     eofTrigger = false;
     return *this;
