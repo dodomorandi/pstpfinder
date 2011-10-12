@@ -478,39 +478,10 @@ namespace PstpFinder
     while(Main::events_pending())
       Main::iteration();
 
-    MetaStream& sasStream = sessionFile.getSasStream();
-    char* chunk = new char[1024 * 1024 * 128];
-    unsigned long nChunks = sessionFile.getSasSize() / (1024 * 1024 * 128);
-    unsigned long remainChunk = sessionFile.getSasSize() % (1024 * 1024 * 128);
-    if(fs::exists(fs::path("/tmp/sas.psf")))
-      fs::remove(fs::path("/tmp/sas.psf"));
-    std::ofstream streamSas("/tmp/sas.psf",
-                            std::ios::trunc | std::ios::out | std::ios::binary);
-    for(unsigned long i = 0; i < nChunks; i++)
-    {
-      while(Main::events_pending())
-        Main::iteration();
-      sasStream.read(chunk, 1024 * 1024 * 128);
-      while(Main::events_pending())
-        Main::iteration();
-      streamSas.write(chunk, 1024 * 1024 * 128);
-    }
-
-    if(remainChunk != 0)
-    {
-      while(Main::events_pending())
-        Main::iteration();
-      sasStream.read(chunk, remainChunk);
-      while(Main::events_pending())
-        Main::iteration();
-      streamSas.write(chunk, remainChunk);
-    }
-    streamSas.flush();
-    streamSas.close();
-
     MetaStream& pdbStream = sessionFile.getPdbStream();
-    nChunks = sessionFile.getPdbSize() / (1024 * 1024 * 128);
-    remainChunk = sessionFile.getPdbSize() % (1024 * 1024 * 128);
+    char* chunk = new char[1024 * 1024 * 128];
+    unsigned long nChunks = sessionFile.getPdbSize() / (1024 * 1024 * 128);
+    unsigned long remainChunk = sessionFile.getPdbSize() % (1024 * 1024 * 128);
     std::ofstream streamPdb("/tmp/aver.pdb",
                             std::ios::trunc | std::ios::out | std::ios::binary);
     for(unsigned long i = 0; i < nChunks; i++)
