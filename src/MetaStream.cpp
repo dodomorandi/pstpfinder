@@ -18,6 +18,7 @@
  */
 
 #include "MetaStream.h"
+#include <sstream>
 
 using namespace std;
 
@@ -61,7 +62,8 @@ namespace PstpFinder
   bool
   MetaStream::eof() const
   {
-    if(currentPosition < streamEnd and currentPosition >= streamBegin)
+    streampos position = inputStream.tellg();
+    if(not eofTrigger and position < streamEnd and position >= streamBegin)
       return false;
     else
       return true;
@@ -74,21 +76,23 @@ namespace PstpFinder
       if(not valid or eofTrigger)
         throw;
 
-      inputStream >> out;
-      currentPosition += sizeof(T);
       if(eof())
         eofTrigger = true;
+      streamoff currentPosition = inputStream.tellg();
+      streampos finalPosition = currentPosition + sizeof(T);
 
-      if(currentPosition > streamEnd)
+      if(finalPosition > streamEnd)
       {
-        inputStream.seekg(streamEnd);
-        currentPosition = streamEnd;
+        stringstream tempStream(stringstream::in | stringstream::out);
+        streamsize tempStreamSize = streamEnd - currentPosition;
+        char *remainingData = new char[tempStreamSize];
+        inputStream.read(remainingData, tempStreamSize);
+        tempStream.write(remainingData, tempStreamSize);
+        tempStream >> out;
+        delete[] remainingData;
       }
-      else if(currentPosition < streamBegin)
-      {
-        inputStream.seekg(streamBegin);
-        currentPosition = streamBegin;
-      }
+      else
+        inputStream >> out;
     }
 
   MetaStream&
@@ -216,17 +220,17 @@ namespace PstpFinder
     if(not valid or eofTrigger)
       throw;
 
+    streamoff currentPosition = inputStream.tellg();
+
     if(currentPosition + length > streamEnd)
     {
       inputStream.read(data, streamEnd - currentPosition);
       size = streamEnd - currentPosition;
-      currentPosition = streamEnd;
     }
     else
     {
       inputStream.read(data, length);
       size = length;
-      currentPosition += length;
     }
     if(eof())
       eofTrigger = true;

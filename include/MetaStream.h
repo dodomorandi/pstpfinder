@@ -71,7 +71,6 @@ namespace PstpFinder
       ifstream nullStream;
       streampos streamBegin;
       streampos streamEnd;
-      streampos currentPosition;
       const bool valid;
       bool eofTrigger;
 
