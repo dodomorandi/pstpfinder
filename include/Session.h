@@ -33,6 +33,7 @@ namespace PstpFinder
     public:
       Session();
       Session(const string& fileName);
+      ~Session();
       string getTrajectoryFileName() const;
       string getTopologyFileName() const;
       unsigned long getBeginTime() const;
@@ -64,8 +65,8 @@ namespace PstpFinder
       streampos sasDataEnd;
       streampos pdbDataStart;
       streampos pdbDataEnd;
-      MetaStream sasMetaStream;
-      MetaStream pdbMetaStream;
+      MetaStream* sasMetaStream;
+      MetaStream* pdbMetaStream;
 
       void
       readSession(const string& fileName);

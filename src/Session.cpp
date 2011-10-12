@@ -42,6 +42,16 @@ namespace PstpFinder
     readSession(fileName);
   }
 
+  Session::~Session()
+  {
+    if(ready)
+    {
+      delete sasMetaStream;
+      if(not rawSasSession)
+        delete pdbMetaStream;
+    }
+  }
+
   string
   Session::getTrajectoryFileName() const
   {
@@ -95,7 +105,7 @@ namespace PstpFinder
   {
     if(not ready)
       throw;
-    return sasMetaStream;
+    return *sasMetaStream;
   }
 
   unsigned long
@@ -117,7 +127,7 @@ namespace PstpFinder
   {
     if(not ready or rawSasSession)
       throw;
-    return pdbMetaStream;
+    return *pdbMetaStream;
   }
 
   unsigned long
@@ -140,8 +150,8 @@ namespace PstpFinder
     else
     {
       new (this) Session(session.sessionFileName);
-      sasMetaStream.seekg(session.sasMetaStream.tellg());
-      pdbMetaStream.seekg(session.pdbMetaStream.tellg());
+      sasMetaStream->seekg(session.sasMetaStream->tellg());
+      pdbMetaStream->seekg(session.pdbMetaStream->tellg());
     }
 
     return *this;
@@ -170,7 +180,7 @@ namespace PstpFinder
       sasDataStart = sessionFile.tellg();
       sessionFile.seekg(dataUInt, ios::cur);
       sasDataEnd = sessionFile.tellg();
-      sasMetaStream = MetaStream(sasStream, sasDataStart, sasDataEnd);
+      sasMetaStream = new MetaStream(sasStream, sasDataStart, sasDataEnd);
 
       sessionFile >> dataUInt;
       if(sessionFile.peek() == '\n')
@@ -178,7 +188,7 @@ namespace PstpFinder
       pdbDataStart = sessionFile.tellg();
       sessionFile.seekg(dataUInt, ios::cur);
       pdbDataEnd = sessionFile.tellg();
-      pdbMetaStream = MetaStream(pdbStream, pdbDataStart, pdbDataEnd);
+      pdbMetaStream = new MetaStream(pdbStream, pdbDataStart, pdbDataEnd);
     }
     else
     {
@@ -187,7 +197,7 @@ namespace PstpFinder
       sasDataStart = sessionFile.tellg();
       sessionFile.seekg(0, ios_base::end);
       sasDataEnd = sessionFile.tellg();
-      sasMetaStream = MetaStream(sasStream, sasDataStart, sasDataEnd);
+      sasMetaStream = new MetaStream(sasStream, sasDataStart, sasDataEnd);
     }
 
     std::locale::global(oldLocale);
