@@ -508,7 +508,8 @@ namespace PstpFinder
 
     delete[] chunk;
 
-    Gromacs gromacs(trjChooser.get_filename(), tprChooser.get_filename());
+    Gromacs gromacs(sessionFile.getTrajectoryFileName(),
+                    sessionFile.getTopologyFileName());
     __timeStep = gromacs.getTimeStep();
     __frames = gromacs.getFramesCount();
     gromacs.setBegin(beginTime);
@@ -542,7 +543,6 @@ namespace PstpFinder
               spinPocketThreshold.get_value());
 
     progress.hide();
-    fs::remove(fs::path("/tmp/sas.psf"));
     std::locale::global(oldLocale);
 
     set_sensitive();
