@@ -64,27 +64,17 @@ namespace PstpFinder
       int __frames;
       float __timeStep;
 
-      void
-      init();
-      void
-      runAnalysis();
-      void
-      chooserTrajectoryClicked();
-      void
-      threadTrajectoryClicked();
-      void
-      start_spin();
-      void
-      stop_spin();
-      void
-      checkParameters();
-      void
-      buttonBrowseFileClicked();
-      void
-      update_limits();
-      void
-      runPittpi(Gromacs& gromacs, const string& SessionFileName,
-                float radius, float threshold);
+      void init();
+      void runAnalysis();
+      void chooserTrajectoryClicked();
+      void threadTrajectoryClicked();
+      void start_spin();
+      void stop_spin();
+      void checkParameters();
+      void buttonBrowseFileClicked();
+      void update_limits();
+      void runPittpi(Gromacs& gromacs, const string& SessionFileName,
+                     float radius, float threshold);
   };
 }
 
