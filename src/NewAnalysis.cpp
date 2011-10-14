@@ -19,8 +19,6 @@
 
 #include "pstpfinder.h"
 #include "NewAnalysis.h"
-#include "Gromacs.h"
-#include "Pittpi.h"
 #include "Session.h"
 
 #include <gtkmm.h>
@@ -180,6 +178,7 @@ namespace PstpFinder
     vboxMain.pack_start(buttonBoxRun, PACK_SHRINK);
 
     add(vboxMain);
+    pittpi = 0;
 
     signal_delete_event().connect(sigc::ptr_fun(&closeApplication));
   }
@@ -213,19 +212,22 @@ namespace PstpFinder
     while(Main::events_pending())
       Main::iteration();
 
-    Pittpi pittpi(gromacs, SessionFileName, radius, threshold);
+    pittpi = new Pittpi(gromacs, SessionFileName, radius, threshold);
 
-    while(not pittpi.isFinished())
+    while(not pittpi->isFinished())
     {
-      float status = pittpi.getStatus();
+      float status = pittpi->getStatus();
       if(status >= 0)
         progress.set_fraction(status);
       else
         progress.pulse();
       while(Main::events_pending())
         Main::iteration();
-      pittpi.waitNextStatus();
+      pittpi->waitNextStatus();
     }
+
+    delete pittpi;
+    pittpi = 0;
   }
 
   void

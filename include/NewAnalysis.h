@@ -21,6 +21,7 @@
 #define _NEWANALYSIS_H
 
 #include "Gromacs.h"
+#include "Pittpi.h"
 
 #include <gtkmm.h>
 #include <glibmm.h>
@@ -61,6 +62,7 @@ namespace PstpFinder
       HScale hScaleBegin, hScaleEnd;
       Spinner spinnerWait;
       VSeparator vSeparator;
+      Pittpi* pittpi;
       int __frames;
       float __timeStep;
 
