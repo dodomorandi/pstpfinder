@@ -461,8 +461,6 @@ namespace PstpFinder
 
     Session sessionFile(sessionFileName);
     std::string tmpString;
-    double tmpDouble;
-    unsigned int tmpUInt;
 
     trjChooser.set_filename(sessionFile.getTrajectoryFileName());
     tprChooser.set_filename(sessionFile.getTopologyFileName());
