@@ -126,35 +126,25 @@ namespace PstpFinder
              float radius, unsigned long threshold);
       ~Pittpi();
 
-      void
-      join();
-      void
-      setStatus(float value) const;
-      float
-      getStatus() const;
-      void
-      waitNextStatus();
-      bool
-      isFinished();
+      void join();
+      void setStatus(float value) const;
+      float getStatus() const;
+      void waitNextStatus();
+      bool isFinished();
     private:
-      std::vector<Group>
-      makeGroups(float radius);
-      void
-      fillGroups(std::vector<Group>& groups, const string& sessionFileName,
-                 unsigned int timeStep);
-      std::vector<Group>
-      makeGroupsByDistance(const std::vector<Atom>& centers, float radius);
-      std::vector<Group>
-      makeGroupsByDistance(const std::vector<Atom>& centers, float radius,
-                           const std::vector<PdbAtom>& reference);
-      Group
-      makeGroupByDistance(const std::vector<Atom>& centers,
-                          const PdbAtom& atom, float radius);
-      void
-      pittpiRun();
+      std::vector<Group> makeGroups(float radius);
+      void fillGroups(std::vector<Group>& groups,
+                      const string& sessionFileName, unsigned int timeStep);
+      std::vector<Group> makeGroupsByDistance(const std::vector<Atom>& centers,
+                                              float radius);
+      std::vector<Group> makeGroupsByDistance(const std::vector<Atom>& centers,
+                                              float radius,
+                                              const std::vector<PdbAtom>& reference);
+      Group makeGroupByDistance(const std::vector<Atom>& centers,
+                                const PdbAtom& atom, float radius);
+      void pittpiRun();
 #ifdef HAVE_PYMOD_SADIC
-      Protein
-      runSadic(const Protein& structure) const;
+      Protein runSadic(const Protein& structure) const;
 #endif
 
       Gromacs* p_gromacs;
