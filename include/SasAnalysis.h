@@ -49,7 +49,8 @@ namespace PstpFinder
   class SasAnalysis
   {
     public:
-      SasAnalysis(unsigned int nAtoms, std::string filename = "/tmp/sas.psf",
+      SasAnalysis(unsigned int nAtoms, const Gromacs& gromacs = 0,
+                  std::string filename = "/tmp/sas.psf",
                   bool savingMode = true);
 
       SasAnalysis(const Gromacs& gromacs, std::string filename = "/tmp/sas.psf",

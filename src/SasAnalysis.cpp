@@ -27,11 +27,11 @@ namespace fs = boost::filesystem;
 namespace PstpFinder
 {
 
-  SasAnalysis::SasAnalysis(unsigned int nAtoms, std::string filename,
-                           bool savingMode)
+  SasAnalysis::SasAnalysis(unsigned int nAtoms, const Gromacs& gromacs,
+                           std::string filename, bool savingMode)
   {
     this->nAtoms = nAtoms;
-    gromacs = 0;
+    this->gromacs = &gromacs;
     init(filename, savingMode);
   }
 
