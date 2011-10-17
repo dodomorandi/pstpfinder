@@ -170,7 +170,7 @@ namespace PstpFinder
     }
 
     gpbc = gmx_rmpbc_init(&top.idef, ePBC, natoms, box);
-    SasAnalysis sasAnalysis(nx);
+    SasAnalysis sasAnalysis(nx, *this);
 
     do
     {
