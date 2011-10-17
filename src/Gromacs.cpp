@@ -77,6 +77,7 @@ namespace PstpFinder
     _begin = -1;
     _end = -1;
     timeStepCached = 0;
+    abortFlag = false;
 
     // Damn it! I can't handle errors raised inside this f*****g function,
     // because it simply crashes on a ERROR HANDLING FUNCTION, overriding
@@ -173,6 +174,8 @@ namespace PstpFinder
 
     do
     {
+      if(abortFlag)
+        break;
       gmx_rmpbc(gpbc, natoms, box, x);
       if(nsc_dclm_pbc(x, radius, nx, 24, FLAG_ATOM_AREA, &totarea, &area,
                       &totvolume, &surfacedots, &nsurfacedots, index.data(),
@@ -192,6 +195,8 @@ namespace PstpFinder
         if(bDGsol)
           dgsolv += area[i] * dgs_factor[i];
       }
+      if(abortFlag)
+        break;
 
       operationMutex.lock();
       sasAnalysis << atoms;
@@ -232,6 +237,7 @@ namespace PstpFinder
     double** U;
     gmx_rmpbc_t gpbc;
     int statusCount = 0;
+    averageStructure = Protein();
 
     if(not getTopology())
       gmx_fatal(FARGS, "Could not read topology file.\n");
@@ -264,10 +270,14 @@ namespace PstpFinder
     count = 0;
     do
     {
+      if(abortFlag)
+        break;
       gmx_rmpbc(gpbc, natoms, box, x);
       sub_xcm(x, isize, index.data(), top.atoms.atom, xcm, FALSE);
       do_fit(natoms, w_rls, xtop, x);
 
+      if(abortFlag)
+        break;
       for(int i = 0; i < isize; i++)
       {
         atom_id aid = index[i];
@@ -286,6 +296,9 @@ namespace PstpFinder
       operationMutex.unlock();
     }
     while(readNextX());
+
+    if(abortFlag)
+      return averageStructure;
 
     gmx_rmpbc_done(gpbc);
     invcount = 1.0 / count;
@@ -307,13 +320,16 @@ namespace PstpFinder
       delete[] *i;
     delete[] U;
 
+    if(abortFlag)
+      return averageStructure;
     for(int i = 0; i < isize; i++)
       top.atoms.pdbinfo[index[i]].bfac = 800 * M_PI * M_PI / 3.0 * rmsf[i];
 
-    averageStructure = Protein();
     Residue res;
     for(int i = 0; i < isize; i++)
     {
+      if(abortFlag)
+        return averageStructure;
       PdbAtom atom;
       atom.index = i + 1;
       strncpy(atom.type, *top.atoms.atomname[index[i]], 5);
@@ -660,7 +676,7 @@ namespace PstpFinder
   {
     namespace ip = boost::interprocess;
 
-    if(getCurrentFrame() < getFramesCount())
+    if(not abortFlag and getCurrentFrame() < getFramesCount())
     {
       ip::scoped_lock<ip::interprocess_mutex> slock(wakeMutex);
       wakeCondition.wait(slock);
@@ -672,7 +688,7 @@ namespace PstpFinder
   {
     namespace ip = boost::interprocess;
 
-    while(getCurrentFrame() < refFrame + 1)
+    while(not abortFlag and getCurrentFrame() < refFrame + 1)
     {
       ip::scoped_lock<ip::interprocess_mutex> slock(wakeMutex);
       wakeCondition.wait(slock);
@@ -772,5 +788,12 @@ namespace PstpFinder
     _end = endTime;
     setTimeValue(TEND, endTime);
   }
+
+  void
+  Gromacs::abort()
+  {
+    abortFlag = true;
+    operationThread.join();
+    wakeCondition.notify_all();
+  }
 }
-;

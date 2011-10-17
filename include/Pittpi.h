@@ -131,6 +131,7 @@ namespace PstpFinder
       float getStatus() const;
       void waitNextStatus();
       bool isFinished();
+      void abort();
     private:
       std::vector<Group> makeGroups(float radius);
       void fillGroups(std::vector<Group>& groups,
@@ -158,6 +159,7 @@ namespace PstpFinder
       mutable boost::interprocess::interprocess_condition nextStatusCondition;
       mutable float __status;
       bool sync;
+      bool abortFlag;
   };
 }
 

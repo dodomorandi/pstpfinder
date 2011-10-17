@@ -116,7 +116,8 @@ namespace PstpFinder
   }
 
   Pittpi::Pittpi(Gromacs& gromacs, const std::string& sessionFileName,
-                 float radius, unsigned long threshold)
+                 float radius, unsigned long threshold) :
+      abortFlag(false)
   {
     this->p_gromacs = &gromacs;
     this->sessionFileName = sessionFileName;
@@ -159,6 +160,9 @@ namespace PstpFinder
   float
   Pittpi::getStatus() const
   {
+    if(pittpiThread == boost::thread())
+      return __status;
+
     float retval;
     statusMutex.lock();
     retval = __status;
@@ -184,10 +188,12 @@ namespace PstpFinder
 
     averageStructure = gromacs.getAverageStructure();
     vector<Group> groups = makeGroups(radius);
+    if(abortFlag) return;
 
 #define PS_PER_SAS 5
     unsigned int const frameStep = float(PS_PER_SAS) / gromacs.getTimeStep();
     fillGroups(groups, sessionFileName, frameStep);
+    if(abortFlag) return;
 
     sort(groups.begin(), groups.end(), Group::sortByZeros);
 
@@ -205,6 +211,7 @@ namespace PstpFinder
     vector<Pocket> pockets;
     for(vector<Group>::iterator i = groups.begin(); i < groups.end(); i++)
     {
+      if(abortFlag) return;
       vector<float>::iterator startPocket = i->sas.end();
       unsigned int notOpenCounter = 0;
       float* maxFrame = 0;
@@ -212,6 +219,7 @@ namespace PstpFinder
 
       for(vector<float>::iterator j = i->sas.begin(); j < i->sas.end(); j++)
       {
+        if(abortFlag) return;
         if(startPocket == i->sas.end() and *j > 1)
         {
           startPocket = j;
@@ -262,6 +270,7 @@ namespace PstpFinder
               for(vector<float>::iterator k = startPocket + 1; k < j; k++)
                 if(abs(mean - *nearToAverage) > abs(mean - *k))
                   nearToAverage = k;
+              if(abortFlag) return;
               pocket.averageNearFrame = distance(i->sas.begin(), nearToAverage)
                                         * frameStep
                                         + 1;
@@ -289,6 +298,7 @@ namespace PstpFinder
     sort(pockets.begin(), pockets.end(), Pocket::sortByWidth);
     for(vector<Pocket>::iterator i = pockets.begin(); i < pockets.end(); i++)
     {
+      if(abortFlag) return;
       const Residue& centralRes = i->group.getCentralRes();
       const vector<const Residue*>& groupRes = i->group.getResidues();
       for(vector<const Residue*>::const_iterator j = groupRes.begin();
@@ -325,6 +335,7 @@ namespace PstpFinder
       for(vector<Pocket>::const_iterator j = pockets.begin(); j < pockets.end();
           j++)
       {
+        if(abortFlag) return;
         if(&j->group == &(*i))
         {
           if(not writtenHeader)
@@ -411,6 +422,7 @@ namespace PstpFinder
     for(vector<Residue>::const_iterator i = residues.begin();
         i < residues.end(); i++)
     {
+      if(abortFlag) return vector<Group>();
       Atom center(0);
       const vector<PdbAtom>& atoms = i->atoms;
 
@@ -456,6 +468,7 @@ namespace PstpFinder
     setStatus(0);
     for(vector<Group>::iterator i = groups.begin(); i < groups.end(); i++)
     {
+      if(abortFlag) return vector<Group>();
       const vector<const Residue*>& groupRes = i->getResidues();
       PdbAtom center = i->getCentralH();
       center.x = 0;
@@ -472,6 +485,7 @@ namespace PstpFinder
       for(vector<const Residue*>::const_iterator j = groupRes.begin();
           j < groupRes.end(); j++)
       {
+        if(abortFlag) return vector<Group>();
         const vector<PdbAtom>& atoms = (*j)->atoms;
 
         if((*j)->type == AA_PRO)
@@ -507,6 +521,7 @@ namespace PstpFinder
     for(vector<Residue>::const_iterator i = residues.begin();
         i < residues.end(); i++)
     {
+      if(abortFlag) return vector<Group>();
       const PdbAtom& hAtom = i->getAtomByType("H");
 
       if(strcmp(hAtom.type, "UNK") == 0)
@@ -542,6 +557,7 @@ namespace PstpFinder
     for(resIterator = residues.begin(), refIterator = reference.begin();
         resIterator < residues.end(); resIterator++, refIterator++)
     {
+      if(abortFlag) return vector<Group>();
       if(strcmp(resIterator->getAtomByType("H").type, "UNK") == 0)
       {
         refIterator--;
@@ -572,6 +588,7 @@ namespace PstpFinder
     for(vector<Atom>::const_iterator j = centers.begin(); j < centers.end();
         j++)
     {
+      if(abortFlag) return group;
       const Residue& curResidue = residues[distance(centers.begin(), j)];
       if(curResidue.type == AA_PRO)
         continue;
@@ -609,6 +626,8 @@ namespace PstpFinder
     (*sasAnalysis) >> sasAtoms;
     while(sasAtoms != 0)
     {
+      if(abortFlag) return;
+
       fIndex = meanSas;
       SasAtom* m_end = sasAtoms + nAtoms;
       unsigned int* ptr;
@@ -645,6 +664,7 @@ namespace PstpFinder
     (*sasAnalysis) >> sasAtoms;
     while(sasAtoms != 0)
     {
+      if(abortFlag) return;
 
       /*
        * This part is a "legacy" method. It have been implemented in perl time ago
@@ -683,8 +703,11 @@ namespace PstpFinder
         for(float* i = sasCounter; i < sasCounter + protein.size(); i++)
           *i /= timeStep;
 
+        if(abortFlag) return;
+
         for(vector<Group>::iterator i = groups.begin(); i < groups.end(); i++)
         {
+          if(abortFlag) return;
           i->sas.push_back(0);
           float& curFrame = i->sas.back();
 
@@ -698,6 +721,7 @@ namespace PstpFinder
           for(vector<const Residue*>::const_iterator j = residues.begin();
               j < residues.end(); j++)
           {
+            if(abortFlag) return;
             const PdbAtom& atomH = (*j)->getAtomByType("H");
             if(strcmp(atomH.type, "UNK") == 0)
               continue;
@@ -725,8 +749,11 @@ namespace PstpFinder
       for(float* i = sasCounter; i < sasCounter + protein.size(); i++)
         *i /= (counter % timeStep);
 
+      if(abortFlag) return;
+
       for(vector<Group>::iterator i = groups.begin(); i < groups.end(); i++)
       {
+        if(abortFlag) return;
         i->sas.push_back(0);
         float& curFrame = i->sas.back();
 
@@ -740,6 +767,7 @@ namespace PstpFinder
         for(vector<const Residue*>::const_iterator j = residues.begin();
             j < residues.end(); j++)
         {
+          if(abortFlag) return;
           const PdbAtom& atomH = (*j)->getAtomByType("H");
           if(strcmp(atomH.type, "UNK") == 0)
             continue;
@@ -804,6 +832,8 @@ namespace PstpFinder
       for(py::stl_input_iterator<py::object> model(models); model != iterObjEnd;
           model++, imodel++)
       {
+        if(abortFlag) return sadicProtein;
+
         setStatus(-1);
         py::object query = sadic.attr("get_query")(settings, *model);
         py::object prot = sadic.attr("Protein")();
@@ -816,6 +846,7 @@ namespace PstpFinder
         {
           for(;;)
           {
+            if(abortFlag) return sadicProtein;
             setStatus(-1);
             query.attr("sample")(prot, scheme);
 
@@ -826,6 +857,7 @@ namespace PstpFinder
             py::stl_input_iterator<py::object> i(query);
             for(; i != iterObjEnd; i++)
             {
+              if(abortFlag) return sadicProtein;
               setStatus(-1);
               if(static_cast<bool>(i->attr("all_inside")))
                 break;
@@ -865,6 +897,7 @@ namespace PstpFinder
         for(py::stl_input_iterator<py::object> curViewer(*model_viewer);
             curViewer != iterObjEnd; curViewer++)
         {
+          if(abortFlag) return sadicProtein;
           string fileName = py::extract<string>(
               out.attr("mangle_file_name")(*curViewer));
           sadicProtein = Protein(fileName);
@@ -876,6 +909,15 @@ namespace PstpFinder
     Py_Finalize();
 
     return sadicProtein;
+  }
+
+  void
+  Pittpi::abort()
+  {
+    abortFlag = true;
+    join();
+    sync = true;
+    nextStatusCondition.notify_all();
   }
 }
 #endif

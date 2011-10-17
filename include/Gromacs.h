@@ -91,6 +91,7 @@ namespace PstpFinder
       const Protein& getAverageStructure() const;
       void setAverageStructure(Protein structure);
       void waitOperation();
+      void abort();
     private:
 #ifdef GMX45
       output_env_t oenv;
@@ -121,6 +122,7 @@ namespace PstpFinder
       Protein averageStructure;
       float _begin, _end;
       mutable float timeStepCached;
+      bool abortFlag;
 
       void init(float solventSize);
       bool getTopology();
