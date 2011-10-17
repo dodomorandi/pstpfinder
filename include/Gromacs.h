@@ -92,6 +92,7 @@ namespace PstpFinder
       void setAverageStructure(Protein structure);
       void waitOperation();
       void abort();
+      bool isAborting() const;
     private:
 #ifdef GMX45
       output_env_t oenv;

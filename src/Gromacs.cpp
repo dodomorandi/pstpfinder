@@ -796,4 +796,10 @@ namespace PstpFinder
     operationThread.join();
     wakeCondition.notify_all();
   }
+
+  bool
+  Gromacs::isAborting() const
+  {
+    return abortFlag;
+  }
 }
