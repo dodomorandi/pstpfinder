@@ -275,6 +275,8 @@ namespace PstpFinder
     for(std::vector<SasAtom*>::const_iterator i = chunk.begin();
         i < chunk.end(); i++)
     {
+      if(gromacs and gromacs->isAborting())
+        break;
       const SasAtom* end = *i + nAtoms;
       for(SasAtom* j = *i; j < end; j++)
         out << *j;
@@ -299,6 +301,8 @@ namespace PstpFinder
 
       for(unsigned int k = 0; k < nAtoms; k++, atom++)
       {
+        if(gromacs and gromacs->isAborting())
+          return chunk;
         try
         {
           in >> *atom;
@@ -363,6 +367,9 @@ namespace PstpFinder
         break;
       }
 
+      if(parent->gromacs and parent->gromacs->isAborting())
+        break;
+
       if(parent->save())
       {
         vector<SasAtom*>& curChunk = parent->chunks.front();
@@ -378,6 +385,9 @@ namespace PstpFinder
 
       parent->bufferMutex.unlock();
     }
+
+    if(parent->gromacs and parent->gromacs->isAborting())
+      return;
 
     parent->bufferMutex.lock();
     while(parent->bufferSemaphoreCount < parent->bufferSemaphoreMax - 1)
@@ -418,6 +428,9 @@ namespace PstpFinder
         parent->bufferMutex.unlock();
         break;
       }
+
+      if(parent->gromacs and parent->gromacs->isAborting())
+        break;
 
       if(not parent->open())
         isStopped = true;
