@@ -180,8 +180,10 @@ namespace PstpFinder
     add(vboxMain);
     pittpi = 0;
     gromacs = 0;
+    abortFlag = false;
 
-    signal_delete_event().connect(sigc::ptr_fun(&closeApplication));
+    signal_delete_event().connect(
+        sigc::mem_fun(*this, &NewAnalysis::close_window));
   }
 
   void
@@ -292,15 +294,24 @@ namespace PstpFinder
     while(Main::events_pending())
       Main::iteration();
 
+    if(abortFlag)
+      return;
     gromacs->calculateSas();
 
     while((currentFrame = gromacs->getCurrentFrame()) < count)
     {
+      if(abortFlag)
+      {
+        gromacs->abort();
+        break;
+      }
       progress.set_fraction(static_cast<float>(currentFrame) / count);
       while(Main::events_pending())
         Main::iteration();
       gromacs->waitNextFrame();
     }
+    if(abortFlag)
+      return;
 
     gromacs->waitOperation();
     while(Main::events_pending())
@@ -325,11 +336,18 @@ namespace PstpFinder
 
     while((currentFrame = gromacs->getCurrentFrame()) < count)
     {
+      if(abortFlag)
+      {
+        gromacs->abort();
+        break;
+      }
       progress.set_fraction(static_cast<float>(currentFrame) / count);
       while(Main::events_pending())
         Main::iteration();
       gromacs->waitNextFrame();
     }
+    if(abortFlag)
+      return;
 
     gromacs->waitOperation();
     while(Main::events_pending())
@@ -337,6 +355,8 @@ namespace PstpFinder
 
     gromacs->getAverageStructure().dumpPdb("/tmp/aver.pdb");
 
+    if(abortFlag)
+      return;
     if(writeSession)
     {
       sessionFile << fs::file_size(fs::path("/tmp/aver.pdb")) << endl;
@@ -348,6 +368,8 @@ namespace PstpFinder
       sessionFile.close();
     }
     fs::remove(fs::path("/tmp/aver.pdb"));
+    if(abortFlag)
+      return;
 
     progress.set_fraction(1);
     while(Main::events_pending())
@@ -355,6 +377,8 @@ namespace PstpFinder
 
     runPittpi(*gromacs, "/tmp/sas.psf", spinRadius.get_value(),
               spinPocketThreshold.get_value());
+    if(abortFlag)
+      return;
     fs::remove(fs::path("/tmp/sas.psf"));
 
     progress.hide();
@@ -545,6 +569,8 @@ namespace PstpFinder
 
     runPittpi(*gromacs, sessionFileName, spinRadius.get_value(),
               spinPocketThreshold.get_value());
+    if(abortFlag)
+      return;
 
     progress.hide();
     std::locale::global(oldLocale);
@@ -566,4 +592,32 @@ namespace PstpFinder
     msg.run();
   }
 
+  bool
+  NewAnalysis::close_window(GdkEventAny* event)
+  {
+    if(not is_sensitive())
+    {
+      MessageDialog messageAbort(
+          "An analysis is running. If you quit you will lose all your work."
+          " Abort and quit?",
+          false, MESSAGE_QUESTION, BUTTONS_YES_NO, true);
+
+      int response = messageAbort.run();
+      if(response == RESPONSE_YES)
+      {
+        abortFlag = true;
+        if(pittpi)
+          pittpi->abort();
+        if(gromacs)
+          gromacs->abort();
+        closeApplication(event);
+        return false;
+      }
+      else
+        return true;
+    }
+
+    closeApplication(event);
+    return false;
+  }
 }

@@ -66,6 +66,7 @@ namespace PstpFinder
       Gromacs* gromacs;
       int __frames;
       float __timeStep;
+      bool abortFlag;
 
       void init();
       void runAnalysis();
@@ -76,6 +77,7 @@ namespace PstpFinder
       void checkParameters();
       void buttonBrowseFileClicked();
       void update_limits();
+      bool close_window(GdkEventAny* event);
       void runPittpi(Gromacs& gromacs, const string& SessionFileName,
                      float radius, float threshold);
   };
