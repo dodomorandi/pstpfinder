@@ -56,41 +56,26 @@ namespace PstpFinder
               float solventSize = 0.14);
       // FIXME: It will have to return an object Molecular Dynamics with SAS
       // FIXME: additional informations
-      void
-      calculateSas();
+      void calculateSas();
 
-      string
-      getTrajectoryFile() const;
-      string
-      getTopologyFile() const;
-      unsigned long
-      getAtomsCount() const;
-      unsigned int
-      getFramesCount() const;
-      float
-      getTimeStep() const; // In nsec
-      unsigned int
-      getFrameStep() const;
-      float
-      getBegin() const;
-      void
-      setBegin(float beginTime);
-      float
-      getEnd() const;
-      void
-      setEnd(float endTime);
-      vector<atom_id>
-      getGroup(const string& groupName);
-      vector<atom_id>
-      getGroup(const string& groupName) const;
+      string getTrajectoryFile() const;
+      string getTopologyFile() const;
+      unsigned long getAtomsCount() const;
+      unsigned int getFramesCount() const;
+      float getTimeStep() const; // In nsec
+      unsigned int getFrameStep() const;
+      float getBegin() const;
+      void setBegin(float beginTime);
+      float getEnd() const;
+      void setEnd(float endTime);
+      vector<atom_id> getGroup(const string& groupName);
+      vector<atom_id> getGroup(const string& groupName) const;
 
       /**
        * @brief Returns the number of the current frame starting from 1
        */
-      unsigned int
-      getCurrentFrame() const;
-      void
-      waitNextFrame() const;
+      unsigned int getCurrentFrame() const;
+      void waitNextFrame() const;
 
       /**
        * @brief Waits for next frame
@@ -98,21 +83,14 @@ namespace PstpFinder
        *                 The method will return when the current frame is
        *                 refFrame + 1
        */
-      void
-      waitNextFrame(unsigned int refFrame) const;
+      void waitNextFrame(unsigned int refFrame) const;
 
-      void
-      __calculateSas();
-      const Protein&
-      __calculateAverageStructure();
-      void
-      calculateAverageStructure();
-      const Protein&
-      getAverageStructure() const;
-      void
-      setAverageStructure(Protein structure);
-      void
-      waitOperation();
+      void __calculateSas();
+      const Protein& __calculateAverageStructure();
+      void calculateAverageStructure();
+      const Protein& getAverageStructure() const;
+      void setAverageStructure(Protein structure);
+      void waitOperation();
     private:
 #ifdef GMX45
       output_env_t oenv;
@@ -144,14 +122,10 @@ namespace PstpFinder
       float _begin, _end;
       mutable float timeStepCached;
 
-      void
-      init(float solventSize);
-      bool
-      getTopology();
-      bool
-      getTrajectory();
-      bool
-      readNextX();
+      void init(float solventSize);
+      bool getTopology();
+      bool getTrajectory();
+      bool readNextX();
   };
 }
 ;
