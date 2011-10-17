@@ -97,16 +97,15 @@ namespace PstpFinder
   void
   Gromacs::calculateSas()
   {
-    operationThread = boost::thread(boost::bind(&Gromacs::__calculateSas,
-                                                boost::ref(*this)));
+    operationThread = boost::thread(
+        boost::bind(&Gromacs::__calculateSas, boost::ref(*this)));
   }
 
   void
   Gromacs::calculateAverageStructure()
   {
-    operationThread
-        = boost::thread(boost::bind(&Gromacs::__calculateAverageStructure,
-                                    boost::ref(*this)));
+    operationThread = boost::thread(
+        boost::bind(&Gromacs::__calculateAverageStructure, boost::ref(*this)));
   }
 
   void
@@ -129,649 +128,649 @@ namespace PstpFinder
     if(not gotTopology and not (bTop = getTopology()))
       gmx_fatal(FARGS, "Could not read topology file.\n");
 
-      currentFrame = 0;
+    currentFrame = 0;
 
-      /* bDGsol = (strcmp(*(top.atoms.atomtype[0]),"?") != 0); */
-      /* TODO: warnings about bDGsol */
-      /* For now I really don't want anything related to DG solvatation! */
-      bDGsol = false;
+    /* bDGsol = (strcmp(*(top.atoms.atomtype[0]),"?") != 0); */
+    /* TODO: warnings about bDGsol */
+    /* For now I really don't want anything related to DG solvatation! */
+    bDGsol = false;
 
-      if(not gotTrajectory and not getTrajectory())
+    if(not gotTrajectory and not getTrajectory())
       gmx_fatal(FARGS, "Could not read coordinates from statusfile.\n");
 
-      /* TODO: index file handling and integration */
+    /* TODO: index file handling and integration */
 
-      index = getGroup("Protein");
-      nx = index.size();
+    index = getGroup("Protein");
+    nx = index.size();
 
-      if(bDGsol)
+    if(bDGsol)
       dgs_factor = new real[nx];
-      radius = new real[natoms];
+    radius = new real[natoms];
 
-      for(int i = 0; i < natoms; i++)
-      {
-        gmx_atomprop_query( aps, epropVDW,
-            *(top.atoms.resinfo[top.atoms.atom[i].resind].name),
-            *(top.atoms.atomname[i]), radius + i);
-        radius[i] += solSize;
-      }
-
-      if(bDGsol)
-      {
-        for(int i = 0; i < nx; i++)
-        {
-          int ii = index[i];
-          if( !gmx_atomprop_query( aps, epropDGsol,
-                  *(top.atoms.resinfo[top.atoms.atom[ii].resind].name),
-                  *(top.atoms.atomname[ii]), dgs_factor + i))
-          dgs_factor[i] = 0;
-        }
-      }
-
-      gpbc = gmx_rmpbc_init(&top.idef, ePBC, natoms, box);
-      SasAnalysis sasAnalysis(nx);
-
-      do
-      {
-        gmx_rmpbc(gpbc, natoms, box, x);
-        if(nsc_dclm_pbc(x, radius, nx, 24, FLAG_ATOM_AREA, &totarea,
-                &area, &totvolume, &surfacedots, &nsurfacedots,
-                index.data(), ePBC, box) != 0)
-        gmx_fatal(FARGS, "Something wrong in nsc_dclm_pbc");
-
-        SasAtom atoms[nx];
-        dgsolv = 0;
-        for(int i = 0; i < nx; i++)
-        {
-          atoms[i].x = x[index[i]][0];
-          atoms[i].y = x[index[i]][1];
-          atoms[i].z = x[index[i]][2];
-          atoms[i].sas = area[i];
-
-          if(bDGsol)
-          dgsolv += area[i]*dgs_factor[i];
-        }
-
-        operationMutex.lock();
-        sasAnalysis << atoms;
-        currentFrame++;
-        wakeCondition.notify_all();
-        operationMutex.unlock();
-
-        if(area)
-        {
-          sfree(area);
-          area = NULL;
-        }
-        if(surfacedots)
-        {
-          sfree(surfacedots);
-          surfacedots = NULL;
-        }
-      }
-      while(readNextX());
-
-      gmx_rmpbc_done(gpbc);
-
-      if(bDGsol)
-      delete[] dgs_factor;
-      delete[] radius;
+    for(int i = 0; i < natoms; i++)
+    {
+      gmx_atomprop_query(aps, epropVDW,
+                         *(top.atoms.resinfo[top.atoms.atom[i].resind].name),
+                         *(top.atoms.atomname[i]), radius + i);
+      radius[i] += solSize;
     }
 
-    const Protein&
-    Gromacs::__calculateAverageStructure()
+    if(bDGsol)
     {
-      vector<atom_id> index;
-      int npdbatoms, isize, count;
-      rvec xcm;
-      matrix pdbbox;
-      real *w_rls;
-      real invcount;
-      double *xav, *rmsf;
-      double** U;
-      gmx_rmpbc_t gpbc;
-      int statusCount = 0;
+      for(int i = 0; i < nx; i++)
+      {
+        int ii = index[i];
+        if(!gmx_atomprop_query(
+            aps, epropDGsol,
+            *(top.atoms.resinfo[top.atoms.atom[ii].resind].name),
+            *(top.atoms.atomname[ii]), dgs_factor + i))
+          dgs_factor[i] = 0;
+      }
+    }
 
-      if(not getTopology())
+    gpbc = gmx_rmpbc_init(&top.idef, ePBC, natoms, box);
+    SasAnalysis sasAnalysis(nx);
+
+    do
+    {
+      gmx_rmpbc(gpbc, natoms, box, x);
+      if(nsc_dclm_pbc(x, radius, nx, 24, FLAG_ATOM_AREA, &totarea, &area,
+                      &totvolume, &surfacedots, &nsurfacedots, index.data(),
+                      ePBC, box)
+         != 0)
+        gmx_fatal(FARGS, "Something wrong in nsc_dclm_pbc");
+
+      SasAtom atoms[nx];
+      dgsolv = 0;
+      for(int i = 0; i < nx; i++)
+      {
+        atoms[i].x = x[index[i]][0];
+        atoms[i].y = x[index[i]][1];
+        atoms[i].z = x[index[i]][2];
+        atoms[i].sas = area[i];
+
+        if(bDGsol)
+          dgsolv += area[i] * dgs_factor[i];
+      }
+
+      operationMutex.lock();
+      sasAnalysis << atoms;
+      currentFrame++;
+      wakeCondition.notify_all();
+      operationMutex.unlock();
+
+      if(area)
+      {
+        sfree(area);
+        area = NULL;
+      }
+      if(surfacedots)
+      {
+        sfree(surfacedots);
+        surfacedots = NULL;
+      }
+    }
+    while(readNextX());
+
+    gmx_rmpbc_done(gpbc);
+
+    if(bDGsol)
+      delete[] dgs_factor;
+    delete[] radius;
+  }
+
+  const Protein&
+  Gromacs::__calculateAverageStructure()
+  {
+    vector<atom_id> index;
+    int npdbatoms, isize, count;
+    rvec xcm;
+    matrix pdbbox;
+    real *w_rls;
+    real invcount;
+    double *xav, *rmsf;
+    double** U;
+    gmx_rmpbc_t gpbc;
+    int statusCount = 0;
+
+    if(not getTopology())
       gmx_fatal(FARGS, "Could not read topology file.\n");
 
-      if(not getTrajectory())
+    if(not getTrajectory())
       gmx_fatal(FARGS, "Could not read coordinates from statusfile.\n");
 
-      currentFrame = 0;
+    currentFrame = 0;
 
-      index = getGroup("Protein");
-      isize = index.size();
+    index = getGroup("Protein");
+    isize = index.size();
 
-      w_rls = new real[top.atoms.nr];
-      for(vector<atom_id>::const_iterator i = index.begin(); i < index.end(); i++)
-        w_rls[*i] = top.atoms.atom[*i].m;
+    w_rls = new real[top.atoms.nr];
+    for(vector<atom_id>::const_iterator i = index.begin(); i < index.end(); i++)
+      w_rls[*i] = top.atoms.atom[*i].m;
 
-        xav = new double[isize*DIM]();
-        U = new double*[isize];
-        for(double** i = U; i < U + isize; i++)
-        *i = new double[DIM*DIM]();
-        rmsf = new double[isize];
+    xav = new double[isize * DIM]();
+    U = new double*[isize];
+    for(double** i = U; i < U + isize; i++)
+      *i = new double[DIM * DIM]();
+    rmsf = new double[isize];
 
-        npdbatoms = top.atoms.nr;
-        snew(top.atoms.pdbinfo, npdbatoms);
-        copy_mat(box, pdbbox);
+    npdbatoms = top.atoms.nr;
+    snew(top.atoms.pdbinfo, npdbatoms);
+    copy_mat(box, pdbbox);
 
-        sub_xcm(xtop, isize, index.data(), top.atoms.atom, xcm, FALSE);
-        gpbc = gmx_rmpbc_init(&top.idef, ePBC, natoms, box);
+    sub_xcm(xtop, isize, index.data(), top.atoms.atom, xcm, FALSE);
+    gpbc = gmx_rmpbc_init(&top.idef, ePBC, natoms, box);
 
-        count = 0;
-        do
+    count = 0;
+    do
+    {
+      gmx_rmpbc(gpbc, natoms, box, x);
+      sub_xcm(x, isize, index.data(), top.atoms.atom, xcm, FALSE);
+      do_fit(natoms, w_rls, xtop, x);
+
+      for(int i = 0; i < isize; i++)
+      {
+        atom_id aid = index[i];
+        for(int d = 0; d < DIM; d++)
         {
-          gmx_rmpbc(gpbc, natoms, box, x);
-          sub_xcm(x, isize, index.data(), top.atoms.atom, xcm, FALSE);
-          do_fit(natoms, w_rls, xtop, x);
-
-          for(int i = 0; i < isize; i++)
-          {
-            atom_id aid = index[i];
-            for(int d = 0; d < DIM; d++)
-            {
-              xav[i * DIM + d] += x[aid][d];
-              for(int m = 0; m < DIM; m++)
-              U[i][d * DIM + m] += x[aid][d] * x[aid][m];
-            }
-          }
-
-          count++;
-          operationMutex.lock();
-          currentFrame = (float)getFramesCount() / (count + isize) * statusCount++;
-          wakeCondition.notify_all();
-          operationMutex.unlock();
-        }while(readNextX());
-
-        gmx_rmpbc_done(gpbc);
-        invcount = 1.0/count;
-        for(int i = 0; i < isize; i++)
-        {
-          for(int d = 0; d < DIM; d++)
-          xav[i*DIM + d] *= invcount;
-
-          for(int d = 0; d < DIM; d++)
+          xav[i * DIM + d] += x[aid][d];
           for(int m = 0; m < DIM; m++)
-          U[i][d * DIM + m] = U[i][d * DIM + m] * invcount -
-          xav[i * DIM + d] * xav[i * DIM + m];
+            U[i][d * DIM + m] += x[aid][d] * x[aid][m];
+        }
+      }
+
+      count++;
+      operationMutex.lock();
+      currentFrame = (float) getFramesCount() / (count + isize) * statusCount++;
+      wakeCondition.notify_all();
+      operationMutex.unlock();
+    }
+    while(readNextX());
+
+    gmx_rmpbc_done(gpbc);
+    invcount = 1.0 / count;
+    for(int i = 0; i < isize; i++)
+    {
+      for(int d = 0; d < DIM; d++)
+        xav[i * DIM + d] *= invcount;
+
+      for(int d = 0; d < DIM; d++)
+        for(int m = 0; m < DIM; m++)
+          U[i][d * DIM + m] = U[i][d * DIM + m] * invcount
+                              - xav[i * DIM + d] * xav[i * DIM + m];
+    }
+
+    for(int i = 0; i < isize; i++)
+      rmsf[i] = U[i][XX * DIM + XX] + U[i][YY * DIM + YY] + U[i][ZZ * DIM + ZZ];
+
+    for(double** i = U; i < U + isize; i++)
+      delete[] *i;
+    delete[] U;
+
+    for(int i = 0; i < isize; i++)
+      top.atoms.pdbinfo[index[i]].bfac = 800 * M_PI * M_PI / 3.0 * rmsf[i];
+
+    averageStructure = Protein();
+    Residue res;
+    for(int i = 0; i < isize; i++)
+    {
+      PdbAtom atom;
+      atom.index = i + 1;
+      strncpy(atom.type, *top.atoms.atomname[index[i]], 5);
+
+      atom.x = xcm[0] + xav[i * DIM];
+      atom.y = xcm[1] + xav[i * DIM + 1];
+      atom.z = xcm[2] + xav[i * DIM + 2];
+
+      if(top.atoms.pdbinfo)
+      {
+        atom.bFactor = top.atoms.pdbinfo[index[i]].bfac;
+        atom.occupancy = top.atoms.pdbinfo[index[i]].occup;
+      }
+      else
+      {
+        atom.bFactor = 0.0;
+        atom.occupancy = 1.0;
+      }
+
+      int resind = top.atoms.atom[index[i]].resind;
+      string resname(*top.atoms.resinfo[resind].name);
+      for(const string* j = aminoacidUncommonTranslator;
+          j < aminoacidUncommonTranslator + aminoacidUncommonTranslatorSize;
+          j += 2)
+      {
+        size_t found = resname.find(*j);
+        if(found != string::npos)
+        {
+          resname.replace(found, 3, j[1]);
+          break;
+        }
+      }
+
+      if(res.atoms.size() == 0 or top.atoms.resinfo[resind].nr != res.index)
+      {
+        if(res.atoms.size() != 0)
+        {
+          averageStructure.appendResidue(res);
+          res = Residue();
         }
 
-        for(int i = 0; i < isize; i++)
-        rmsf[i] = U[i][XX * DIM + XX] + U[i][YY * DIM + YY] +
-        U[i][ZZ * DIM + ZZ];
+        transform(resname.begin(), resname.end(), resname.begin(), ::toupper);
+        res.index = top.atoms.resinfo[resind].nr;
 
-        for(double** i = U; i < U + isize; i++)
-        delete[] *i;
-        delete[] U;
-
-        for(int i = 0; i < isize; i++)
-        top.atoms.pdbinfo[index[i]].bfac = 800*M_PI*M_PI/3.0*rmsf[i];
-
-        averageStructure = Protein();
-        Residue res;
-        for(int i = 0; i < isize; i++)
-        {
-          PdbAtom atom;
-          atom.index = i+1;
-          strncpy(atom.type, *top.atoms.atomname[index[i]], 5);
-
-          atom.x = xcm[0] + xav[i * DIM];
-          atom.y = xcm[1] + xav[i * DIM + 1];
-          atom.z = xcm[2] + xav[i * DIM + 2];
-
-          if(top.atoms.pdbinfo)
+        for(int aa = 1; aa < 21; aa++) // 20 + unknown
+          if(resname.find(aminoacidTriplet[aa]) != string::npos)
           {
-            atom.bFactor = top.atoms.pdbinfo[index[i]].bfac;
-            atom.occupancy = top.atoms.pdbinfo[index[i]].occup;
-          }
-          else
-          {
-            atom.bFactor = 0.0;
-            atom.occupancy = 1.0;
-          }
-
-          int resind = top.atoms.atom[index[i]].resind;
-          string resname(*top.atoms.resinfo[resind].name);
-          for
-          (
-              const string* j = aminoacidUncommonTranslator;
-              j < aminoacidUncommonTranslator + aminoacidUncommonTranslatorSize;
-              j += 2
-          )
-          {
-            size_t found = resname.find(*j);
-            if(found != string::npos)
-            {
-              resname.replace(found, 3, j[1]);
-              break;
-            }
-          }
-
-          if(res.atoms.size() == 0 or
-              top.atoms.resinfo[resind].nr != res.index)
-          {
-            if(res.atoms.size() != 0)
-            {
-              averageStructure.appendResidue(res);
-              res = Residue();
-            }
-
-            transform(resname.begin(), resname.end(), resname.begin(), ::toupper);
-            res.index = top.atoms.resinfo[resind].nr;
-
-            for(int aa = 1; aa < 21; aa++) // 20 + unknown
-            if(resname.find(aminoacidTriplet[aa]) != string::npos)
-            {
-              res.type = static_cast<Aminoacids>(aa);
-              break;
-            }
-          }
-          res.atoms.push_back(atom);
-
-          operationMutex.lock();
-          currentFrame = (float)getFramesCount() / (count + isize) * statusCount++;
-          wakeCondition.notify_all();
-          operationMutex.unlock();
-        }
-        averageStructure.appendResidue(res);
-
-        delete[] rmsf;
-        delete[] xav;
-        delete[] w_rls;
-
-        return averageStructure;
-      }
-
-      const Protein&
-      Gromacs::getAverageStructure() const
-      {
-        return averageStructure;
-      }
-
-      void
-      Gromacs::setAverageStructure(Protein structure)
-      {
-        averageStructure = structure;
-      }
-
-      unsigned long
-      Gromacs::getAtomsCount() const
-      {
-        if(gotTopology)
-        return natoms;
-        else
-        return 0;
-      }
-
-      vector<atom_id>
-      Gromacs::getGroup(const string& groupName)
-      {
-        if(not gotTopology and not getTopology())
-        abort();
-
-        return const_cast<const Gromacs&>(*this).getGroup(groupName);
-      }
-
-      vector<atom_id>
-      Gromacs::getGroup(const string& groupName) const
-      {
-        // The original code was simply:
-        // get_index(&top.atoms, 0, 2, nx, index, grpname);
-        // but now I need an automatic selection or a GUI.
-        // For this purpose it's necessary to partially use index.c code in GROMACS
-
-        // These will be reallocated by Gromacs libraries.
-        // They must be allocated on the heap.
-        // I think it'g good to allocate them as arrays, because they will probably
-        // be reallocated. It would be easier to debug later.
-
-        vector<atom_id> group;
-        int size;
-
-        t_blocka* grps;
-        snew(grps, 1);
-        snew(grps->index, 1);
-        char*** gnames;
-        snew(gnames, 1);
-        int targetIndex = -1;
-
-        t_atoms* m_atoms = new t_atoms;
-        memcpy(m_atoms, &top.atoms, sizeof(t_atoms));
-
-        analyse(m_atoms, grps, gnames, FALSE, FALSE);
-
-        for(char** i = *gnames; i < *gnames + grps->nr; i++)
-        {
-          if(groupName.compare(*i) == 0)
-          {
-            targetIndex = (int)(i - *gnames);
+            res.type = static_cast<Aminoacids>(aa);
             break;
           }
-        }
-        // TODO: Return in case of missing target index
-
-        size = grps->index[targetIndex + 1] - grps->index[targetIndex];
-        group.reserve(size);
-
-        for(int i = 0; i < size; i++)
-        group.push_back(grps->a[grps->index[targetIndex] + i]);
-
-        delete[] gnames;
-        delete[] grps->index;
-        delete[] grps;
-        delete[] m_atoms;
-
-        return group;
       }
+      res.atoms.push_back(atom);
 
-      bool Gromacs::getTopology()
+      operationMutex.lock();
+      currentFrame = (float) getFramesCount() / (count + isize) * statusCount++;
+      wakeCondition.notify_all();
+      operationMutex.unlock();
+    }
+    averageStructure.appendResidue(res);
+
+    delete[] rmsf;
+    delete[] xav;
+    delete[] w_rls;
+
+    return averageStructure;
+  }
+
+  const Protein&
+  Gromacs::getAverageStructure() const
+  {
+    return averageStructure;
+  }
+
+  void
+  Gromacs::setAverageStructure(Protein structure)
+  {
+    averageStructure = structure;
+  }
+
+  unsigned long
+  Gromacs::getAtomsCount() const
+  {
+    if(gotTopology)
+      return natoms;
+    else
+      return 0;
+  }
+
+  vector<atom_id>
+  Gromacs::getGroup(const string& groupName)
+  {
+    if(not gotTopology and not getTopology())
+      abort();
+
+    return const_cast<const Gromacs&>(*this).getGroup(groupName);
+  }
+
+  vector<atom_id>
+  Gromacs::getGroup(const string& groupName) const
+  {
+    // The original code was simply:
+    // get_index(&top.atoms, 0, 2, nx, index, grpname);
+    // but now I need an automatic selection or a GUI.
+    // For this purpose it's necessary to partially use index.c code in GROMACS
+
+    // These will be reallocated by Gromacs libraries.
+    // They must be allocated on the heap.
+    // I think it'g good to allocate them as arrays, because they will probably
+    // be reallocated. It would be easier to debug later.
+
+    vector<atom_id> group;
+    int size;
+
+    t_blocka* grps;
+    snew(grps, 1);
+    snew(grps->index, 1);
+    char*** gnames;
+    snew(gnames, 1);
+    int targetIndex = -1;
+
+    t_atoms* m_atoms = new t_atoms;
+    memcpy(m_atoms, &top.atoms, sizeof(t_atoms));
+
+    analyse(m_atoms, grps, gnames, FALSE, FALSE);
+
+    for(char** i = *gnames; i < *gnames + grps->nr; i++)
+    {
+      if(groupName.compare(*i) == 0)
       {
-        t_inputrec ir;
-        matrix topbox;
-        char title[1024];
+        targetIndex = (int) (i - *gnames);
+        break;
+      }
+    }
+    // TODO: Return in case of missing target index
+
+    size = grps->index[targetIndex + 1] - grps->index[targetIndex];
+    group.reserve(size);
+
+    for(int i = 0; i < size; i++)
+      group.push_back(grps->a[grps->index[targetIndex] + i]);
+
+    delete[] gnames;
+    delete[] grps->index;
+    delete[] grps;
+    delete[] m_atoms;
+
+    return group;
+  }
+
+  bool
+  Gromacs::getTopology()
+  {
+    t_inputrec ir;
+    matrix topbox;
+    char title[1024];
 
 #ifdef GMX45    
-        read_tpx(tprName.c_str(), &ir, box, &natoms, 0, 0, 0, &mtop);
+    read_tpx(tprName.c_str(), &ir, box, &natoms, 0, 0, 0, &mtop);
 #else
-        read_tpx( tprName.c_str(), &step, &t, &lambda, &ir, box, &natoms,
-            0, 0, 0, &mtop);
+    read_tpx( tprName.c_str(), &step, &t, &lambda, &ir, box, &natoms,
+        0, 0, 0, &mtop);
 #endif
 
-        gotTopology = read_tps_conf( tprName.c_str(), title, &top, &ePBC, &xtop,
-            NULL, topbox, FALSE);
-        return gotTopology;
-      }
+    gotTopology = read_tps_conf(tprName.c_str(), title, &top, &ePBC, &xtop,
+                                NULL, topbox, FALSE);
+    return gotTopology;
+  }
 
-      bool
-      Gromacs::getTrajectory()
-      {
+  bool
+  Gromacs::getTrajectory()
+  {
 #ifdef GMX45
-        if(not gotTrajectory)
-        {
-          snew(oenv, 1);
-          output_env_init_default(oenv);
-        }
+    if(not gotTrajectory)
+    {
+      snew(oenv, 1);
+      output_env_init_default(oenv);
+    }
 
-        cachedNFrames = 0;
-        timeStepCached = 0;
-        currentFrame = 0;
+    cachedNFrames = 0;
+    timeStepCached = 0;
+    currentFrame = 0;
 
-        if((natoms =
-                read_first_x(oenv, &status, trjName.c_str(), &t, &x, box)) == 0)
+    if((natoms = read_first_x(oenv, &status, trjName.c_str(), &t, &x, box))
+       == 0)
 #else
-        if((natoms =
-                read_first_x(&status, trjName.c_str(), &t, &x, box)) == 0)
+    if((natoms =
+            read_first_x(&status, trjName.c_str(), &t, &x, box)) == 0)
 #endif
-        {
-          output_env_done(oenv);
-          return gotTrajectory = false;
-        }
-        else
-        return gotTrajectory = true;
-      }
+    {
+      output_env_done(oenv);
+      return gotTrajectory = false;
+    }
+    else
+      return gotTrajectory = true;
+  }
 
-      bool
-      Gromacs::readNextX()
-      {
-        bool out;
+  bool
+  Gromacs::readNextX()
+  {
+    bool out;
 
 #ifdef GMX45
-        out = read_next_x(oenv, status, &t, natoms, x, box);
+    out = read_next_x(oenv, status, &t, natoms, x, box);
 #else
-        out = read_next_x(status, &t, natoms, x, box);
+    out = read_next_x(status, &t, natoms, x, box);
 #endif
 
-        if(not out)
-        {
-          close_trx(status);
-          getTrajectory();
-        }
+    if(not out)
+    {
+      close_trx(status);
+      getTrajectory();
+    }
 
-        return out;
-      }
+    return out;
+  }
 
-      unsigned int
-      Gromacs::getFramesCount() const
+  unsigned int
+  Gromacs::getFramesCount() const
+  {
+    if(cachedNFrames > 0)
+      return cachedNFrames;
+
+    namespace file = boost::filesystem;
+    if(not file::exists(file::path(trjName)))
+      return 0;
+
+    int nFrames = 0;
+    /*
+     output_env_t _oenv;
+     t_trxstatus *_status;
+     real _t;
+     rvec* _x;
+     matrix _box;
+     int _natoms;
+
+     snew(_oenv, 1);
+     output_env_init_default(_oenv);
+
+     if((_natoms = read_first_x(_oenv,&_status, trjName.c_str(), &_t, &_x,
+     _box)) == 0)
+     {
+     output_env_done(_oenv);
+     return 0;
+     }
+     nFrames = 1;
+
+     while(read_next_x(_oenv, _status, &_t, _natoms, _x, _box))
+     nFrames++;
+
+     close_trx(_status);
+     output_env_done(_oenv);
+     */
+
+    if(_begin != -1 and _end != -1)
+      return (_end - _begin) / getTimeStep();
+
+    /* This is a workaround to obtain the f*****g number of frames... */
+    ifstream trjStream(trjName.c_str(), ios::in | ios::binary);
+    bool gotFirst = false;
+    unsigned char cTmp[4];
+    int nAtoms;
+    int* iTmp = (int*) cTmp;
+    int step = -1;
+
+    trjStream.seekg(4, ios::beg);
+    cTmp[3] = trjStream.get();
+    cTmp[2] = trjStream.get();
+    cTmp[1] = trjStream.get();
+    cTmp[0] = trjStream.get();
+    nAtoms = *iTmp;
+
+    while(not trjStream.eof())
+    {
+      cTmp[3] = trjStream.get();
+      cTmp[2] = trjStream.get();
+      cTmp[1] = trjStream.get();
+      cTmp[0] = trjStream.get();
+
+      if(nAtoms == *iTmp and not gotFirst)
       {
-        if(cachedNFrames > 0)
-        return cachedNFrames;
-
-        namespace file = boost::filesystem;
-        if(not file::exists(file::path(trjName)))
-        return 0;
-
-        int nFrames = 0;
-        /*
-         output_env_t _oenv;
-         t_trxstatus *_status;
-         real _t;
-         rvec* _x;
-         matrix _box;
-         int _natoms;
-
-         snew(_oenv, 1);
-         output_env_init_default(_oenv);
-
-         if((_natoms = read_first_x(_oenv,&_status, trjName.c_str(), &_t, &_x,
-         _box)) == 0)
-         {
-         output_env_done(_oenv);
-         return 0;
-         }
-         nFrames = 1;
-
-         while(read_next_x(_oenv, _status, &_t, _natoms, _x, _box))
-         nFrames++;
-
-         close_trx(_status);
-         output_env_done(_oenv);
-         */
-
-        if(_begin != -1 and _end != -1)
-        return (_end - _begin) / getTimeStep();
-
-        /* This is a workaround to obtain the f*****g number of frames... */
-        ifstream trjStream(trjName.c_str(), ios::in | ios::binary);
-        bool gotFirst = false;
-        unsigned char cTmp[4];
-        int nAtoms;
-        int* iTmp = (int*)cTmp;
-        int step = -1;
-
-        trjStream.seekg(4, ios::beg);
+        gotFirst = true;
+        continue;
+      }
+      else if(nAtoms == *iTmp)
+      {
         cTmp[3] = trjStream.get();
         cTmp[2] = trjStream.get();
         cTmp[1] = trjStream.get();
         cTmp[0] = trjStream.get();
-        nAtoms = *iTmp;
 
-        while(not trjStream.eof())
-        {
-          cTmp[3] = trjStream.get();
-          cTmp[2] = trjStream.get();
-          cTmp[1] = trjStream.get();
-          cTmp[0] = trjStream.get();
-
-          if(nAtoms == *iTmp and not gotFirst)
-          {
-            gotFirst = true;
-            continue;
-          }
-          else if(nAtoms == *iTmp)
-          {
-            cTmp[3] = trjStream.get();
-            cTmp[2] = trjStream.get();
-            cTmp[1] = trjStream.get();
-            cTmp[0] = trjStream.get();
-
-            step = *iTmp;
-            gotFirst = false;
-            break;
-          }
-          trjStream.seekg(-3, ios::cur);
-        }
-
-        if(step == -1)
-        return 0;
-
-        trjStream.seekg(-7, ios::end);
-
-        while(trjStream.seekg(-5, ios::cur))
-        {
-          cTmp[3] = trjStream.get();
-          cTmp[2] = trjStream.get();
-          cTmp[1] = trjStream.get();
-          cTmp[0] = trjStream.get();
-
-          if(nAtoms == *iTmp and not gotFirst)
-          {
-            gotFirst = true;
-            trjStream.seekg(-3, ios::cur);
-          }
-          else if(nAtoms == *iTmp)
-          {
-            cTmp[3] = trjStream.get();
-            cTmp[2] = trjStream.get();
-            cTmp[1] = trjStream.get();
-            cTmp[0] = trjStream.get();
-
-            nFrames = *iTmp / step + 1;
-            break;
-          }
-        }
-
-        return cachedNFrames = nFrames;
+        step = *iTmp;
+        gotFirst = false;
+        break;
       }
+      trjStream.seekg(-3, ios::cur);
+    }
 
-      unsigned int
-      Gromacs::getCurrentFrame() const
+    if(step == -1)
+      return 0;
+
+    trjStream.seekg(-7, ios::end);
+
+    while(trjStream.seekg(-5, ios::cur))
+    {
+      cTmp[3] = trjStream.get();
+      cTmp[2] = trjStream.get();
+      cTmp[1] = trjStream.get();
+      cTmp[0] = trjStream.get();
+
+      if(nAtoms == *iTmp and not gotFirst)
       {
-        unsigned int nFrame;
-
-        operationMutex.lock();
-        nFrame = currentFrame + 1;
-        operationMutex.unlock();
-
-        return nFrame;
+        gotFirst = true;
+        trjStream.seekg(-3, ios::cur);
       }
-
-      void
-      Gromacs::waitNextFrame() const
+      else if(nAtoms == *iTmp)
       {
-        namespace ip = boost::interprocess;
+        cTmp[3] = trjStream.get();
+        cTmp[2] = trjStream.get();
+        cTmp[1] = trjStream.get();
+        cTmp[0] = trjStream.get();
 
-        if(getCurrentFrame() < getFramesCount())
-        {
-          ip::scoped_lock<ip::interprocess_mutex> slock(wakeMutex);
-          wakeCondition.wait(slock);
-        }
+        nFrames = *iTmp / step + 1;
+        break;
       }
+    }
 
-      void
-      Gromacs::waitNextFrame(unsigned int refFrame) const
-      {
-        namespace ip = boost::interprocess;
+    return cachedNFrames = nFrames;
+  }
 
-        while(getCurrentFrame() < refFrame + 1)
-        {
-          ip::scoped_lock<ip::interprocess_mutex> slock(wakeMutex);
-          wakeCondition.wait(slock);
-        }
-      }
+  unsigned int
+  Gromacs::getCurrentFrame() const
+  {
+    unsigned int nFrame;
 
-      float
-      Gromacs::getTimeStep() const
-      {
-        namespace file = boost::filesystem;
-        if(not file::exists(file::path(trjName)))
-        return 0;
+    operationMutex.lock();
+    nFrame = currentFrame + 1;
+    operationMutex.unlock();
 
-        if(timeStepCached != 0)
-        return timeStepCached;
+    return nFrame;
+  }
 
-        output_env_t _oenv;
-        t_trxstatus *_status;
-        int _natoms;
-        t_trxframe _fr;
-        float time1, time2;
+  void
+  Gromacs::waitNextFrame() const
+  {
+    namespace ip = boost::interprocess;
 
-        snew(_oenv, 1);
-        output_env_init_default(_oenv);
+    if(getCurrentFrame() < getFramesCount())
+    {
+      ip::scoped_lock<ip::interprocess_mutex> slock(wakeMutex);
+      wakeCondition.wait(slock);
+    }
+  }
 
-        if((_natoms = read_first_frame(_oenv,&_status, trjName.c_str(), &_fr, 0)
-            ) == 0)
-        {
-          output_env_done(_oenv);
-          return 0;
-        }
+  void
+  Gromacs::waitNextFrame(unsigned int refFrame) const
+  {
+    namespace ip = boost::interprocess;
 
-        time1 = _fr.time;
-        read_next_frame(_oenv, _status, &_fr);
-        time2 = _fr.time;
-        close_trx(_status);
+    while(getCurrentFrame() < refFrame + 1)
+    {
+      ip::scoped_lock<ip::interprocess_mutex> slock(wakeMutex);
+      wakeCondition.wait(slock);
+    }
+  }
 
-        output_env_done(_oenv);
+  float
+  Gromacs::getTimeStep() const
+  {
+    namespace file = boost::filesystem;
+    if(not file::exists(file::path(trjName)))
+      return 0;
 
-        timeStepCached = time2 - time1;
-        return timeStepCached;
-      }
+    if(timeStepCached != 0)
+      return timeStepCached;
 
-      unsigned int
-      Gromacs::getFrameStep() const
-      {
-        namespace file = boost::filesystem;
-        if(not file::exists(file::path(trjName)))
-        return 0;
+    output_env_t _oenv;
+    t_trxstatus *_status;
+    int _natoms;
+    t_trxframe _fr;
+    float time1, time2;
 
-        output_env_t _oenv;
-        t_trxstatus *_status;
-        int _natoms;
-        t_trxframe _fr;
+    snew(_oenv, 1);
+    output_env_init_default(_oenv);
 
-        snew(_oenv, 1);
-        output_env_init_default(_oenv);
+    if((_natoms = read_first_frame(_oenv, &_status, trjName.c_str(), &_fr, 0))
+       == 0)
+    {
+      output_env_done(_oenv);
+      return 0;
+    }
 
-        if((_natoms = read_first_frame(_oenv,&_status, trjName.c_str(), &_fr, 0)
-            ) == 0)
-        {
-          close_trx(_status);
-          output_env_done(_oenv);
-          return 0;
-        }
+    time1 = _fr.time;
+    read_next_frame(_oenv, _status, &_fr);
+    time2 = _fr.time;
+    close_trx(_status);
 
-        read_next_frame(_oenv, _status, &_fr);
-        close_trx(_status);
+    output_env_done(_oenv);
 
-        output_env_done(_oenv);
+    timeStepCached = time2 - time1;
+    return timeStepCached;
+  }
 
-        return _fr.step;
-      }
+  unsigned int
+  Gromacs::getFrameStep() const
+  {
+    namespace file = boost::filesystem;
+    if(not file::exists(file::path(trjName)))
+      return 0;
 
-      float
-      Gromacs::getBegin() const
-      {
-        return _begin;
-      }
+    output_env_t _oenv;
+    t_trxstatus *_status;
+    int _natoms;
+    t_trxframe _fr;
 
-      void
-      Gromacs::setBegin(float beginTime)
-      {
-        _begin = beginTime;
-        setTimeValue(TBEGIN, beginTime);
-      }
+    snew(_oenv, 1);
+    output_env_init_default(_oenv);
 
-      float
-      Gromacs::getEnd() const
-      {
-        return _end;
-      }
+    if((_natoms = read_first_frame(_oenv, &_status, trjName.c_str(), &_fr, 0))
+       == 0)
+    {
+      close_trx(_status);
+      output_env_done(_oenv);
+      return 0;
+    }
 
-      void
-      Gromacs::setEnd(float endTime)
-      {
-        _end = endTime;
-        setTimeValue(TEND, endTime);
-      }
-    };
+    read_next_frame(_oenv, _status, &_fr);
+    close_trx(_status);
+
+    output_env_done(_oenv);
+
+    return _fr.step;
+  }
+
+  float
+  Gromacs::getBegin() const
+  {
+    return _begin;
+  }
+
+  void
+  Gromacs::setBegin(float beginTime)
+  {
+    _begin = beginTime;
+    setTimeValue(TBEGIN, beginTime);
+  }
+
+  float
+  Gromacs::getEnd() const
+  {
+    return _end;
+  }
+
+  void
+  Gromacs::setEnd(float endTime)
+  {
+    _end = endTime;
+    setTimeValue(TEND, endTime);
+  }
+}
+;
