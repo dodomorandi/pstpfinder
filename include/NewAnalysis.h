@@ -63,6 +63,7 @@ namespace PstpFinder
       Spinner spinnerWait;
       VSeparator vSeparator;
       Pittpi* pittpi;
+      Gromacs* gromacs;
       int __frames;
       float __timeStep;
 

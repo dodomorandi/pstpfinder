@@ -179,6 +179,7 @@ namespace PstpFinder
 
     add(vboxMain);
     pittpi = 0;
+    gromacs = 0;
 
     signal_delete_event().connect(sigc::ptr_fun(&closeApplication));
   }
@@ -237,10 +238,10 @@ namespace PstpFinder
     std::locale oldLocale;
     std::locale::global(std::locale("C"));
 
-    Gromacs gromacs(trjChooser.get_filename(), tprChooser.get_filename());
+    gromacs = new Gromacs(trjChooser.get_filename(), tprChooser.get_filename());
 
-    gromacs.setBegin(spinBegin.get_value());
-    gromacs.setEnd(spinEnd.get_value());
+    gromacs->setBegin(spinBegin.get_value());
+    gromacs->setEnd(spinEnd.get_value());
 
     if(not progress.is_ancestor(vboxMain))
     {
@@ -287,21 +288,21 @@ namespace PstpFinder
       Main::iteration();
 
     unsigned int currentFrame;
-    unsigned int count = gromacs.getFramesCount();
+    unsigned int count = gromacs->getFramesCount();
     while(Main::events_pending())
       Main::iteration();
 
-    gromacs.calculateSas();
+    gromacs->calculateSas();
 
-    while((currentFrame = gromacs.getCurrentFrame()) < count)
+    while((currentFrame = gromacs->getCurrentFrame()) < count)
     {
       progress.set_fraction(static_cast<float>(currentFrame) / count);
       while(Main::events_pending())
         Main::iteration();
-      gromacs.waitNextFrame();
+      gromacs->waitNextFrame();
     }
 
-    gromacs.waitOperation();
+    gromacs->waitOperation();
     while(Main::events_pending())
       Main::iteration();
 
@@ -320,21 +321,21 @@ namespace PstpFinder
     progress.set_fraction(0);
     while(Main::events_pending())
       Main::iteration();
-    gromacs.calculateAverageStructure();
+    gromacs->calculateAverageStructure();
 
-    while((currentFrame = gromacs.getCurrentFrame()) < count)
+    while((currentFrame = gromacs->getCurrentFrame()) < count)
     {
       progress.set_fraction(static_cast<float>(currentFrame) / count);
       while(Main::events_pending())
         Main::iteration();
-      gromacs.waitNextFrame();
+      gromacs->waitNextFrame();
     }
 
-    gromacs.waitOperation();
+    gromacs->waitOperation();
     while(Main::events_pending())
       Main::iteration();
 
-    gromacs.getAverageStructure().dumpPdb("/tmp/aver.pdb");
+    gromacs->getAverageStructure().dumpPdb("/tmp/aver.pdb");
 
     if(writeSession)
     {
@@ -352,13 +353,16 @@ namespace PstpFinder
     while(Main::events_pending())
       Main::iteration();
 
-    runPittpi(gromacs, "/tmp/sas.psf", spinRadius.get_value(),
+    runPittpi(*gromacs, "/tmp/sas.psf", spinRadius.get_value(),
               spinPocketThreshold.get_value());
     fs::remove(fs::path("/tmp/sas.psf"));
 
     progress.hide();
     set_sensitive(true);
     std::locale::global(oldLocale);
+
+    delete gromacs;
+    gromacs = 0;
 
     MessageDialog msg("Two log files have been written in /tmp/pockets.log and "
                       "/tmp/pockets_details.log");
@@ -508,13 +512,13 @@ namespace PstpFinder
 
     delete[] chunk;
 
-    Gromacs gromacs(sessionFile.getTrajectoryFileName(),
-                    sessionFile.getTopologyFileName());
-    __timeStep = gromacs.getTimeStep();
-    __frames = gromacs.getFramesCount();
-    gromacs.setBegin(beginTime);
-    gromacs.setEnd(endTime);
-    gromacs.setAverageStructure(Protein("/tmp/aver.pdb"));
+    gromacs = new Gromacs(sessionFile.getTrajectoryFileName(),
+                          sessionFile.getTopologyFileName());
+    __timeStep = gromacs->getTimeStep();
+    __frames = gromacs->getFramesCount();
+    gromacs->setBegin(beginTime);
+    gromacs->setEnd(endTime);
+    gromacs->setAverageStructure(Protein("/tmp/aver.pdb"));
 
     stop_spin();
     while(Main::events_pending())
@@ -539,7 +543,7 @@ namespace PstpFinder
     while(Main::events_pending())
       Main::iteration();
 
-    runPittpi(gromacs, sessionFileName, spinRadius.get_value(),
+    runPittpi(*gromacs, sessionFileName, spinRadius.get_value(),
               spinPocketThreshold.get_value());
 
     progress.hide();
@@ -553,6 +557,9 @@ namespace PstpFinder
 
     while(Main::events_pending())
       Main::iteration();
+
+    delete gromacs;
+    gromacs = 0;
 
     MessageDialog msg("Two log files have been written in /tmp/pockets.log and "
                       "/tmp/pockets_details.log");
