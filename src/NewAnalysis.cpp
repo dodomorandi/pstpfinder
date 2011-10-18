@@ -176,6 +176,7 @@ namespace PstpFinder
     vboxMain.set_border_width(10);
     vboxMain.pack_start(mainFrame);
     vboxMain.pack_start(buttonBoxRun, PACK_SHRINK);
+    vboxMain.pack_start(progress, PACK_EXPAND_WIDGET, 10);
 
     add(vboxMain);
     pittpi = 0;
@@ -193,6 +194,7 @@ namespace PstpFinder
       vboxMain.pack_start(spinnerWait);
     mainFrame.hide();
     buttonBoxRun.hide();
+    progress.hide();
     spinnerWait.show();
     spinnerWait.start();
   }
@@ -204,6 +206,7 @@ namespace PstpFinder
     spinnerWait.hide();
     mainFrame.show();
     buttonBoxRun.show();
+    progress.show();
   }
 
   void
@@ -245,27 +248,13 @@ namespace PstpFinder
     gromacs->setBegin(spinBegin.get_value());
     gromacs->setEnd(spinEnd.get_value());
 
-    if(not progress.is_ancestor(vboxMain))
-    {
-      vboxMain.pack_end(progress, PACK_EXPAND_WIDGET, 10);
-      int x, y, width, height;
-      get_position(x, y);
-      get_size(width, height);
-      Glib::RefPtr<Gdk::Screen> screen = get_screen();
-      if(screen->get_height() < y + height)
-      {
-        y = screen->get_height() - height;
-        move(x, y);
-      }
-    }
-
-    set_sensitive(false);
+    mainFrame.set_sensitive(false);
+    buttonRun.set_sensitive(false);
 
     if(fs::exists(fs::path("/tmp/sas.psf")))
       fs::remove(fs::path("/tmp/sas.psf"));
 
     progress.set_fraction(0);
-    progress.show();
     while(Main::events_pending())
       Main::iteration();
 
@@ -381,8 +370,8 @@ namespace PstpFinder
       return;
     fs::remove(fs::path("/tmp/sas.psf"));
 
-    progress.hide();
-    set_sensitive(true);
+    mainFrame.set_sensitive();
+    buttonRun.set_sensitive();
     std::locale::global(oldLocale);
 
     delete gromacs;
@@ -501,7 +490,8 @@ namespace PstpFinder
     spinPocketThreshold.set_value(sessionFile.getPocketThreshold());
     entrySessionFile.set_text(sessionFileName);
 
-    set_sensitive(false);
+    mainFrame.set_sensitive(false);
+    buttonRun.set_sensitive(false);
     start_spin();
     while(Main::events_pending())
       Main::iteration();
@@ -548,22 +538,7 @@ namespace PstpFinder
     while(Main::events_pending())
       Main::iteration();
 
-    if(not progress.is_ancestor(vboxMain))
-    {
-      vboxMain.pack_end(progress, PACK_EXPAND_WIDGET, 10);
-      int x, y, width, height;
-      get_position(x, y);
-      get_size(width, height);
-      Glib::RefPtr<Gdk::Screen> screen = get_screen();
-      if(screen->get_height() < y + height)
-      {
-        y = screen->get_height() - height;
-        move(x, y);
-      }
-    }
-
     progress.set_fraction(0);
-    progress.show();
     while(Main::events_pending())
       Main::iteration();
 
@@ -572,10 +547,10 @@ namespace PstpFinder
     if(abortFlag)
       return;
 
-    progress.hide();
     std::locale::global(oldLocale);
 
-    set_sensitive();
+    mainFrame.set_sensitive();
+    buttonRun.set_sensitive();
     update_limits();
     spinBegin.set_value(beginTime);
     spinEnd.set_value(endTime);
@@ -595,7 +570,7 @@ namespace PstpFinder
   bool
   NewAnalysis::close_window(GdkEventAny* event)
   {
-    if(not is_sensitive())
+    if(not mainFrame.is_sensitive())
     {
       MessageDialog messageAbort(
           "An analysis is running. If you quit you will lose all your work."
@@ -620,4 +595,5 @@ namespace PstpFinder
     closeApplication(event);
     return false;
   }
+
 }
