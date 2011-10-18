@@ -157,6 +157,14 @@ namespace PstpFinder
     nextStatusCondition.notify_all();
   }
 
+  void
+  Pittpi::setStatusDescription(const string& description) const
+  {
+    statusMutex.lock();
+    __statusDescription = description;
+    statusMutex.unlock();
+  }
+
   float
   Pittpi::getStatus() const
   {
@@ -168,6 +176,16 @@ namespace PstpFinder
     retval = __status;
     statusMutex.unlock();
     return retval;
+  }
+
+  string
+  Pittpi::getStatusDescription() const
+  {
+    string description;
+    statusMutex.lock();
+    description = __statusDescription;
+    statusMutex.unlock();
+    return description;
   }
 
   void

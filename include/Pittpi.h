@@ -128,7 +128,9 @@ namespace PstpFinder
 
       void join();
       void setStatus(float value) const;
+      void setStatusDescription(const string& description) const;
       float getStatus() const;
+      string getStatusDescription() const;
       void waitNextStatus();
       bool isFinished();
       void abort();
@@ -158,6 +160,7 @@ namespace PstpFinder
       mutable boost::interprocess::interprocess_mutex nextStatusMutex;
       mutable boost::interprocess::interprocess_condition nextStatusCondition;
       mutable float __status;
+      mutable string __statusDescription;
       bool sync;
       bool abortFlag;
   };
