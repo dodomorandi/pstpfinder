@@ -291,7 +291,7 @@ namespace PstpFinder
 
       count++;
       operationMutex.lock();
-      currentFrame = (float) getFramesCount() / (count + isize) * statusCount++;
+      currentFrame = ++statusCount;
       wakeCondition.notify_all();
       operationMutex.unlock();
     }
@@ -384,7 +384,7 @@ namespace PstpFinder
       res.atoms.push_back(atom);
 
       operationMutex.lock();
-      currentFrame = (float) getFramesCount() / (count + isize) * statusCount++;
+      currentFrame = (float) getFramesCount() / isize * i;
       wakeCondition.notify_all();
       operationMutex.unlock();
     }
