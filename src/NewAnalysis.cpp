@@ -202,7 +202,7 @@ namespace PstpFinder
       vboxMain.pack_start(spinnerWait);
     mainFrame.hide();
     buttonBoxRun.hide();
-    progress.hide();
+    progressAligner.hide();
     statusBar.hide();
     spinnerWait.show();
     spinnerWait.start();
@@ -215,7 +215,7 @@ namespace PstpFinder
     spinnerWait.hide();
     mainFrame.show();
     buttonBoxRun.show();
-    progress.show();
+    progressAligner.show();
     statusBar.show();
   }
 
