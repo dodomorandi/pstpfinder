@@ -58,6 +58,7 @@ namespace PstpFinder
       HButtonBox buttonBoxRun;
       Button buttonRun, buttonBrowseFile;
       ProgressBar progress;
+      Alignment progressAligner;
       SpinButton spinBegin, spinEnd, spinRadius, spinPocketThreshold;
       HScale hScaleBegin, hScaleEnd;
       Spinner spinnerWait;

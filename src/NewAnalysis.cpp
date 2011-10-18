@@ -162,6 +162,7 @@ namespace PstpFinder
     hboxFrame.pack_start(vboxFrame2);
 
     mainFrame.set_label("Main files");
+    mainFrame.set_border_width(10);
     mainFrame.add(hboxFrame);
 
     buttonRun.set_label("Run!");
@@ -169,14 +170,16 @@ namespace PstpFinder
     buttonRun.signal_clicked().connect(
         sigc::mem_fun(*this, &NewAnalysis::runAnalysis));
     buttonBoxRun.set_layout(BUTTONBOX_END);
+    buttonBoxRun.set_border_width(10);
     buttonBoxRun.pack_end(buttonRun);
 
+    progressAligner.add(progress);
+    progressAligner.set_border_width(10);
+
     vboxMain.set_homogeneous(false);
-    vboxMain.set_spacing(10);
-    vboxMain.set_border_width(10);
     vboxMain.pack_start(mainFrame);
     vboxMain.pack_start(buttonBoxRun, PACK_SHRINK);
-    vboxMain.pack_start(progress, PACK_EXPAND_WIDGET, 10);
+    vboxMain.pack_start(progressAligner, PACK_EXPAND_WIDGET);
 
     add(vboxMain);
     pittpi = 0;
