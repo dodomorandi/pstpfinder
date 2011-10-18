@@ -63,6 +63,8 @@ namespace PstpFinder
       HScale hScaleBegin, hScaleEnd;
       Spinner spinnerWait;
       VSeparator vSeparator;
+      Statusbar statusBar;
+      unsigned int statusBarContext;
       Pittpi* pittpi;
       Gromacs* gromacs;
       int __frames;

@@ -225,6 +225,7 @@ namespace PstpFinder
     else
       noZeroPass = 3;
 
+    setStatusDescription("Searching for pockets");
     setStatus(0);
     vector<Pocket> pockets;
     for(vector<Group>::iterator i = groups.begin(); i < groups.end(); i++)
@@ -424,6 +425,7 @@ namespace PstpFinder
         pocketDetailLog << endl;
     }
     sync = false;
+    setStatusDescription("Finished");
     setStatus(1);
   }
 
@@ -435,6 +437,7 @@ namespace PstpFinder
     radius /= 10.0;
 
     // Calculate the center for every sidechain (excluding PRO)
+    setStatusDescription("Building atom groups");
     setStatus(0);
     centers.reserve(residues.size());
     for(vector<Residue>::const_iterator i = residues.begin();
@@ -483,6 +486,7 @@ namespace PstpFinder
     Protein sadicStructure = runSadic(averageStructure);
     vector<PdbAtom> newCenters;
 
+    setStatusDescription("Recalibrating using depth index");
     setStatus(0);
     for(vector<Group>::iterator i = groups.begin(); i < groups.end(); i++)
     {
@@ -639,6 +643,7 @@ namespace PstpFinder
     unsigned int* notZero = new unsigned int[nAtoms]();
 
     /* First of all we need to calculate SAS means */
+    setStatusDescription("Calculating SAS means");
     setStatus(0);
     sasAnalysis = new SasAnalysis(gromacs, sessionFileName, false);
     (*sasAnalysis) >> sasAtoms;
@@ -676,6 +681,7 @@ namespace PstpFinder
     /* Now we have to normalize values and store results per group */
     sas = new float[protein.size()];
     float* sasCounter = new float[protein.size()];
+    setStatusDescription("Searching for zeros and normalizing SAS");
     setStatus(0);
     counter = 0;
     sasAnalysis = new SasAnalysis(gromacs, sessionFileName, false);
@@ -815,6 +821,7 @@ namespace PstpFinder
     Py_Initialize();
 
     {
+      setStatusDescription("Running Sadic");
       setStatus(-1);
       py::object sadic = py::import("sadic");
       py::object setting = py::import("sadic.setting");

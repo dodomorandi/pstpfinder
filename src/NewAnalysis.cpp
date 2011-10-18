@@ -176,10 +176,15 @@ namespace PstpFinder
     progressAligner.add(progress);
     progressAligner.set_border_width(10);
 
+    statusBarContext = statusBar.get_context_id("PSTP-finder status");
+    statusBar.push("Welcome to PSTP-finder. Choose you options and press Run.",
+                   statusBarContext);
+
     vboxMain.set_homogeneous(false);
     vboxMain.pack_start(mainFrame);
     vboxMain.pack_start(buttonBoxRun, PACK_SHRINK);
     vboxMain.pack_start(progressAligner, PACK_EXPAND_WIDGET);
+    vboxMain.pack_start(statusBar, PACK_SHRINK);
 
     add(vboxMain);
     pittpi = 0;
@@ -198,6 +203,7 @@ namespace PstpFinder
     mainFrame.hide();
     buttonBoxRun.hide();
     progress.hide();
+    statusBar.hide();
     spinnerWait.show();
     spinnerWait.start();
   }
@@ -210,6 +216,7 @@ namespace PstpFinder
     mainFrame.show();
     buttonBoxRun.show();
     progress.show();
+    statusBar.show();
   }
 
   void
@@ -226,6 +233,9 @@ namespace PstpFinder
     while(not pittpi->isFinished())
     {
       float status = pittpi->getStatus();
+      float oldStatus = progress.get_fraction();
+      if(status <= oldStatus)
+        statusBar.push(pittpi->getStatusDescription(), statusBarContext);
       if(status >= 0)
         progress.set_fraction(status);
       else
@@ -257,6 +267,7 @@ namespace PstpFinder
     if(fs::exists(fs::path("/tmp/sas.psf")))
       fs::remove(fs::path("/tmp/sas.psf"));
 
+    statusBar.push("Calculating SAS using Gromacs", statusBarContext);
     progress.set_fraction(0);
     while(Main::events_pending())
       Main::iteration();
@@ -321,6 +332,7 @@ namespace PstpFinder
     while(Main::events_pending())
       Main::iteration();
 
+    statusBar.push("Calculating average structure", statusBarContext);
     progress.set_fraction(0);
     while(Main::events_pending())
       Main::iteration();
