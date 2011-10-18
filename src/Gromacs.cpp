@@ -551,6 +551,11 @@ namespace PstpFinder
   {
     if(cachedNFrames > 0)
       return cachedNFrames;
+    else if(_begin != -1 and _end != -1)
+    {
+      cachedNFrames = (_end - _begin) / getTimeStep();
+      return cachedNFrames;
+    }
 
     namespace file = boost::filesystem;
     if(not file::exists(file::path(trjName)))
@@ -582,9 +587,6 @@ namespace PstpFinder
      close_trx(_status);
      output_env_done(_oenv);
      */
-
-    if(_begin != -1 and _end != -1)
-      return (_end - _begin) / getTimeStep();
 
     /* This is a workaround to obtain the f*****g number of frames... */
     ifstream trjStream(trjName.c_str(), ios::in | ios::binary);
