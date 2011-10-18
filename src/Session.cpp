@@ -156,7 +156,8 @@ namespace PstpFinder
     {
       new (this) Session(session.sessionFileName);
       sasMetaStream->seekg(session.sasMetaStream->tellg());
-      pdbMetaStream->seekg(session.pdbMetaStream->tellg());
+      if(not session.rawSasSession)
+        pdbMetaStream->seekg(session.pdbMetaStream->tellg());
     }
 
     return *this;
