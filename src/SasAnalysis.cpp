@@ -18,6 +18,7 @@
  */
 
 #include "SasAnalysis.h"
+#include <sys/sysinfo.h>
 
 namespace archive = boost::archive;
 namespace io = boost::iostreams;
@@ -61,7 +62,16 @@ namespace PstpFinder
       mode = MODE_OPEN;
     }
 
-    maxBytes = 134217728;
+    struct sysinfo info;
+    if(sysinfo(&info) == 0)
+    {
+      maxBytes = info.freeram * 0.8; // 80% of free ram
+      if(maxBytes > 1073741824) // 1 GB
+        maxBytes = 1073741824;
+    }
+    else
+      maxBytes = 134217728;
+
     maxChunk = 8388608;
 
     updateChunks();
