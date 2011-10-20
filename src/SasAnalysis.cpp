@@ -62,7 +62,7 @@ namespace PstpFinder
     }
 
     maxBytes = 134217728;
-    maxChunk = 16777216;
+    maxChunk = 8388608;
 
     updateChunks();
   }
