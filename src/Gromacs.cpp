@@ -471,10 +471,10 @@ namespace PstpFinder
     for(int i = 0; i < size; i++)
       group.push_back(grps->a[grps->index[targetIndex] + i]);
 
-    delete[] gnames;
-    delete[] grps->index;
-    delete[] grps;
-    delete[] m_atoms;
+    sfree(gnames);
+    sfree(grps->index);
+    sfree(grps);
+    delete m_atoms;
 
     return group;
   }
