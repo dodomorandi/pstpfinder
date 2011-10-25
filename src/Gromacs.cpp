@@ -676,11 +676,9 @@ namespace PstpFinder
   void
   Gromacs::waitNextFrame() const
   {
-    namespace ip = boost::interprocess;
-
     if(not abortFlag and getCurrentFrame() < getFramesCount())
     {
-      ip::scoped_lock<ip::interprocess_mutex> slock(wakeMutex);
+      boost::unique_lock<boost::mutex> slock(wakeMutex);
       wakeCondition.wait(slock);
     }
   }
@@ -692,7 +690,7 @@ namespace PstpFinder
 
     while(not abortFlag and getCurrentFrame() < refFrame + 1)
     {
-      ip::scoped_lock<ip::interprocess_mutex> slock(wakeMutex);
+      boost::unique_lock<boost::mutex> slock(wakeMutex);
       wakeCondition.wait(slock);
     }
   }

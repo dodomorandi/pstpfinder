@@ -27,7 +27,7 @@
 #include <boost/thread.hpp>
 #include <boost/circular_buffer.hpp>
 #include <boost/filesystem.hpp>
-#include <boost/thread/detail/thread.hpp>
+#include <boost/thread/thread.hpp>
 #include <boost/iostreams/filtering_stream.hpp>
 #include <boost/iostreams/device/file_descriptor.hpp>
 #include <boost/iostreams/filter/zlib.hpp>
@@ -35,9 +35,6 @@
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/interprocess/sync/interprocess_semaphore.hpp>
-#include <boost/interprocess/sync/interprocess_mutex.hpp>
-#include <boost/interprocess/sync/interprocess_condition.hpp>
-#include <boost/interprocess/sync/scoped_lock.hpp>
 
 #include <vector>
 #include <string>
@@ -89,7 +86,8 @@ namespace PstpFinder
       mutable boost::interprocess::interprocess_semaphore* bufferSemaphore;
       unsigned int bufferSemaphoreCount;
       unsigned int bufferSemaphoreMax;
-      mutable boost::interprocess::interprocess_mutex bufferMutex;
+      mutable boost::mutex bufferMutex;
+      mutable boost::mutex bufferCleaningMutex;
       bool changeable;
       boost::iostreams::filtering_istream inFilter;
       boost::archive::binary_iarchive* inArchive;
@@ -124,8 +122,8 @@ namespace PstpFinder
           SasAnalysis* parent;
           bool isStopped;
           boost::thread thread;
-          boost::interprocess::interprocess_condition wakeCondition;
-          boost::interprocess::interprocess_mutex wakeMutex;
+          boost::condition_variable wakeCondition;
+          boost::mutex wakeMutex;
       };
 
       friend class OperationThread;

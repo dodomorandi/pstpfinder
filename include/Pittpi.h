@@ -25,8 +25,6 @@
 #include "Protein.h"
 #include <vector>
 #include <boost/thread/thread.hpp>
-#include <boost/interprocess/sync/interprocess_mutex.hpp>
-#include <boost/interprocess/sync/interprocess_condition.hpp>
 
 namespace PstpFinder
 {
@@ -156,9 +154,9 @@ namespace PstpFinder
       unsigned long threshold;
       Protein averageStructure;
       boost::thread pittpiThread;
-      mutable boost::interprocess::interprocess_mutex statusMutex;
-      mutable boost::interprocess::interprocess_mutex nextStatusMutex;
-      mutable boost::interprocess::interprocess_condition nextStatusCondition;
+      mutable boost::mutex statusMutex;
+      mutable boost::mutex nextStatusMutex;
+      mutable boost::condition_variable nextStatusCondition;
       mutable float __status;
       mutable string __statusDescription;
       bool sync;

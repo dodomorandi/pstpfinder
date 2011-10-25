@@ -367,7 +367,7 @@ namespace PstpFinder
       if(cond)
       {
         parent->bufferMutex.unlock();
-        ip::scoped_lock<ip::interprocess_mutex> lock(wakeMutex);
+        boost::unique_lock<boost::mutex> lock(wakeMutex);
         wakeCondition.wait(lock);
         parent->bufferMutex.lock();
       }
@@ -424,7 +424,7 @@ namespace PstpFinder
       if(cond)
       {
         parent->bufferMutex.unlock();
-        ip::scoped_lock<ip::interprocess_mutex> lock(wakeMutex);
+        boost::unique_lock<boost::mutex> lock(wakeMutex);
         wakeCondition.wait(lock);
         parent->bufferMutex.lock();
       }

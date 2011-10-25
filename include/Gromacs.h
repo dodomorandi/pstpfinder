@@ -29,8 +29,6 @@
 #include <string>
 
 #include <boost/thread/thread.hpp>
-#include <boost/interprocess/sync/interprocess_mutex.hpp>
-#include <boost/interprocess/sync/interprocess_condition.hpp>
 
 #include <atomprop.h>
 #include <statutil.h>
@@ -116,8 +114,8 @@ namespace PstpFinder
       gmx_mtop_t mtop;
 
       boost::thread operationThread;
-      mutable boost::interprocess::interprocess_mutex operationMutex, wakeMutex;
-      mutable boost::interprocess::interprocess_condition wakeCondition;
+      mutable boost::mutex operationMutex, wakeMutex;
+      mutable boost::condition_variable wakeCondition;
       mutable unsigned int cachedNFrames;
       unsigned int currentFrame; // index-0 based -- like always
       Protein averageStructure;

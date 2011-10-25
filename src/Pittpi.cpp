@@ -194,8 +194,7 @@ namespace PstpFinder
     if(isFinished())
       return;
 
-    boost::interprocess::scoped_lock<boost::interprocess::interprocess_mutex> lock(
-        nextStatusMutex);
+    boost::unique_lock<boost::mutex> lock(nextStatusMutex);
     nextStatusCondition.wait(lock);
   }
 
