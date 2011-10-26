@@ -22,7 +22,6 @@
 
 namespace archive = boost::archive;
 namespace io = boost::iostreams;
-namespace ip = boost::interprocess;
 namespace fs = boost::filesystem;
 
 namespace PstpFinder
@@ -98,8 +97,6 @@ namespace PstpFinder
 
       delete inArchive;
     }
-
-    delete bufferSemaphore;
   }
 
   const SasAnalysis&
@@ -109,7 +106,6 @@ namespace PstpFinder
     if(changeable)
     {
       changeable = false;
-      bufferSemaphore = new ip::interprocess_semaphore(bufferSemaphoreMax);
 
       //outFilter.push(io::zlib_compressor());
       outFilter.push(fileIO);
@@ -134,7 +130,6 @@ namespace PstpFinder
     if(changeable)
     {
       changeable = false;
-      bufferSemaphore = new ip::interprocess_semaphore(0);
 
       //inFilter.push(io::zlib_decompressor());
       inFilter.push(sessionFile.getSasStream());
@@ -145,27 +140,41 @@ namespace PstpFinder
 
     if(frames.size() == 0)
     {
-      bufferSemaphore->wait();
-      bufferMutex.lock();
+      bufferMutex.lock_upgrade();
+      while(bufferCount == 0)
+      {
+        boost::unique_lock<boost::mutex> bufferCountLock(bufferCountMutex);
+        bufferMutex.unlock_upgrade();
+        bufferCountCondition.wait(bufferCountLock);
+        bufferMutex.lock_upgrade();
+      }
+      bufferMutex.unlock_upgrade_and_lock();
       frames = chunks.front();
       i = frames.begin();
 
-      bufferSemaphoreCount--;
+      bufferCount--;
       bufferMutex.unlock();
     }
     else if(i == frames.end())
     {
-      bufferMutex.lock();
+      bufferMutex.lock_upgrade();
 
       for(i = frames.begin(); i < frames.end(); i++)
         delete[] *i;
       frames.clear();
+
+      bufferMutex.unlock_upgrade_and_lock();
       chunks.pop_front();
 
-      bufferMutex.unlock();
-      bufferSemaphore->wait();
-      bufferMutex.lock();
-      bufferSemaphoreCount--;
+      if(bufferCount == 0)
+      {
+        bufferMutex.unlock();
+        boost::unique_lock<boost::mutex> bufferCountLock(bufferCountMutex);
+        bufferCountCondition.wait(bufferCountLock);
+        bufferMutex.lock();
+      }
+
+      bufferCount--;
 
       if(chunks.size() == 0)
       {
@@ -195,7 +204,6 @@ namespace PstpFinder
     if(changeable)
     {
       changeable = false;
-      bufferSemaphore = new ip::interprocess_semaphore(bufferSemaphoreMax);
 
       //outFilter.push(io::zlib_compressor());
       outFilter.push(fileIO);
@@ -204,9 +212,16 @@ namespace PstpFinder
       operationThread = new OperationThread(*this);
     }
 
-    bufferSemaphore->wait();
-    bufferMutex.lock();
-    bufferSemaphoreCount--;
+    bufferMutex.lock_upgrade();
+    while(bufferCount == 0)
+    {
+      boost::unique_lock<boost::mutex> bufferCountLock(bufferCountMutex);
+      bufferMutex.unlock_upgrade();
+      bufferCountCondition.wait(bufferCountLock);
+      bufferMutex.lock_upgrade();
+    }
+    bufferMutex.unlock_upgrade_and_lock();
+    bufferCount--;
     chunks.push_back(frames);
 
     frames.clear();
@@ -356,32 +371,27 @@ namespace PstpFinder
   void
   SasAnalysis::OperationThread::threadSave()
   {
-    bool cond;
-
     while(not isStopped)
     {
-      parent->bufferMutex.lock();
-      cond = (parent->bufferSemaphoreCount == parent->bufferSemaphoreMax - 1
-              and not isStopped);
+      parent->bufferMutex.lock_upgrade();
 
-      if(cond)
+      while(parent->bufferCount == parent->bufferMax - 1 and not isStopped)
       {
-        parent->bufferMutex.unlock();
         boost::unique_lock<boost::mutex> lock(wakeMutex);
+        parent->bufferMutex.unlock_upgrade();
         wakeCondition.wait(lock);
-        parent->bufferMutex.lock();
-      }
-      else if(isStopped)
-      {
-        parent->bufferMutex.unlock();
-        break;
+        parent->bufferMutex.lock_upgrade();
       }
 
-      if(parent->gromacs and parent->gromacs->isAborting())
+      if(isStopped or (parent->gromacs and parent->gromacs->isAborting()))
+      {
+        parent->bufferMutex.unlock_upgrade();
         break;
+      }
 
       if(parent->save())
       {
+        parent->bufferMutex.unlock_upgrade_and_lock();
         vector<SasAtom*>& curChunk = parent->chunks.front();
         for(std::vector<SasAtom*>::iterator i = curChunk.begin();
             i < curChunk.end(); i++)
@@ -389,64 +399,71 @@ namespace PstpFinder
         curChunk.clear();
 
         parent->chunks.pop_front();
-        parent->bufferSemaphore->post();
-        parent->bufferSemaphoreCount++;
+        parent->bufferCount++;
+        parent->bufferCountCondition.notify_all();
+
+        parent->bufferMutex.unlock_and_lock_upgrade();
       }
 
-      parent->bufferMutex.unlock();
+      parent->bufferMutex.unlock_upgrade();
     }
 
     if(parent->gromacs and parent->gromacs->isAborting())
       return;
 
-    parent->bufferMutex.lock();
-    while(parent->bufferSemaphoreCount < parent->bufferSemaphoreMax - 1)
+    parent->bufferMutex.lock_upgrade();
+    while(parent->bufferCount < parent->bufferMax - 1)
     {
+      parent->bufferMutex.unlock_upgrade_and_lock();
       parent->save();
       parent->chunks.pop_front();
-      parent->bufferSemaphore->post();
-      parent->bufferSemaphoreCount++;
+      parent->bufferCount++;
+      parent->bufferCountCondition.notify_all();
+      parent->bufferMutex.unlock_and_lock_upgrade();
     }
-    parent->bufferMutex.unlock();
+    parent->bufferMutex.unlock_upgrade();
   }
 
   void
   SasAnalysis::OperationThread::threadOpen()
   {
-    bool cond;
-
     while(not isStopped)
     {
-      parent->bufferMutex.lock();
-      cond = (parent->bufferSemaphoreCount == parent->bufferSemaphoreMax - 1
-              and not isStopped);
+      parent->bufferMutex.lock_upgrade();
 
-      if(cond)
+      while(parent->bufferCount == parent->bufferMax - 1 and not isStopped)
       {
-        parent->bufferMutex.unlock();
         boost::unique_lock<boost::mutex> lock(wakeMutex);
+        parent->bufferMutex.unlock_upgrade();
         wakeCondition.wait(lock);
-        parent->bufferMutex.lock();
+        parent->bufferMutex.lock_upgrade();
       }
-      else if(isStopped)
+
+      if(isStopped)
       {
-        while(parent->bufferSemaphoreCount < parent->bufferSemaphoreMax - 1)
+        while(parent->bufferCount < parent->bufferMax - 1)
         {
-          parent->bufferSemaphore->post();
-          parent->bufferSemaphoreCount++;
+          parent->bufferMutex.unlock_upgrade_and_lock();
+          parent->bufferCount++;
+          parent->bufferCountCondition.notify_all();
+          parent->bufferMutex.unlock_and_lock_upgrade();
         }
-        parent->bufferMutex.unlock();
+        parent->bufferMutex.unlock_upgrade();
         break;
       }
 
       if(parent->gromacs and parent->gromacs->isAborting())
+      {
+        parent->bufferMutex.unlock_upgrade();
         break;
+      }
 
       if(not parent->open())
         isStopped = true;
 
-      parent->bufferSemaphore->post();
-      parent->bufferSemaphoreCount++;
+      parent->bufferMutex.unlock_upgrade_and_lock();
+      parent->bufferCount++;
+      parent->bufferCountCondition.notify_all();
       parent->bufferMutex.unlock();
     }
   }
@@ -518,14 +535,14 @@ namespace PstpFinder
 
     unsigned int numFrames = maxBytes / sizeof(SasAtom) / nAtoms;
 
-    bufferSemaphoreMax = numFrames * nAtoms * sizeof(SasAtom) / maxChunk;
-    maxFrames = numFrames / bufferSemaphoreMax;
+    bufferMax = numFrames * nAtoms * sizeof(SasAtom) / maxChunk;
+    maxFrames = numFrames / bufferMax;
 
     if(mode == MODE_SAVE)
-      bufferSemaphoreCount = bufferSemaphoreMax - 1;
+      bufferCount = bufferMax - 1;
     else
-      bufferSemaphoreCount = 0;
+      bufferCount = 0;
 
-    chunks = boost::circular_buffer<std::vector<SasAtom*> >(bufferSemaphoreMax);
+    chunks = boost::circular_buffer<std::vector<SasAtom*> >(bufferMax);
   }
 }

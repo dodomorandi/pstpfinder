@@ -34,7 +34,6 @@
 #include <boost/range/iterator_range.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
-#include <boost/interprocess/sync/interprocess_semaphore.hpp>
 
 #include <vector>
 #include <string>
@@ -83,10 +82,11 @@ namespace PstpFinder
       std::streampos fileStreamEnd;
       const Gromacs* gromacs;
       unsigned long maxFrames, maxBytes, maxChunk;
-      mutable boost::interprocess::interprocess_semaphore* bufferSemaphore;
-      unsigned int bufferSemaphoreCount;
-      unsigned int bufferSemaphoreMax;
-      mutable boost::mutex bufferMutex;
+      unsigned int bufferCount;
+      unsigned int bufferMax;
+      mutable boost::shared_mutex bufferMutex;
+      mutable boost::condition_variable bufferCountCondition;
+      mutable boost::mutex bufferCountMutex;
       mutable boost::mutex bufferCleaningMutex;
       bool changeable;
       boost::iostreams::filtering_istream inFilter;
