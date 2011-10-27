@@ -87,7 +87,6 @@ namespace PstpFinder
       mutable boost::shared_mutex bufferMutex;
       mutable boost::condition_variable bufferCountCondition;
       mutable boost::mutex bufferCountMutex;
-      mutable boost::mutex bufferCleaningMutex;
       bool changeable;
       boost::iostreams::filtering_istream inFilter;
       boost::archive::binary_iarchive* inArchive;

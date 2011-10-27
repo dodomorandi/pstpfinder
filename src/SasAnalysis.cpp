@@ -290,7 +290,26 @@ namespace PstpFinder
     if(inFilter.eof())
       return false;
 
-    chunks.push_back(loadChunk(*inArchive));
+    vector<SasAtom*> chunk = loadChunk(*inArchive);
+    unsigned long chunkSize = chunk.capacity()
+                              * (sizeof(SasAtom*) + sizeof(SasAtom) * nAtoms)
+                              + sizeof(vector<SasAtom*>);
+    if(chunkSize > maxChunk)
+    {
+      // bufferMutex already lock_upgrade from ThreadOpen
+      while(bufferCount != 0)
+      {
+        boost::unique_lock<boost::mutex> lock(bufferCountMutex);
+        bufferMutex.unlock_upgrade();
+        bufferCountCondition.wait(lock);
+        bufferMutex.lock_upgrade();
+      }
+      bufferMutex.unlock_upgrade_and_lock();
+      maxChunk = chunkSize;
+      updateChunks();
+      bufferMutex.unlock_and_lock_upgrade();
+    }
+    chunks.push_back(chunk);
 
     return true;
   }
@@ -535,13 +554,14 @@ namespace PstpFinder
   void
   SasAnalysis::updateChunks()
   {
-    if(not changeable)
-      return;
+    // SasAtom serialization produces real * 4
+    maxFrames = maxChunk / (nAtoms * sizeof(real) * 4);
+    vector<SasAtom*> testVector(maxFrames);
+    unsigned int vectorSize = testVector.capacity()
+                              * (sizeof(SasAtom*) + sizeof(SasAtom) * nAtoms)
+                              + sizeof(vector<SasAtom*> );
 
-    unsigned int numFrames = maxBytes / sizeof(SasAtom) / nAtoms;
-
-    bufferMax = numFrames * nAtoms * sizeof(SasAtom) / maxChunk;
-    maxFrames = numFrames / bufferMax;
+    bufferMax = maxBytes / vectorSize;
 
     if(mode == MODE_SAVE)
       bufferCount = bufferMax - 1;
