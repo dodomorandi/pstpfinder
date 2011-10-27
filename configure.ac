@@ -1,4 +1,4 @@
-AC_INIT([pstpfinder], [0.1], [enki@dodomorandi.no-ip.biz])
+AC_INIT([pstpfinder], [0.3.2], [enki@dodomorandi.no-ip.biz])
 AM_INIT_AUTOMAKE([-Wall -Werror])
 LT_INIT
 AC_CONFIG_MACRO_DIR([m4])

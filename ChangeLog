@@ -1,3 +1,837 @@
+commit fc3a2ea18137515921d2d97476eae42896e29983
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Thu Oct 27 17:32:29 2011 +0200
+
+    Not changing progressbar if abortFlag is on
+
+commit 7143a619698da6f71880880ad9ea229bbb92398b
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Thu Oct 27 17:26:56 2011 +0200
+
+    Avoid showing the MainWindow after quitting
+
+commit 1127095c9457ef02a8cc78f246b44ad3a900cd93
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Thu Oct 27 17:10:09 2011 +0200
+
+    New memory handling
+    
+    Now it should work perfectly
+
+commit 6bc9a18ad987150db69b6d188c7b21e20a7e77be
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Thu Oct 27 15:30:55 2011 +0200
+
+    Fixed missing mutex
+
+commit 9e81847d53c6175f8dee47dba6d3ed5cb4d4994a
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Oct 26 15:03:27 2011 +0200
+
+    Not using interprocess::semaphore anymore
+    
+    Everything tweaked to use only boost::thread
+
+commit 32ddc8ef643074435ac8c51d3264aad04f4fe36e
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue Oct 25 15:35:20 2011 +0200
+
+    Using thread mutexes instead of interprocess
+    
+    ...but boost 1.36 is needed instead of 1.34
+
+commit 403edbcf4c15e2297ff5eb9a5efe5fc4ea040cd3
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue Oct 25 15:26:46 2011 +0200
+
+    Fixed memory leaks
+    
+    Thank you, valgrind
+
+commit 663ab1773c65529670c3afa6bf862f3934a2663c
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Thu Oct 20 17:19:23 2011 +0200
+
+    Memory usage is changed dinamically
+
+commit bfaffa9d3906f82173d338f5456d404c994df200
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Thu Oct 20 17:01:25 2011 +0200
+
+    Changed default chunk to 8Mib
+
+commit f5b1f52da15099d9ae0fac102292d697a03b9645
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Oct 19 10:55:07 2011 +0200
+
+    Fixed last stage of status and progress bar
+
+commit dfd87dc8fb745b5084d0cc1c2cd423d92a1c2d0d
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue Oct 18 17:41:49 2011 +0200
+
+    Changed behaviour in __calculateAverageStructure
+
+commit 5ad76b4db279e184d30f14e8ec40beb9cb531119
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue Oct 18 17:41:25 2011 +0200
+
+    Missing cached value in Gromacs
+
+commit 21d234a88fe398f68c84bee6e00842bb0feac310
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue Oct 18 16:37:57 2011 +0200
+
+    Hide and show progressAligner instead of progress
+
+commit 6432f6061115cbdd088a990d21dbbce5565d6935
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue Oct 18 16:32:29 2011 +0200
+
+    Adding a status bar
+
+commit 20c43aef7fd3f9e9b66a6b7c6e6d284156ad0e44
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue Oct 18 16:31:00 2011 +0200
+
+    Handling spacing child-by-child
+    
+    That's because I'm going to add a status bar, and this must have the same width of his parent.
+
+commit 8af3d2cc11c12f94391c8b62d1df111fb27f42ee
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue Oct 18 16:17:17 2011 +0200
+
+    Progressbar always shown in NewAnalysis
+
+commit 4fa3e14b6c4971e7f9ee19d897e4dcb11cc432e2
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue Oct 18 16:14:47 2011 +0200
+
+    Added status description in Pittpi
+
+commit 98de3f96d43abb7b095de44fdfa57647d53d717b
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue Oct 18 16:13:35 2011 +0200
+
+    Fixed bug in Session::operator =
+
+commit a5e13b11876daaf7fae9c3afa4d2deda0f98826c
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Mon Oct 17 16:21:09 2011 +0200
+
+    Using new SasAnalysis constructor in Gromacs
+
+commit 496879f384037f17e5c80ce39bf1ac1cb6a7925d
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Mon Oct 17 16:20:29 2011 +0200
+
+    Checks for abort flag inside SasAnalysis
+
+commit 6e2ba1891fbe0f6d79ecfc06b7ae005f0616f122
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Mon Oct 17 16:19:53 2011 +0200
+
+    Changed SasAnalysis constructor parameters
+
+commit b4db2137eb6c5e373011a32d0d3df8ec674b61b6
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Mon Oct 17 16:19:06 2011 +0200
+
+    Added Gromacs::isAborting
+
+commit bbb9d96881d6773dd1b803b744bc89af24d260cd
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Mon Oct 17 15:48:39 2011 +0200
+
+    Handling abort in NewAnalysis
+
+commit a6d1dcf9f9092237c7541df6410ff9d79b609799
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Mon Oct 17 15:48:08 2011 +0200
+
+    Handling abort in Pittpi and Gromacs
+
+commit e0ae5b194cead980254b4c2654a965f720a562da
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Mon Oct 17 15:45:12 2011 +0200
+
+    Gromacs handled as a pointer in NewAnalysis
+
+commit ed3812edb874871d940e5b644f3c4bb98cb02692
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Mon Oct 17 15:26:51 2011 +0200
+
+    Gromacs.cpp code reindentation
+
+commit a08d265d447a64923205ffb391b40965c63e9a09
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Mon Oct 17 15:15:40 2011 +0200
+
+    Indent refactory in Gromacs.h
+
+commit bae7d46d35921451d290fd560db0dc379d23a2d1
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri Oct 14 15:54:39 2011 +0200
+
+    Pittpi code rearranged using one-line method style
+
+commit 400b0ed8b68726c2fda42e89d23bbfe5901f01b3
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri Oct 14 15:53:45 2011 +0200
+
+    NewAnalysis handles now a pointer to Pittpi
+    
+    Useful to check and control Pittpi thread status.
+
+commit 37e5259a9be4f8686c0731901b47429160e41c08
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri Oct 14 15:37:28 2011 +0200
+
+    Removed unused variables
+
+commit d5fe0508c26b43d39e0c13a002df1fca4e088ca6
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri Oct 14 15:07:18 2011 +0200
+
+    One line definitions in NewAnalysis.h
+    
+    Eclipse likes to split methods and functions also in .h files, but I don't like it.
+
+commit 4a4829fd71e36da876673a49c9a76c95ccba56c0
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Thu Oct 13 14:41:53 2011 +0200
+
+    Fixed race condition
+    
+    And not removing the sas.psf file anymore when opening a session.
+
+commit e3285ab3ec687ae88b702552c14139c9ae14459e
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Oct 12 16:02:58 2011 +0200
+
+    Don't create the psf file anymore
+
+commit 2fa33cf7757f3d652e23d49126aeae7570d02b1f
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Oct 12 16:01:05 2011 +0200
+
+    Changed soma names; Starting using sessions
+    
+    Now sasAnalysisFileName are changed in sessionFileName.
+    Also using the session filename instead of the old psf file.
+
+commit 6a60a82a4d051672b929432c42166cfe2da0b5e2
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Oct 12 15:53:49 2011 +0200
+
+    Let's close some file handle.
+    
+    They should close automatically, but it's always a good practice.
+
+commit b971652ea0ecbc2b028d28de71b393165c742fd1
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Oct 12 15:52:09 2011 +0200
+
+    Eof must not be triggered by MetaStream::read
+
+commit 56d4ef13dbe2a4572dc24029c38d50d72344ced3
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Oct 12 13:27:35 2011 +0200
+
+    Removed MetaStream assignment operator
+    
+    I understood I don't like this behaviour. See the previous commit for details.
+
+commit cc913a314fa617987c8d29016b9edafed575b857
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Oct 12 13:16:59 2011 +0200
+
+    Using pointers to MetaStream instead of objects
+    
+    I've never thought that if I use something like:
+    
+    A& A::operator =(const A& a)
+    {
+      a->~A();
+      new (this) A(a.somearg); // Or also with the copy constructor
+      return *this;
+    }
+    
+    ...
+    
+    A a; // Using the empty constructor
+    ...
+    a = A(somearg);
+    
+    ...then I call firstly the empty constructor A, then two times the A(somearg) constructor. It's a waste of resource, then it's better using a pointer to the object if I can't initialize it inside the class initialization.
+
+commit 5f924ce88548ce761920be6e053734f59c478220
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Oct 12 13:14:32 2011 +0200
+
+    currentPosition not used anymore in MetaStream
+
+commit 95d99c8c900132a55f1e8442975a0faa882e83cc
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Oct 12 13:10:09 2011 +0200
+
+    Fixed seekg in MetaStream
+
+commit 8eb891304bc273fa9e545489c7d0a2525996c142
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Oct 12 13:06:32 2011 +0200
+
+    Added eofTrigger and fixed eof in MetaStream
+
+commit d62c6369f8f8c43180556f1e12c589f307afa498
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue Oct 11 13:18:55 2011 +0200
+
+    Implemented Session in SasAnalysis
+
+commit ac169980a85acf7816594dac86ef7398cd35062b
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue Oct 11 13:17:50 2011 +0200
+
+    Missing "good-styling-code" break
+
+commit 411ca34ebf5bc6f72361120ebd24b5f72743edbe
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue Oct 11 13:16:22 2011 +0200
+
+    Session can now handle raw SAS files
+
+commit 2172a9926b9fc84ddcf4d24d5bb8e4ec5109c81c
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri Oct 7 17:11:18 2011 +0200
+
+    Added assignment method to Session
+
+commit 535050b2da7a57d1fa2a98048152698676eb1762
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri Oct 7 17:10:48 2011 +0200
+
+    Added some exceptions when Session is not ready
+
+commit fd375bfff0e0ef76c7fb76c183a3556f12211688
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri Oct 7 17:09:11 2011 +0200
+
+    Added empty constructor and ready parameter
+
+commit bb4183a11719198f5ee77dcb36db4fc3485107e9
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri Oct 7 17:07:30 2011 +0200
+
+    Added fileName as const property in Session
+
+commit e1130e21ec46088d4954c4a8fe9b601a7305feb3
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri Oct 7 17:04:33 2011 +0200
+
+    Added some boost-stream parameter to class
+    
+    Now MetaStream can be used as device source in SasAnalysis.
+
+commit 3edc9c850592533c9b8327a3f987afb54cef706d
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri Oct 7 17:03:18 2011 +0200
+
+    tellg and seekg are now boost-like
+    
+    Yes, I know that tellg doesn't exists. But I WANT a const method for this purpose!
+
+commit bfe410eb837a3c779263fcbf24a643bd31c31c20
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri Oct 7 17:01:09 2011 +0200
+
+    Added copy constructor and changed property
+    
+    copyStream is not useful anymore. I still need a dump stream because I can't initialize a stream reference against null (that's why I called it nullStream).
+
+commit 506fa1ea3d68270770f68fb3ce1ec5e066369be4
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri Oct 7 16:58:40 2011 +0200
+
+    Useless constructor
+    
+    It also brings some copy-constructor related problems.
+
+commit 46b674f53069f60aa3a305945989a001de6f010d
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Thu Oct 6 14:22:39 2011 +0200
+
+    Started implementing Session class in NewAnalysis
+
+commit bf7528fe610de72aceed9ab6172ed04020c139fd
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Thu Oct 6 14:13:14 2011 +0200
+
+    Main function not in global namespace
+
+commit f984286e1cf817c0345ee2f421c2bc56f01c71a9
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Thu Oct 6 13:55:44 2011 +0200
+
+    Added read method to MetaStream
+
+commit 50981f98bebfd7cde859ceac886813b0acf36903
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Thu Oct 6 13:55:00 2011 +0200
+
+    Added getPdbSize and getSasSize to Session
+
+commit ef67c9aa5341d6f749b8c2a21de48a1a5f9a5cf1
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Thu Oct 6 13:54:01 2011 +0200
+
+    Session.cpp missed from namespace change
+
+commit 80369c2bf939fd635e8e26455b02362c6b1e9e76
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Thu Oct 6 13:50:30 2011 +0200
+
+    Entire project under PstpFinder namespace
+    
+    Keep it simple, stupid!
+
+commit 8b7260b2a17a0f8eb78a77cb9f0031cef3ba6ea8
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Oct 5 17:04:23 2011 +0200
+
+    Fixed locale issue
+
+commit bc2b2182a8379298f09a93f3cb54394da58e51f8
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Oct 5 16:52:35 2011 +0200
+
+    Implemented MetaStreams in Session class
+
+commit 3d2a5a57967b7afff1392ef4a04d1bd461e8bc26
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Oct 5 16:35:55 2011 +0200
+
+    Added assignment operator to MetaStream
+
+commit 346b07004ee5286451234e6b0dcda81ef309b2ac
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Oct 5 16:27:34 2011 +0200
+
+    Added empty constructor to MetaStream
+
+commit f57d68ffbd90a49eb48fdc733ad89d70ff383cc2
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Oct 5 16:27:13 2011 +0200
+
+    Added validity check to MetaStream
+
+commit 6c40bd20298b485c1ca233d6d89bb357aa246834
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Oct 5 16:26:37 2011 +0200
+
+    Merged checkEof in getFromStream
+
+commit 3194aaaa45eeaa9d2d2165dc34fb909287a3a72b
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Oct 5 15:57:08 2011 +0200
+
+    Added constructor for a stream reference
+
+commit e38d31a7e447f7964e93f2c07fcf21053b9ad074
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Oct 5 15:55:57 2011 +0200
+
+    Property inputStream now is a reference
+    
+    Useful to reference to a input stream or a local stream.
+
+commit 6d8a6bdc60192471fff2f76689c19a81708f4754
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Oct 5 15:54:53 2011 +0200
+
+    Fixed issue with end parameter
+
+commit 09fa5cfa9960d4c7782d84969987a93b13b8f9b8
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Oct 5 15:43:37 2011 +0200
+
+    Initial implementation of MetaStream
+
+commit 3251a4b54732a985471ff755cbaf0bb6dde0f0bc
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Oct 5 11:31:02 2011 +0200
+
+    Added MeaStream class
+
+commit c8c09b8f306766a96c9a7adeac9f9c184e054f57
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Oct 5 11:25:15 2011 +0200
+
+    Added Session constructor and some get methods
+
+commit ce42a19c891c15883fdfae15ea1c75927cc7697e
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Oct 5 11:25:01 2011 +0200
+
+    Add Session.cpp to Makefile.am
+
+commit bdb0cb00774738f7b5e0dfaa5e72d633216c6cdb
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue Oct 4 16:44:20 2011 +0200
+
+    Starting with Session file handler
+
+commit ddf3dd92525197d82a79049d29d9ec54eb9b3910
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri Sep 30 17:00:52 2011 +0200
+
+    Using a stream end position instead of eof
+    
+    It allows to pass custom end for the file.
+
+commit e1a669e4c03a3ebea7a7b5c36b491a1e6aa42023
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri Sep 30 11:04:43 2011 +0200
+
+    Wrong indentation
+
+commit ab4c1095e2d6acd083f54d92ba43c05bd48f9440
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri Sep 30 10:51:02 2011 +0200
+
+    Code reformatting using Eclipse
+
+commit c98664a223afa65e10f95943881dd9ab0affd561
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Thu Sep 29 17:08:13 2011 +0200
+
+    Pocket operator= must set also group value.
+    
+    The object is deallocated and a new one is created with the new group value.
+
+commit fbd1f36764c045dd3323b5dcdd5424310685253a
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Thu Sep 29 17:06:58 2011 +0200
+
+    Changed pocket end selection behaviour
+    
+    Pocket ends before the current zero value. Fixed.
+
+commit 76accc12f25a31842e78dc06272a736fe925705a
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Sep 28 17:51:30 2011 +0200
+
+    Huge code refactory for fillGroups and pittpiRun
+    
+    Now the code should work correctly. The problem was about binning; now data seems more coherent and very similar results.
+
+commit e3932b1f284bb2194dfd6888b09ece8e75825a86
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Mon Sep 26 13:24:39 2011 +0200
+
+    Added boost_system to dependencies
+
+commit c59641f75fa61438d681959ed503d6aeda7a0a00
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Thu Sep 8 12:36:20 2011 +0200
+
+    Explicit cast from Glib::ustring to string
+    
+    It lets the code compile with newer versions of Boost library.
+
+commit 1d0a1cc4aa409894dac5ee14508e39d55aa88ffa
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Mon Jul 25 16:08:39 2011 +0200
+
+    Removed debug output (unwanted)
+
+commit 48435459e6116ad05398081e06a3553508e7aabd
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Mon Jul 25 13:16:58 2011 +0200
+
+    Fixed group list desync
+
+commit 1a391ee2c7964fdc96d3345a0be70c81d8cd4081
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Sat Jul 23 17:19:44 2011 +0200
+
+    Added Group::operator=
+
+commit 58ae6c6ccce1bdaa6c1b23b86a4cb73193ddd17b
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Sat Jul 23 17:19:14 2011 +0200
+
+    Changed opertator= to operator<< in Group
+
+commit 7dab6cc86a01630502a9960edf8b111b23d9c2dc
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Thu Jul 21 21:02:56 2011 +0200
+
+    Rewritten algorithm for pockets elimination
+
+commit c2f3a68fcc2dcf59641f1b27f9c9ffdaf0efdb13
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Thu Jul 21 21:02:01 2011 +0200
+
+    Added Pittpi::Protein::sortByWidth
+
+commit 2a4847c38e0e879d119413b5ce7dd9e48085ac97
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Thu Jul 21 20:56:17 2011 +0200
+
+    Ignore unknown atoms for groups making
+
+commit f91f4f5143200acc76d68a17b04785abc777c1e0
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Thu Jul 21 20:42:07 2011 +0200
+
+    Changed behaviour for Protein::group
+    
+    Changed from a pointer to a const reference.
+
+commit 65242ee3da80c65d594a017bd226dcc04075478b
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Thu Jul 21 20:05:41 2011 +0200
+
+    Wrong algorithm for groups elimination
+    
+    I need to rewrite this piece of code. For now I added a note in the code.
+
+commit 9fcdf488be707e67c50ca7496b10ab833bdde461
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Thu Jul 21 19:39:34 2011 +0200
+
+    Vector assignment is a copy method
+
+commit f94ad36ce82b6c96ffac34117504fcebf3e3810a
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Thu Jul 21 19:26:17 2011 +0200
+
+    Missing preprocessor condition
+
+commit b1a8eae166b2c8203f48727997803b6b35d9381f
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Thu Jul 21 18:32:36 2011 +0200
+
+    Changed constness for Group reference
+
+commit 7d8d57a062b26de1b2c2267ae749729fe886e3d3
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Thu Jul 21 18:22:19 2011 +0200
+
+    Various code refactory for groups making
+    
+    The problem was I misunderstood how should the algorithm works to build groups. I rearranged the code to let it work correctly.
+
+commit bb0ad4b30b9aa9bc2d626dce94dd93c9c22fba7e
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Thu Jul 21 18:19:04 2011 +0200
+
+    Added Group::operator =()
+    
+    Assignment have to leave reference Atom and Residue unchanged.
+
+commit 38d06d2d3e877c01afbc0da7c09febc9ff5ef4f0
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Thu Jul 21 18:16:20 2011 +0200
+
+    Improved readability for runSadic
+
+commit fc0686fa7847f0e3c93599529931373aeec0e9f1
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Thu Jul 21 18:13:26 2011 +0200
+
+    Missing Py_Finalize
+
+commit 2ff4a85824fe6717e0b00004feb35f0723d00de8
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Thu Jul 21 18:03:22 2011 +0200
+
+    Added Protein operator =
+    
+    It's needed because of atoms vector. It uses references to the residues vector, so it needs to be reinitialized with a new Protein object. Setting locked = false is sufficient for this purpose.
+
+commit 185d41bddc3bb14afb3ac2af38a2515c5457c397
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue Jul 12 16:14:52 2011 +0200
+
+    Fixed Sadic algorithm. Now it works!
+
+commit 36adf863f850c6d7ad1cca90b135df4563b052e6
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Mon Jul 11 17:03:02 2011 +0200
+
+    Fixed groups desync against centers
+
+commit d30ee84c57e410983dabc9a19f81d5c7c4384c69
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Mon Jul 11 16:58:28 2011 +0200
+
+    Fixed but with Py_Initialize/Finalize
+    
+    They should be called in the same thread of the python functions/methods used.
+
+commit 18602f7d556ca19722173bb03be21db4b9414c13
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Mon Jul 11 12:05:19 2011 +0200
+
+    Fixed bug 'bout sidechains centers
+
+commit e87edd34633f35257e1d23d644e0ad8588ead163
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Jul 6 16:49:59 2011 +0200
+
+    Fixed uninitializated variables
+
+commit c8a4c125d6276aacdfe70911cf536a3d1ec0e7b2
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Jul 6 14:42:53 2011 +0200
+
+    Unlink /tmp/sas.psf if exists
+
+commit 27735515a440b318969a24ea5452d93f5a05cc42
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Jul 6 13:33:09 2011 +0200
+
+    Fixed PDB issue
+
+commit f94a8feb1dcd0a2cde56129dcf54e3e298457554
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue Jul 5 15:52:46 2011 +0200
+
+    Fixed warning and added flow control
+
+commit e8cd08b51d969e5bc322511c9a64a0c5a0c92001
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue Jul 5 15:39:21 2011 +0200
+
+    Added group erasing algorithm
+
+commit 7519f7bbca5d65ba0c02127a46de6858ce2a5149
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue Jul 5 13:12:53 2011 +0200
+
+    Integrated Sadic algorithm
+
+commit 075953bf221017710175eaad8e3408664833f950
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue Jul 5 12:52:10 2011 +0200
+
+    Missing constness for operators
+
+commit 6b5827b6fcb268e5445e627c901d132ad9c95bb1
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue Jul 5 12:48:39 2011 +0200
+
+    Added Atom multiplication
+
+commit ac789f44fa8d128e7bc6a2c4b1d54719157e5c14
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue Jul 5 12:25:59 2011 +0200
+
+    Splitted makeGroups in two methods
+
+commit ec1b8bd2c918a5e302112460386c5ddb4816abc1
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Mon Jul 4 16:08:03 2011 +0200
+
+    Missing compile-time condition
+
+commit 20d08e41c744de232ce3abe9e578dd7a207870c1
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Mon Jul 4 15:19:03 2011 +0200
+
+    runSadic returns something useful
+
+commit a90c45eb396f9d14d7e08e13bcac0576bc63f76e
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Mon Jul 4 15:17:54 2011 +0200
+
+    Changed constness for setStatus
+
+commit 8bd5a16459752ce64fb4f6c3fe8c362ff0b1ee9a
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Mon Jul 4 15:05:36 2011 +0200
+
+    Fixed different things for PDBs
+
+commit 9ac361ca82d027e476cc7cb42aaafb43debc6348
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri Jul 1 14:40:23 2011 +0200
+
+    Removed line (it was for testing purposes)
+
+commit a1a5fbd21f705857da68bb453ca097acf2a52f95
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri Jul 1 12:54:26 2011 +0200
+
+    Added scrolling during Sadic algorithm
+
+commit f4d51b43160e8dfb574d93c0b330c4e3c38e3158
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri Jul 1 12:36:47 2011 +0200
+
+    First implementation for Sadic algorithm
+    
+    It's an hybrid C++/Python implementation, because Boost Python library has been used to call Sadic Python functions. Naturally, everything have been written in C++.
+
+commit dac28499ed6f62acaf4a7a5c03af67e0fc28a614
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Jun 29 17:09:11 2011 +0200
+
+    Autoconf script code refactory
+    
+    * Added ax_python_modules.m4;
+    * fixed various things related to Python and boost_python presence;
+    * implemented check for Sadic.
+
+commit 4644cd92181a4e919fd7335d88eefb8bf6d95259
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Jun 29 15:28:24 2011 +0200
+
+    Added python and boost_python in configure.ac
+
+commit 854e8dbf3f534c9ba6395ba59745e10560c813a4
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Jun 29 15:28:03 2011 +0200
+
+    Better implementation in configure.ac
+
+commit e349f2175aa812cedbcfb471fe5c6b7081bc5345
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri Jun 17 17:58:10 2011 +0200
+
+    Run button sensitive after opening
+
+commit d8d860dd91afd9fe40ebe3a907770c5f46eca214
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue Jun 28 18:03:27 2011 +0200
+
+    Fixed race condition?
+
+commit 455f90019c40efbabd2d06e69eccaf8c06c9b1b1
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Jun 8 15:28:28 2011 +0200
+
+    Uninitialized variable
+    
+    Race condition brings to a possibly uninitialized currentFrame.
+
+commit af785e808cc4c81cf966687662b7aee1bc7779d2
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Jun 8 15:06:58 2011 +0200
+
+    Fixed interface problem
+    
+    Now NewAnalysis window moves up when adding progressbar if it was adjacent to the screen borders.
+
+commit 44ee1090dbf2cb43e6dcd9f64555f5d34a27f829
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue Jun 7 17:26:23 2011 +0200
+
+    Updated changelog
+
 commit aab7e95e9ef9a09d6086172c672d283c32812f1e
 Author: Edoardo Morandi <morandidodo@gmail.com>
 Date:   Tue Jun 7 17:20:46 2011 +0200
