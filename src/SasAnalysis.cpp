@@ -115,9 +115,14 @@ namespace PstpFinder
     }
 
     std::copy(sasAtoms, sasAtoms + nAtoms, tmpFrame);
-
+    bufferMutex.lock();
     frames.push_back(tmpFrame);
-    if(frames.size() == maxFrames)
+    bufferMutex.unlock_and_lock_shared();
+
+    bool cond = (frames.size() == maxFrames);
+    bufferMutex.unlock_shared();
+
+    if(cond)
       flush();
     return *this;
   }
