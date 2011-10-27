@@ -24,8 +24,8 @@
 
 namespace PstpFinder
 {
-  bool
-  closeApplication(GdkEventAny* event);
+  static bool quitting = false;
+  bool closeApplication(GdkEventAny* event);
 }
 
 #endif

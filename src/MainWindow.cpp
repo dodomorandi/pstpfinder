@@ -88,7 +88,8 @@ namespace PstpFinder
       newAnalysis->hide();
       delete (newAnalysis);
       newAnalysis = 0;
-      show();
+      if(not quitting)
+        show();
     }
   }
 
