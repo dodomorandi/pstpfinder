@@ -245,8 +245,11 @@ namespace PstpFinder
       pittpi->waitNextStatus();
     }
 
-    progress.set_fraction(pittpi->getStatus());
-    statusBar.push(pittpi->getStatusDescription(), statusBarContext);
+    if(not abortFlag)
+    {
+      progress.set_fraction(pittpi->getStatus());
+      statusBar.push(pittpi->getStatusDescription(), statusBarContext);
+    }
 
     delete pittpi;
     pittpi = 0;
