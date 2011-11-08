@@ -12,6 +12,7 @@ OLD_CFLAGS="$CFLAGS"
 
 # Checks for programs.
 AC_PROG_CXX
+AX_CXX_CHECK_STD
 
 # Restoring output variables
 CXXFLAGS="$OLD_CXXFLAGS"
@@ -20,6 +21,14 @@ CFLAGS="$OLD_CFLAGS"
 AC_SUBST([CPPFLAGS])
 AC_SUBST([CXXFLAGS])
 AC_SUBST([CFLAGS])
+
+if test $CXX_SUPPORTS_CXX11 -eq 1; then
+   CXXFLAGS="$CXXFLAGS -std=c++11"
+elif test $CXX_SUPPORTS_CXX0X -eq 1; then
+   CXXFLAGS="$CXXFLAGS -std=c++0x"
+else
+   AC_ERROR([cannot compile PSTP-Finder. A compiler compatible with C++11 features is required.])
+fi
 
 # Checks for libraries.
 AX_GROMACS
