@@ -27,8 +27,8 @@
 #include "Protein.h"
 
 #include <string>
+#include <thread>
 
-#include <boost/thread/thread.hpp>
 #include <boost/interprocess/sync/interprocess_mutex.hpp>
 #include <boost/interprocess/sync/interprocess_condition.hpp>
 
@@ -142,7 +142,7 @@ namespace Gromacs
     string sasTarget;
     gmx_mtop_t mtop;
     
-    boost::thread operationThread;
+    thread operationThread;
     mutable boost::interprocess::interprocess_mutex operationMutex, wakeMutex;
     mutable boost::interprocess::interprocess_condition wakeCondition;
     mutable unsigned int cachedNFrames;

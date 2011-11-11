@@ -21,6 +21,7 @@
 #include "SasAtom.h"
 #include "SasAnalysis.h"
 #include <cstring>
+#include <utility>
 
 #include <boost/interprocess/sync/scoped_lock.hpp>
 
@@ -56,6 +57,15 @@ Group::operator <<(const Residue& reference)
   return *this;
 }
 
+Group&
+Group::operator <<(const Group& group)
+{
+  sas = group.sas;
+  zeros = group.zeros;
+
+  return *this;
+}
+
 const vector<const Residue*>&
 Group::getResidues() const
 {
@@ -87,22 +97,6 @@ Group::sortByZeros(const Group& a, const Group& b)
   return (a.zeros > b.zeros);
 }
 
-void
-Group::switchReference(const Protein& structure)
-{
-  vector<const Residue*> oldRes = vector<const Residue*>(residues);
-  residues.clear();
-  for
-  (
-    vector<const Residue*>::const_iterator i = oldRes.begin();
-    i < oldRes.end();
-    i++
-  )
-    residues.push_back(&structure.getResidueByIndex((*i)->index));
-  referenceRes = &structure.getResidueByIndex(referenceRes->index);
-  referenceAtom = &referenceRes->getAtomByType("H");
-}
-
 Pittpi::Pittpi(const Gromacs& gromacs,
                const std::string& sasAnalysisFileName,
                float radius,
@@ -115,7 +109,7 @@ Pittpi::Pittpi(const Gromacs& gromacs,
   sync = true;
   __status = 0;
 
-  pittpiThread = boost::thread(&Pittpi::pittpiRun, boost::ref(*this));
+  pittpiThread = thread(&Pittpi::pittpiRun, ref(*this));
 }
 
 Pittpi::Pittpi(const Pittpi& pittpi) :
@@ -140,15 +134,37 @@ Pittpi::clone(const Pittpi& pittpi)
   averageStructure.forceUnlock();
   sync = pittpi.sync;
   __status = pittpi.__status;
-  groups = vector<Group>(pittpi.groups);
-  meanGroups = vector<Group>(pittpi.meanGroups);
   pockets = vector<Pocket>(pittpi.pockets);
 
-  for(vector<Group>::iterator i = groups.begin(); i < groups.end(); i++)
-    i->switchReference(averageStructure);
+  for(auto i = pittpi.groups.cbegin(); i < pittpi.groups.cend(); i++)
+  {
+    Group group(averageStructure.getResidueByIndex(i->getCentralRes().index));
+    group << *i;
 
-  for(vector<Group>::iterator i = meanGroups.begin(); i < meanGroups.end(); i++)
-    i->switchReference(averageStructure);
+    const vector<const Residue*> residues(i->getResidues());
+    for(auto j = residues.cbegin(); j < residues.cend(); j++)
+      group << averageStructure.getResidueByIndex((*j)->index);
+    groups.push_back(move(group));
+
+    for(auto j = pittpi.pockets.cbegin(); j < pittpi.pockets.cend(); j++)
+    {
+      if(j->group == &(*i))
+      {
+        Pocket pocket(groups.back());
+        pocket << *i;
+        pockets.push_back(move(pocket));
+      }
+    }
+  }
+
+  for(auto i = pittpi.meanGroups.cbegin(); i < pittpi.meanGroups.cend(); i++)
+  {
+    Group group(averageStructure.getResidueByIndex(i->getCentralRes().index));
+    group << *i;
+    for(auto j = i->getResidues().cbegin(); j < i->getResidues().cend(); j++)
+      group << averageStructure.getResidueByIndex((*j)->index);
+    meanGroups.push_back(move(group));
+  }
 
   vector<Pocket>::iterator i;
   vector<Pocket>::const_iterator j;
@@ -169,7 +185,8 @@ Pittpi::~Pittpi()
 void
 Pittpi::join()
 {
-  pittpiThread.join();
+  if(pittpiThread.joinable())
+    pittpiThread.join();
 }
 
 bool
@@ -177,7 +194,7 @@ Pittpi::isFinished()
 {
   if(not sync)
     pittpiThread.join();
-  return pittpiThread == boost::thread();
+  return not pittpiThread.joinable();
 }
 
 void
@@ -316,8 +333,7 @@ Pittpi::pittpiRun()
           if(static_cast<unsigned int>(distance(startPocket, j) *
             (float)PS_PER_SAS) >= threshold)
           {
-            Pocket pocket;
-            pocket.group = &(*i);
+            Pocket pocket(*i);
             pocket.startFrame = distance(i->sas.begin(), startPocket) *
                                 frameStep + 1;
             pocket.startPs = distance(i->sas.begin(), startPocket) *

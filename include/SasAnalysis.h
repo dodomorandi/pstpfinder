@@ -23,10 +23,9 @@
 #include "SasAtom.h"
 #include "Gromacs.h"
 
-#include <boost/thread.hpp>
+#include <thread>
 #include <boost/circular_buffer.hpp>
 #include <boost/filesystem.hpp>
-#include <boost/thread/detail/thread.hpp>
 #include <boost/iostreams/filtering_stream.hpp>
 #include <boost/iostreams/device/file_descriptor.hpp>
 #include <boost/iostreams/filter/zlib.hpp>
@@ -100,7 +99,7 @@ namespace Gromacs
     private:
       SasAnalysis* parent;
       bool isStopped;
-      boost::thread thread;
+      std::thread operationThread;
       boost::interprocess::interprocess_condition wakeCondition;
       boost::interprocess::interprocess_mutex wakeMutex;
     };

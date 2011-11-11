@@ -333,11 +333,11 @@ SasAnalysis::OperationThread::OperationThread(SasAnalysis& parent)
   this->parent = &parent;
   isStopped = false;
   if(parent.mode == SasAnalysis::MODE_SAVE)
-    thread = boost::thread(boost::bind(
-                &SasAnalysis::OperationThread::threadSave, boost::ref(*this)));
+    operationThread = thread(bind(&SasAnalysis::OperationThread::threadSave,
+                                  ref(*this)));
   else
-    thread = boost::thread(boost::bind(
-                &SasAnalysis::OperationThread::threadOpen, boost::ref(*this)));
+    operationThread = thread(bind(&SasAnalysis::OperationThread::threadOpen,
+                                  ref(*this)));
 }
 
 SasAnalysis::OperationThread::~OperationThread()
@@ -449,7 +449,8 @@ SasAnalysis::OperationThread::stop()
 {
   if(isStopped)
   {
-    thread.join();
+    if(operationThread.joinable())
+      operationThread.join();
     return;
   }
   
@@ -458,7 +459,8 @@ SasAnalysis::OperationThread::stop()
   wakeCondition.notify_one();
   parent->bufferMutex.unlock();
   
-  thread.join();
+  if(operationThread.joinable())
+    operationThread.join();
 }
 
 bool

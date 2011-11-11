@@ -194,7 +194,8 @@ namespace Gromacs
 
   Gromacs::~Gromacs()
   {
-    operationThread.join();
+    if(operationThread.joinable())
+      operationThread.join();
 #ifdef GMX45
     if(gotTrajectory)
       output_env_done(oenv);
@@ -205,21 +206,21 @@ namespace Gromacs
   void
   Gromacs::calculateSas()
   {
-    operationThread = boost::thread(boost::bind(&Gromacs::__calculateSas,
-                                                boost::ref(*this)));
+    operationThread = thread(bind(&Gromacs::__calculateSas, ref(*this)));
   }
 
   void
   Gromacs::calculateAverageStructure()
   {
-    operationThread = boost::thread(boost::bind(
-                    &Gromacs::__calculateAverageStructure, boost::ref(*this)));
+    operationThread = thread(bind(&Gromacs::__calculateAverageStructure,
+                                  ref(*this)));
   }
 
   void
   Gromacs::waitOperation()
   {
-    operationThread.join();
+    if(operationThread.joinable())
+      operationThread.join();
   }
 
   void
