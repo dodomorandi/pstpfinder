@@ -22,6 +22,7 @@
 
 #include "SasAtom.h"
 #include "Gromacs.h"
+#include "Session.h"
 
 #include <thread>
 #include <boost/circular_buffer.hpp>
@@ -32,93 +33,126 @@
 #include <boost/range/iterator_range.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
-#include <boost/interprocess/sync/interprocess_semaphore.hpp>
-#include <boost/interprocess/sync/interprocess_mutex.hpp>
-#include <boost/interprocess/sync/interprocess_condition.hpp>
-#include <boost/interprocess/sync/scoped_lock.hpp>
 
 #include <vector>
 #include <string>
 #include <iostream>
 #include <sstream>
 
-namespace Gromacs
+namespace PstpFinder
 {
   class SasAnalysis
   {
-  public:
-    SasAnalysis(unsigned int nAtoms,
-                std::string filename = "/tmp/sas.psf",
-                bool savingMode = true);
-                
-    SasAnalysis(const Gromacs& gromacs,
-                std::string filename = "/tmp/sas.psf",
-                bool savingMode = true);
-    
-    ~SasAnalysis();
-    const SasAnalysis& operator <<(SasAtom* sasAtoms);
-    SasAnalysis& operator >>(SasAtom*& sasAtom);
-    bool setMaxBytes(unsigned long bytes);
-    unsigned long getMaxBytes();
-    bool setMaxChunkSize(unsigned long bytes);
-    unsigned long getMaxChunkSize();
-
-  private:
-    boost::circular_buffer<std::vector<SasAtom*> > chunks;
-    std::vector<SasAtom*> frames;
-    unsigned int nAtoms;
-    std::string filename;
-    boost::iostreams::file_descriptor fileIO;
-    const Gromacs* gromacs;
-    unsigned long maxFrames, maxBytes, maxChunk;
-    mutable boost::interprocess::interprocess_semaphore* bufferSemaphore;
-    unsigned int bufferSemaphoreCount;
-    unsigned int bufferSemaphoreMax;
-    mutable boost::interprocess::interprocess_mutex bufferMutex;
-    bool changeable;
-    boost::iostreams::filtering_istream inFilter;
-    boost::archive::binary_iarchive* inArchive;
-    boost::iostreams::filtering_ostream outFilter;
-    boost::archive::binary_oarchive* outArchive;
-
-    enum
-    {
-      MODE_OPEN,
-      MODE_SAVE
-    } mode;
-
-    class OperationThread
-    {
     public:
-      OperationThread(SasAnalysis& parent);
-      ~OperationThread();
-      void wakeUp();
-      void stop();
-      void threadSave();
-      void threadOpen();
+      SasAnalysis(unsigned int nAtoms, const Gromacs& gromacs,
+                  std::string filename = "/tmp/sas.psf",
+                  bool savingMode = true);
+
+      SasAnalysis(const Gromacs& gromacs, std::string filename = "/tmp/sas.psf",
+                  bool savingMode = true);
+
+      ~SasAnalysis();
+
+      const SasAnalysis&
+      operator <<(SasAtom* sasAtoms);
+
+      SasAnalysis&
+      operator >>(SasAtom*& sasAtom);
+
+      bool
+      setMaxBytes(unsigned long bytes);
+
+      unsigned long
+      getMaxBytes();
+
+      bool
+      setMaxChunkSize(unsigned long bytes);
+
+      unsigned long
+      getMaxChunkSize();
+
     private:
-      SasAnalysis* parent;
-      bool isStopped;
-      std::thread operationThread;
-      boost::interprocess::interprocess_condition wakeCondition;
-      boost::interprocess::interprocess_mutex wakeMutex;
-    };
+      boost::circular_buffer<std::vector<SasAtom*> > chunks;
+      std::vector<SasAtom*> frames;
+      unsigned int nAtoms;
+      std::string filename;
+      boost::iostreams::file_descriptor fileIO;
+      Session sessionFile;
+      std::streampos fileStreamEnd;
+      const Gromacs* gromacs;
+      unsigned long maxFrames, maxBytes, maxChunk;
+      unsigned int bufferCount;
+      unsigned int bufferMax;
+      mutable condition_variable bufferCountCondition;
+      mutable mutex bufferMutex, bufferCountMutex;
+      bool changeable;
+      boost::iostreams::filtering_istream inFilter;
+      boost::archive::binary_iarchive* inArchive;
+      boost::iostreams::filtering_ostream outFilter;
+      boost::archive::binary_oarchive* outArchive;
 
-    friend class OperationThread;
-    OperationThread* operationThread;
+      enum
+      {
+        MODE_OPEN,
+        MODE_SAVE
+      } mode;
 
-    void init(string saveFile, bool savingMode = true);
-    void dumpChunk(const std::vector<SasAtom*>& chunk,
-                   boost::archive::binary_oarchive& out) const;
-    std::vector<SasAtom*> loadChunk(boost::archive::binary_iarchive& in);
-    void flush();
-    bool save(const std::string& filename);
-    bool save();
-    bool open();
+      class OperationThread
+      {
+        public:
+          OperationThread(SasAnalysis& parent);
+          ~OperationThread();
 
-    void updateChunks();
+          void
+          wakeUp();
+
+          void
+          stop();
+
+          void
+          threadSave();
+
+          void
+          threadOpen();
+
+        private:
+          SasAnalysis* parent;
+          bool isStopped;
+          thread operationThread;
+          condition_variable wakeCondition;
+          mutex wakeMutex;
+      };
+
+      friend class OperationThread;
+      OperationThread* operationThread;
+
+      void
+      init(string saveFile, bool savingMode = true);
+
+      void
+      dumpChunk(const std::vector<SasAtom*>& chunk,
+                boost::archive::binary_oarchive& out) const;
+
+      std::vector<SasAtom*>
+      loadChunk(boost::archive::binary_iarchive& in);
+
+      void
+      flush();
+
+      bool
+      save(const std::string& filename);
+
+      bool
+      save();
+
+      bool
+      open();
+
+      void
+      updateChunks();
   };
-};
+}
+;
 
 #endif
 

@@ -22,24 +22,28 @@
 
 #include <gtkmm.h>
 
-using namespace Gtk;
+using namespace PstpFinder;
 
-static Main* kit;
+bool PstpFinder::quitting = false;
+static Gtk::Main* kit;
 
-int main(int argc, char* argv[])
+int
+main(int argc, char* argv[])
 {
-  kit = new Main(argc, argv);
+  kit = new Gtk::Main(argc, argv);
 
   MainWindow win;
   kit->run();
-  
+
   delete kit;
-  
+
   return 0;
 }
 
-bool closeApplication(GdkEventAny* event)
+bool
+PstpFinder::closeApplication(GdkEventAny* event)
 {
+  quitting = true;
   kit->quit();
   return false;
 }

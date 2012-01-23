@@ -26,21 +26,28 @@
 
 using namespace Gtk;
 
-class MainWindow: public Window
+namespace PstpFinder
 {
-public:
-  MainWindow();
-  ~MainWindow();
-  void createNewAnalysis();
-  void destroyNewAnalysis();
-  bool onDeleteEvent(GdkEventAny* event);
-protected:
-  HButtonBox buttonBox;
-  Button buttonNew, buttonOpen;
-private:
-  NewAnalysis* newAnalysis;
-  void init();
-  void buttonOpenClicked();
-};
-
+  class MainWindow : public Window
+  {
+    public:
+      MainWindow();
+      ~MainWindow();
+      void
+      createNewAnalysis();
+      void
+      destroyNewAnalysis();
+      bool
+      onDeleteEvent(GdkEventAny* event);
+    protected:
+      HButtonBox buttonBox;
+      Button buttonNew, buttonOpen;
+    private:
+      NewAnalysis* newAnalysis;
+      void
+      init();
+      void
+      buttonOpenClicked();
+  };
+}
 #endif

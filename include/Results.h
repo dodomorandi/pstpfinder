@@ -26,10 +26,10 @@
 
 using namespace Gtk;
 
-class NewAnalysis;
-
-namespace Gromacs
+namespace PstpFinder
 {
+  class NewAnalysis;
+
   struct PocketResidue
   {
     Residue* residue;
@@ -50,7 +50,7 @@ namespace Gromacs
     public:
       Results(NewAnalysis& parent, const Pittpi& pittpi,
               const Gromacs& gromacs);
-      void init();
+      void init() throw();
     private:
       Notebook notebook;
       DrawingArea drawResultsGraph;
@@ -65,7 +65,12 @@ namespace Gromacs
       vector<Gdk::Color> colors;
 
       bool removeFromParent(GdkEventAny* event);
-      bool drawResultsGraphExposeEvent(GdkEventExpose* event);
+#if GTKMM_MAJOR == 3
+      bool drawResultsGraphExposeEvent(
+          const Cairo::RefPtr<Cairo::Context>& event) throw ();
+#else
+      bool drawResultsGraphExposeEvent(GdkEventExpose* event) throw();
+#endif
 
       void fillResidues();
       static inline Gdk::Color rainbow(double value);

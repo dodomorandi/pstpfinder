@@ -20,37 +20,40 @@
 #ifndef _PITTPI_H
 #define _PITTPI_H
 
+#include "config.h"
 #include "Gromacs.h"
+#include "Protein.h"
 
 #include <vector>
 #include <thread>
-#include <boost/interprocess/sync/interprocess_mutex.hpp>
-#include <boost/interprocess/sync/interprocess_condition.hpp>
 
 using namespace std;
 
-namespace Gromacs
+namespace PstpFinder
 {
   class Group
   {
-  public:
-    Group(const Residue& refResidue);
-    Group(const PdbAtom& refAtomH);
-    Group(const PdbAtom& refAtomH, const Protein& protein);
-    Group& operator <<(const Residue& value);
-    Group& operator <<(const Group& group);
-    const vector<const Residue*>& getResidues() const;
-    const PdbAtom& getCentralH() const;
-    const Residue& getCentralRes() const;
-    static bool sortByZeros(const Group& a, const Group& b);
-    void switchReference(const Protein& protein);
+    public:
+      Group(const Residue& refResidue);
+      Group(const PdbAtom& refAtomH);
+      Group(const PdbAtom& refAtomH, const Protein& protein);
+      Group(const Group& group);
+      Group(Group&& group);
+      Group& operator =(const Group& group);
+      Group& operator =(Group&& group);
+      Group& operator <<(const Residue& value);
+      Group& operator <<(const Group& group);
+      const vector<const Residue*>& getResidues() const;
+      const PdbAtom& getCentralH() const;
+      const Residue& getCentralRes() const;
+      static bool sortByZeros(const Group& a, const Group& b);
 
-    vector<float> sas;
-    unsigned int zeros;
-  private:
-    const PdbAtom* referenceAtom;
-    const Residue* referenceRes;
-    vector<const Residue*> residues;
+      vector<float> sas;
+      unsigned int zeros;
+    private:
+      const PdbAtom* referenceAtom;
+      const Residue* referenceRes;
+      vector<const Residue*> residues;
   };
 
   struct Pocket
@@ -68,6 +71,19 @@ namespace Gromacs
     float maxAreaPs;
 
     Pocket(const Group& group) : group(&group) {}
+    Pocket(const Pocket& pocket):
+      group(pocket.group)
+    {
+      *this << pocket;
+    }
+
+    Pocket& operator =(const Pocket& pocket)
+    {
+      group = pocket.group;
+      *this << pocket;
+      return *this;
+    }
+
     Pocket& operator <<(const Pocket& pocket)
     {
       startFrame = pocket.startFrame;
@@ -82,6 +98,12 @@ namespace Gromacs
       maxAreaPs = pocket.maxAreaPs;
 
       return *this;
+    }
+
+    static bool
+    sortByWidth(const Pocket& first, const Pocket& second)
+    {
+      return (first.width > second.width);
     }
   };
 
@@ -99,40 +121,54 @@ namespace Gromacs
    */
   class Pittpi
   {
-  public:
-    Pittpi(const Gromacs& gromacs,
-           const string& sasAnalysisFileName,
-           float radius,
-           unsigned long threshold);
-    Pittpi(const Pittpi& pittpi);
-    Pittpi(const Pittpi& pittpi, const Gromacs& gromacs);
-    ~Pittpi();
+    public:
+      Pittpi(Gromacs& gromacs, const std::string& sessionFileName,
+             float radius, unsigned long threshold);
+      Pittpi(const Pittpi& pittpi);
+      Pittpi(const Pittpi& pittpi, const Gromacs& gromacs);
+      ~Pittpi();
 
-    void join();
-    void setStatus(float value);
-    float getStatus() const;
-    void waitNextStatus();
-    bool isFinished();
-    const vector<Pocket>& getPockets() const;
-  private:
-    vector<Group> makeGroups(float radius);
-    void fillGroups(vector<Group>& groups, const string& sasAnalysisFileName);
-    void pittpiRun();
-    void clone(const Pittpi& pittpi); // Deprecated. Waiting for delegators...
+      void join();
+      void setStatus(float value) const;
+      void setStatusDescription(const string& description) const;
+      float getStatus() const;
+      string getStatusDescription() const;
+      void waitNextStatus();
+      bool isFinished();
+      void abort();
+      const vector<Pocket>& getPockets() const;
+    private:
+      void makeGroups(float radius);
+      void fillGroups(const string& sessionFileName, unsigned int timeStep);
+      std::vector<Group> makeGroupsByDistance(const std::vector<Atom>& centers,
+                                              float radius);
+      std::vector<Group> makeGroupsByDistance(const std::vector<Atom>& centers,
+                                              float radius,
+                                              const std::vector<PdbAtom>& reference);
+      Group makeGroupByDistance(const std::vector<Atom>& centers,
+                                const PdbAtom& atom, float radius);
+      void pittpiRun();
+      void clone(const Pittpi& pittpi); // Deprecated. Waiting for delegators...
+#ifdef HAVE_PYMOD_SADIC
+      Protein runSadic(const Protein& structure) const;
+#endif
 
-    Gromacs gromacs;
-    string sasAnalysisFileName;
-    float radius;
-    unsigned long threshold;
-    Protein averageStructure;
-    thread pittpiThread;
-    mutable boost::interprocess::interprocess_mutex statusMutex;
-    mutable boost::interprocess::interprocess_mutex nextStatusMutex;
-    mutable boost::interprocess::interprocess_condition nextStatusCondition;
-    float __status;
-    bool sync;
-    vector<Pocket> pockets;
-    vector<Group> groups, meanGroups;
+      Gromacs gromacs;
+      std::string sessionFileName;
+      float radius;
+      unsigned long threshold;
+      Protein averageStructure;
+      thread pittpiThread;
+      mutable mutex statusMutex;
+      mutable mutex nextStatusMutex;
+      mutable condition_variable nextStatusCondition;
+      mutable float __status;
+      mutable string __statusDescription;
+      bool sync;
+      mutable mutex syncLock;
+      bool abortFlag;
+      vector<Pocket> pockets;
+      vector<Group> groups;
   };
 }
 

@@ -30,55 +30,65 @@
 
 using namespace Gtk;
 
-namespace Gromacs { class Results; };
-
-class NewAnalysis: public Window
+namespace PstpFinder
 {
-public:
-  enum parallelOperation
+  class Results;
+
+  class NewAnalysis :
+      public Window
   {
-    OPERATION_WAIT
+    public:
+      enum parallelOperation
+      {
+        OPERATION_WAIT
+      };
+
+      NewAnalysis();
+      NewAnalysis(Window& parent);
+      void openSessionFile(const string& sessionFileName);
+      void deleteResultsWindow(const Results& resultsWindow);
+      Glib::Dispatcher signal_start_spin;
+      Glib::Dispatcher signal_stop_spin;
+      Glib::Dispatcher signal_update_limits;
+    private:
+      Frame mainFrame;
+      VBox vboxFrame1, vboxFrame2, vboxMain;
+      FileChooserButton trjChooser, tprChooser;
+      Label labelTrajectory, labelTopology, labelBegin, labelEnd, labelRadius,
+            labelPocketThreshold, labelPs, labelAngstrom, labelSessionFile;
+      HBox hboxTrajectory, hboxTopology, hboxBegin, hboxEnd, hboxFrame, hboxRadius,
+           hboxPocketThreshold, hboxSession;
+      Entry entrySessionFile;
+      HButtonBox buttonBoxRun;
+      Button buttonRun, buttonBrowseFile;
+      ProgressBar progress;
+      Alignment progressAligner;
+      SpinButton spinBegin, spinEnd, spinRadius, spinPocketThreshold;
+      HScale hScaleBegin, hScaleEnd;
+      Spinner spinnerWait;
+      VSeparator vSeparator;
+      Statusbar statusBar;
+      unsigned int statusBarContext;
+      Pittpi* pittpi;
+      Gromacs* gromacs;
+      int __frames;
+      float __timeStep;
+      std::vector<Results*> resultsWindows;
+      bool abortFlag;
+
+      void init();
+      void runAnalysis() throw();
+      void chooserTrajectoryClicked() throw();
+      void threadTrajectoryClicked() throw();
+      void start_spin() throw();
+      void stop_spin() throw();
+      void checkParameters();
+      void buttonBrowseFileClicked() throw();
+      void update_limits() throw();
+      bool close_window(GdkEventAny* event) throw();
+      shared_ptr<Pittpi> runPittpi(const string& SessionFileName, float radius,
+                                   float threshold);
   };
-
-  NewAnalysis();
-  NewAnalysis(Window& parent);
-  void openSessionFile(const string& sessionFileName);
-  void deleteResultsWindow(const Gromacs::Results& resultsWindow);
-  Glib::Dispatcher signal_start_spin;
-  Glib::Dispatcher signal_stop_spin;
-  Glib::Dispatcher signal_update_limits;
-private:
-  Frame mainFrame;
-  VBox vboxFrame1, vboxFrame2, vboxMain;
-  FileChooserButton trjChooser, tprChooser;
-  Label labelTrajectory, labelTopology, labelBegin, labelEnd, labelRadius,
-        labelPocketThreshold, labelPs, labelAngstrom, labelSessionFile;
-  HBox hboxTrajectory, hboxTopology, hboxBegin, hboxEnd, hboxFrame, hboxRadius,
-       hboxPocketThreshold, hboxSession;
-  Entry entrySessionFile;
-  HButtonBox buttonBoxRun;
-  Button  buttonRun, buttonBrowseFile;
-  ProgressBar progress;
-  SpinButton spinBegin, spinEnd, spinRadius, spinPocketThreshold;
-  HScale hScaleBegin, hScaleEnd;
-  Spinner spinnerWait;
-  VSeparator vSeparator;
-  int __frames;
-  float __timeStep;
-  std::vector<Gromacs::Results*> resultsWindows;
-
-  void init();
-  void runAnalysis();
-  void chooserTrajectoryClicked();
-  void threadTrajectoryClicked();
-  void start_spin();
-  void stop_spin();
-  void checkParameters();
-  void buttonBrowseFileClicked();
-  void update_limits();
-  Gromacs::Pittpi runPittpi(const Gromacs::Gromacs& gromacs,
-                            const string& analysisFileName, float radius,
-                            float threshold);
-};
+}
 
 #endif

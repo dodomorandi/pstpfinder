@@ -30,7 +30,7 @@
 #include <pangomm.h>
 
 using namespace std;
-using namespace Gromacs;
+using namespace PstpFinder;
 
 Results::Results(NewAnalysis& parent, const Pittpi& pittpi,
                  const Gromacs& gromacs)
@@ -40,15 +40,20 @@ Results::Results(NewAnalysis& parent, const Pittpi& pittpi,
 }
 
 void
-Results::init()
+Results::init() throw()
 {
   fillResidues();
   signal_delete_event()
       .connect(sigc::mem_fun(*this, &Results::removeFromParent));
 
   drawResultsGraph.set_size_request(500, 200);
+#if GTKMM_MAJOR == 3
+  drawResultsGraph.signal_draw().connect(
+      sigc::mem_fun(*this, &Results::drawResultsGraphExposeEvent));
+#else
   drawResultsGraph.signal_expose_event()
     .connect(sigc::mem_fun(*this, &Results::drawResultsGraphExposeEvent));
+#endif
 
   notebook.append_page(drawResultsGraph, "Results");
 
@@ -159,13 +164,21 @@ Results::init()
 
   textViewData.get_buffer()->set_text(streamData.str());
   textViewData.set_editable(false);
+#if GTKMM_MAJOR == 3
+  textViewData.override_font(fontMono);
+#else
   textViewData.modify_font(fontMono);
+#endif
   scrollData.add(textViewData);
   notebook.append_page(scrollData, "Data");
 
   textViewDetails.get_buffer()->set_text(streamDetails.str());
   textViewDetails.set_editable(false);
+#if GTKMM_MAJOR == 3
+  textViewDetails.override_font(fontMono);
+#else
   textViewDetails.modify_font(fontMono);
+#endif
   scrollDetails.add(textViewDetails);
   notebook.append_page(scrollDetails, "Details");
 
@@ -182,12 +195,19 @@ Results::removeFromParent(GdkEventAny* event)
 }
 
 bool
-Results::drawResultsGraphExposeEvent(GdkEventExpose* event)
+#if GTKMM_MAJOR == 3
+Results::drawResultsGraphExposeEvent(
+    const Cairo::RefPtr<Cairo::Context>& event) throw ()
+#else
+Results::drawResultsGraphExposeEvent(GdkEventExpose* event) throw()
+#endif
 {
   Glib::RefPtr<Gdk::Window> window = drawResultsGraph.get_window();
   Cairo::RefPtr<Cairo::Context> context = window->create_cairo_context();
 
+#if GTKMM_MAJOR == 2
   window->clear();
+#endif
 
   Gdk::Rectangle area_paint(0, 0, window->get_width(), window->get_height());
   window->begin_paint_rect(area_paint);

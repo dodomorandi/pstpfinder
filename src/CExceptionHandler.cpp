@@ -35,9 +35,10 @@ CExceptionHandler::~CExceptionHandler()
   signal(SIGSEGV, SIG_DFL);
 }
 
-void __CExceptionHandler_handler(int signum)
+void
+__CExceptionHandler_handler(int signum)
 {
-  cerr  << "Error " << signum 
-        << " catched during program flow. Exiting." << endl;
+  cerr << "Error " << signum << " catched during program flow. Exiting."
+      << endl;
   terminate();
 }
