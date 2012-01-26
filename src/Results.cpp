@@ -222,18 +222,41 @@ Results::drawResultsGraphExposeEvent(GdkEventExpose* event) throw()
   // Draw graph
   int graphLineWidth = 1;
   int graphBorder = 10;
-  int graphFooterHeight = 0.08 * area_paint.get_height(); // 8%
-  int graphLeftBorder = 0.03 * area_paint.get_width(); // 3%
+  int graphFooterHeight = 0.16 * area_paint.get_height(); // 16%
+  int graphOffsetStart = graphBorder + graphLineWidth;
 
+  int graphLeftBorder;
   int graphHeaderHeight;
+  float graphLabelYSize;
+  context->set_identity_matrix();
+  context->save();
   {
     Cairo::TextExtents extents;
-    context->set_font_size(graphLeftBorder * 0.6);
+    context->rotate(-3.1415 / 2);
+    // We use an approximate value to evaluate graphHeaderHeight
+    context->get_text_extents("pocket opening time(ps)", extents);
+    graphLabelYSize = 10. / extents.width
+                      * (area_paint.get_height() - graphFooterHeight
+                         - graphBorder
+                         - graphOffsetStart);
+    context->set_font_size(graphLabelYSize);
+
+    context->get_text_extents("0", extents);
+    graphHeaderHeight = extents.width * (ceil(log10(maxPocketLength)) / 2 + 1);
+
+    // Now we can calculate the true values
+    context->get_text_extents("pocket opening time(ps)", extents);
+    graphLabelYSize = graphLabelYSize / extents.width
+                      * (area_paint.get_height() - graphFooterHeight
+                         - graphBorder
+                         - graphOffsetStart
+                         - graphHeaderHeight) * 0.9;
+    graphLeftBorder = extents.height * 2.5;
     context->get_text_extents("0", extents);
     graphHeaderHeight = extents.width * (ceil(log10(maxPocketLength)) / 2 + 1);
   }
+  context->restore();
 
-  int graphOffsetStart = graphBorder + graphLineWidth;
   context->select_font_face("Sans", Cairo::FONT_SLANT_NORMAL,
                             Cairo::FONT_WEIGHT_NORMAL);
   // Axis
@@ -255,28 +278,17 @@ Results::drawResultsGraphExposeEvent(GdkEventExpose* event) throw()
   float columnModuleY = (float)(area_paint.get_height() - graphOffsetStart * 2
                                 - graphHeaderHeight - graphFooterHeight)
                         / maxPocketLength;
-  for
-  (
-    vector<PocketResidue>::const_iterator i = residues.begin();
-    i < residues.end();
-    i++
-  )
+  for(auto i = residues.cbegin(); i < residues.cend(); i++)
   {
     int columnOffsetX = graphOffsetStart + graphLeftBorder + columnModuleX *
-        (3 * distance(static_cast<vector<PocketResidue>::const_iterator>
-        (residues.begin()), i) + 1);
+        (3 * distance(residues.cbegin(), i) + 1);
     int columnOffsetY = area_paint.get_height() - graphOffsetStart
                         - graphFooterHeight;
 
-    for
-    (
-      vector<const Pocket*>::const_iterator j = i->pockets.begin();
-      j < i->pockets.end();
-      j++
-    )
+    for(auto j = i->pockets.cbegin(); j < i->pockets.cend(); j++)
     {
       int columnHeight = (float)columnModuleY * (*j)->width;
-      const Gdk::Color& color = colors[distance(i->pockets.begin(), j)];
+      const Gdk::Color& color = colors[distance(i->pockets.cbegin(), j)];
 
       context->set_source_rgb(color.get_red_p(),
                               color.get_green_p(),
@@ -313,14 +325,29 @@ Results::drawResultsGraphExposeEvent(GdkEventExpose* event) throw()
   context->save();
   {
     Cairo::TextExtents extents;
-    context->set_font_size(graphLeftBorder * 0.8);
+    context->set_identity_matrix();
     context->rotate(-3.1415 / 2);
+    context->set_font_size(graphLabelYSize);
+    context->get_text_extents("pocket opening time(ps)", extents);
+
+    unsigned int spaceBeforeLabelY = (area_paint.get_height()
+                                      - graphHeaderHeight
+                                      - graphFooterHeight
+                                      - graphOffsetStart
+                                      - graphBorder
+                                      - extents.width)
+                                     / 2;
+
+    context->move_to(
+        -graphHeaderHeight - graphBorder - extents.width - spaceBeforeLabelY,
+        graphBorder + extents.height);
+    context->show_text("pocket opening time(ps)");
 
     context->get_text_extents("0", extents);
-    context->move_to(-area_paint.get_height() + graphOffsetStart
-                     + graphFooterHeight
-                     - (float)extents.width / 2,
-                     graphBorder + graphLeftBorder * 0.8);
+    context->move_to(
+        -area_paint.get_height() + graphOffsetStart + graphFooterHeight
+        - (float) extents.width / 2,
+        graphBorder + graphLeftBorder * 0.8);
     context->show_text("0");
 
 
