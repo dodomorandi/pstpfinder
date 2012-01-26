@@ -343,17 +343,20 @@ Results::drawResultsGraphExposeEvent(GdkEventExpose* event) throw()
         graphBorder + extents.height);
     context->show_text("pocket opening time(ps)");
 
-    context->get_text_extents("0", extents);
+    context->get_text_extents("000", extents);
+    float numberWidth = extents.width;
+    context->get_text_extents("00", extents);
+    numberWidth -= extents.width;
     context->move_to(
         -area_paint.get_height() + graphOffsetStart + graphFooterHeight
-        - (float) extents.width / 2,
+        - numberWidth / 2,
         graphBorder + graphLeftBorder * 0.8);
     context->show_text("0");
 
 
     unsigned int graphMaxVerticalStep = (float)(area_paint.get_height()
       - graphOffsetStart * 2 - graphHeaderHeight - graphFooterHeight)
-      / (extents.width * (log10(maxPocketLength) + 3));
+      / (numberWidth * (log10(maxPocketLength + 1) + 2));
     for(unsigned int i = 1; i <= graphMaxVerticalStep; i++)
     {
       stringstream pocketSizeStream;
@@ -366,7 +369,7 @@ Results::drawResultsGraphExposeEvent(GdkEventExpose* event) throw()
                           - graphFooterHeight)
                        + (float)(area_paint.get_height() - graphOffsetStart * 2
                                  - graphHeaderHeight - graphFooterHeight)
-                       / graphMaxVerticalStep * i - (float)extents.width / 2,
+                       / graphMaxVerticalStep * i - extents.width / 2,
                        graphBorder + graphLeftBorder * 0.8);
       context->show_text(pocketSize);
     }
