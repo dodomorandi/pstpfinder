@@ -56,6 +56,8 @@ namespace PstpFinder
       DrawingArea drawResultsGraph;
       TextView textViewData, textViewDetails;
       ScrolledWindow scrollData, scrollDetails;
+      VBox drawResultsVBox;
+      Statusbar drawResultsStatusBar;
 
       Gromacs gromacs;
       Pittpi pittpi;

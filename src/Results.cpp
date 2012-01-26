@@ -55,7 +55,11 @@ Results::init() throw()
     .connect(sigc::mem_fun(*this, &Results::drawResultsGraphExposeEvent));
 #endif
 
-  notebook.append_page(drawResultsGraph, "Results");
+  drawResultsStatusBar.push("Move the pointer over graph bars to get more information");
+
+  drawResultsVBox.pack_start(drawResultsGraph);
+  drawResultsVBox.pack_start(drawResultsStatusBar, false, true);
+  notebook.append_page(drawResultsVBox, "Results");
 
   stringstream streamData, streamDetails;
   streamData << setfill(' ') << setw(11) << left << "zeros";
