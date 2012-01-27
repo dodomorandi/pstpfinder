@@ -237,6 +237,13 @@ Results::drawResultsGraphExposeEvent(GdkEventExpose* event) throw()
 
   // Draw grawph
   graphFooterHeight = area_paint.get_height() * labelXMultiplier;
+  if(area_paint.get_height() - graphFooterHeight / 0.8 - graphBorder
+     - graphOffsetStart
+     < 0)
+  {
+    graphFooterHeight = (area_paint.get_height() - graphOffsetStart - graphBorder) * 0.8;
+    labelXMultiplier = static_cast<float>(graphFooterHeight) / area_paint.get_height();
+  }
 
   float graphLabelYSize;
   context->set_identity_matrix();
@@ -252,8 +259,21 @@ Results::drawResultsGraphExposeEvent(GdkEventExpose* event) throw()
                          - graphOffsetStart);
 
     context->set_font_size(graphLabelYSize * labelYMultiplier);
-    context->get_text_extents("0", extents);
-    graphHeaderHeight = extents.width * (ceil(log10(maxPocketLength)) / 2 + 1);
+    context->get_text_extents("000", extents);
+    if(extents.height > graphLeftBorder * 0.6)
+    {
+      float fontSize = graphLeftBorder * 0.6 * graphLabelYSize
+                       * labelYMultiplier
+                       / extents.height;
+      labelYMultiplier = fontSize / graphLabelYSize;
+      context->set_font_size(fontSize);
+      context->get_text_extents("000", extents);
+    }
+
+    float numberWidth = extents.width;
+    context->get_text_extents("00", extents);
+    numberWidth -= extents.width;
+    graphHeaderHeight = numberWidth * (ceil(log10(maxPocketLength + 1)) / 2);
 
     // Now we can calculate the true values
     context->set_font_size(graphLabelYSize);
