@@ -18,6 +18,8 @@ AC_DEFUN([AX_CONF_ARGS],[
             ax_cv_enable_debug=no
             ;;
          esac
+
+         AX_UPDATE_DEBUG_OPTS()
       ],
       [ax_cv_enable_debug=no])
    
@@ -26,7 +28,7 @@ AC_DEFUN([AX_CONF_ARGS],[
          [disable optimization (normally it would depend on --enable-debug)])],
       [
          case x$enableval in
-         xyes | xno)
+         xyes | xy | xno | xn)
             ax_cv_disable_optimization=$enableval
             ;;
          x)
@@ -36,18 +38,65 @@ AC_DEFUN([AX_CONF_ARGS],[
             ax_cv_disable_optimization=unspec
             ;;
          esac
+
+         AX_UPDATE_DEBUG_OPTS()
       ],
-      [ax_cv_disable_optimization=unspec])
+      [ax_cv_disable_optimization=unspec]) 
+
+   AC_ARG_WITH([optimization-level],
+      [AS_HELP_STRING([--with-optimization-level=[[0|1|2|3]]],
+         [defines the level of optimization (default is 3 if optimization is enabled, ignored if disabled)])],
+      [
+         case x$withval in
+         x0 | x1 | x2 | x3)
+            ax_cv_optimization_level=$withval
+            ;;
+         *)
+            ax_cv_optimization_level=default
+            ;;
+         esac
+
+         AX_UPDATE_DEBUG_OPTS()
+      ],
+      [ax_cv_optimization_level=default])
    
-   if test ${ax_cv_enable_debug} = yes; then
+   AX_UPDATE_DEBUG_OPTS()
+])
+
+AC_DEFUN([AX_UPDATE_DEBUG_OPTS],[
+   if test "x$ax_cv_old_debug_flags" != "x"; then
+      CPPFLAGS=`echo $CPPFLAGS | sed -e "s/$ax_cv_old_debug_flags//g"`
+   fi
+
+   if test x${ax_cv_enable_debug} = xyes; then
+      ax_cv_old_debug_flags="-g"
       CPPFLAGS="-g ${CPPFLAGS}"
-      if test ${ax_cv_disable_optimization} = no; then
-        CPPFLAGS="-O3 ${CPPFLAGS}"
+      if test x${ax_cv_disable_optimization} != xyes; then
+         if test x${ax_cv_optimization_level} = xdefault; then
+            CPPFLAGS="-O3 ${CPPFLAGS}"
+            ax_cv_old_debug_flags="-O3 ${ax_cv_old_debug_flags}"
+         else
+            CPPFLAGS="-O${ax_cv_optimization_level} ${CPPFLAGS}"
+            ax_cv_old_debug_flags="-O${ax_cv_optimization_level} ${ax_cv_old_debug_flags}"
+         fi
+      else
+         CPPFLAGS="-O0 ${CPPFLAGS}"
+         ax_cv_old_debug_flags="-O0 ${ax_cv_old_debug_flags}"
       fi
    else
-      if test ${ax_cv_disable_optimization} != yes; then
-         CPPFLAGS="-O3 ${CPPFLAGS}"
+      if test x${ax_cv_disable_optimization} != xyes; then
+         if test x${ax_cv_optimization_level} = xdefault; then
+            CPPFLAGS="-O3 ${CPPFLAGS}"
+            ax_cv_old_debug_flags="-O3"
+         else
+            CPPFLAGS="-O${ax_cv_optimization_level} ${CPPFLAGS}"
+            ax_cv_old_debug_flags="-O${ax_cv_optimization_level}"
+         fi
+      else
+         CPPFLAGS="-O0 ${CPPFLAGS}"
+         ax_cv_old_debug_flags="-O0"
       fi
    fi
+
    AC_SUBST([CPPFLAGS])
 ])
