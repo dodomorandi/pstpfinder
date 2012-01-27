@@ -52,6 +52,13 @@ namespace PstpFinder
               const Gromacs& gromacs);
       void init() throw();
     private:
+      enum enumModifier
+      {
+        NOTHING,
+        LABEL_X,
+        LABEL_Y
+      };
+
       Notebook notebook;
       DrawingArea drawResultsGraph;
       TextView textViewData, textViewDetails;
@@ -65,6 +72,15 @@ namespace PstpFinder
       vector<PocketResidue> residues;
       float maxPocketLength;
       vector<Gdk::Color> colors;
+      float labelYMultiplier;
+
+      const int graphLineWidth;
+      const int graphBorder;
+      const int graphOffsetStart;
+      int graphLeftBorder;
+      int graphHeaderHeight;
+      int graphFooterHeight;
+      enumModifier graphModifier;
 
       bool removeFromParent(GdkEventAny* event);
 #if GTKMM_MAJOR == 3
@@ -73,6 +89,8 @@ namespace PstpFinder
 #else
       bool drawResultsGraphExposeEvent(GdkEventExpose* event) throw();
 #endif
+      bool drawResultsGraphScrollEvent(GdkEventScroll* event) throw();
+      bool drawResultsGraphMotionEvent(GdkEventMotion* event) throw();
 
       void fillResidues();
       static inline Gdk::Color rainbow(double value);

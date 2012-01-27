@@ -33,9 +33,17 @@ using namespace std;
 using namespace PstpFinder;
 
 Results::Results(NewAnalysis& parent, const Pittpi& pittpi,
-                 const Gromacs& gromacs)
-  : gromacs(gromacs), pittpi(pittpi, this->gromacs), parent(parent)
+                 const Gromacs& gromacs) :
+    gromacs(gromacs),
+    pittpi(pittpi, this->gromacs),
+    parent(parent),
+    graphLineWidth(1),
+    graphBorder(10),
+    graphOffsetStart(graphBorder + graphLineWidth)
 {
+  labelYMultiplier = 1.;
+  graphModifier = enumModifier::NOTHING;
+
   init();
 }
 
@@ -54,6 +62,13 @@ Results::init() throw()
   drawResultsGraph.signal_expose_event()
     .connect(sigc::mem_fun(*this, &Results::drawResultsGraphExposeEvent));
 #endif
+
+  drawResultsGraph.signal_scroll_event().connect(
+      sigc::mem_fun(*this, &Results::drawResultsGraphScrollEvent));
+  drawResultsGraph.signal_motion_notify_event().connect(
+      sigc::mem_fun(*this, &Results::drawResultsGraphMotionEvent));
+  drawResultsGraph.add_events(
+      Gdk::EventMask::SCROLL_MASK | Gdk::EventMask::POINTER_MOTION_MASK);
 
   drawResultsStatusBar.push("Move the pointer over graph bars to get more information");
 
@@ -219,14 +234,9 @@ Results::drawResultsGraphExposeEvent(GdkEventExpose* event) throw()
   context->set_source_rgb(1.0, 1.0, 1.0);
   context->paint();
 
-  // Draw graph
-  int graphLineWidth = 1;
-  int graphBorder = 10;
-  int graphFooterHeight = 0.16 * area_paint.get_height(); // 16%
-  int graphOffsetStart = graphBorder + graphLineWidth;
+  // Draw grawph
+  graphFooterHeight = 0.16 * area_paint.get_height(); // 16%
 
-  int graphLeftBorder;
-  int graphHeaderHeight;
   float graphLabelYSize;
   context->set_identity_matrix();
   context->save();
@@ -239,12 +249,13 @@ Results::drawResultsGraphExposeEvent(GdkEventExpose* event) throw()
                       * (area_paint.get_height() - graphFooterHeight
                          - graphBorder
                          - graphOffsetStart);
-    context->set_font_size(graphLabelYSize);
 
+    context->set_font_size(graphLabelYSize * labelYMultiplier);
     context->get_text_extents("0", extents);
     graphHeaderHeight = extents.width * (ceil(log10(maxPocketLength)) / 2 + 1);
 
     // Now we can calculate the true values
+    context->set_font_size(graphLabelYSize);
     context->get_text_extents("pocket opening time(ps)", extents);
     graphLabelYSize = graphLabelYSize / extents.width
                       * (area_paint.get_height() - graphFooterHeight
@@ -252,6 +263,7 @@ Results::drawResultsGraphExposeEvent(GdkEventExpose* event) throw()
                          - graphOffsetStart
                          - graphHeaderHeight) * 0.9;
     graphLeftBorder = extents.height * 2.5;
+    context->set_font_size(graphLabelYSize * labelYMultiplier);
     context->get_text_extents("0", extents);
     graphHeaderHeight = extents.width * (ceil(log10(maxPocketLength)) / 2 + 1);
   }
@@ -343,6 +355,7 @@ Results::drawResultsGraphExposeEvent(GdkEventExpose* event) throw()
         graphBorder + extents.height);
     context->show_text("pocket opening time(ps)");
 
+    context->set_font_size(graphLabelYSize * labelYMultiplier);
     context->get_text_extents("000", extents);
     float numberWidth = extents.width;
     context->get_text_extents("00", extents);
@@ -378,6 +391,35 @@ Results::drawResultsGraphExposeEvent(GdkEventExpose* event) throw()
   context->restore();
 
   window->end_paint();
+
+  return true;
+}
+
+bool
+Results::drawResultsGraphScrollEvent(GdkEventScroll* event) throw ()
+{
+  if(graphModifier == enumModifier::LABEL_Y)
+  {
+    if(event->direction == GdkScrollDirection::GDK_SCROLL_UP)
+      labelYMultiplier *= 1.2;
+    else if(event->direction == GdkScrollDirection::GDK_SCROLL_DOWN)
+      labelYMultiplier /= 1.2;
+
+    drawResultsGraph.queue_draw();
+  }
+  return true;
+}
+
+bool
+Results::drawResultsGraphMotionEvent(GdkEventMotion* event) throw()
+{
+  if(event->x >= graphBorder and event->x < graphBorder + graphLeftBorder
+     and event->y >= graphHeaderHeight + graphBorder
+     and event->y
+         < drawResultsGraph.get_height() - graphOffsetStart - graphFooterHeight)
+    graphModifier = enumModifier::LABEL_Y;
+  else
+    graphModifier = enumModifier::NOTHING;
 
   return true;
 }
