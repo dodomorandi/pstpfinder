@@ -315,9 +315,13 @@ namespace PstpFinder
 
       const Residue& getResidueByIndex(int index) const
       {
-        if(pResidues[index - 1].index == index)
+        if(index >= 1
+           and index - 1 < static_cast<int>(pResidues.size())
+           and pResidues[index - 1].index == index)
           return pResidues[index - 1];
-        else if(pResidues[index].index == index)
+        else if(index >= 0
+                and index < static_cast<int>(pResidues.size())
+                and pResidues[index].index == index)
           return pResidues[index];
         else
         {
