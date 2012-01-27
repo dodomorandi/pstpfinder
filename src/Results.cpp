@@ -42,6 +42,7 @@ Results::Results(NewAnalysis& parent, const Pittpi& pittpi,
     graphOffsetStart(graphBorder + graphLineWidth)
 {
   labelYMultiplier = 1.;
+  labelXMultiplier = 0.16;
   graphModifier = enumModifier::NOTHING;
 
   init();
@@ -235,7 +236,7 @@ Results::drawResultsGraphExposeEvent(GdkEventExpose* event) throw()
   context->paint();
 
   // Draw grawph
-  graphFooterHeight = 0.16 * area_paint.get_height(); // 16%
+  graphFooterHeight = area_paint.get_height() * labelXMultiplier;
 
   float graphLabelYSize;
   context->set_identity_matrix();
@@ -398,15 +399,21 @@ Results::drawResultsGraphExposeEvent(GdkEventExpose* event) throw()
 bool
 Results::drawResultsGraphScrollEvent(GdkEventScroll* event) throw ()
 {
-  if(graphModifier == enumModifier::LABEL_Y)
-  {
-    if(event->direction == GdkScrollDirection::GDK_SCROLL_UP)
-      labelYMultiplier *= 1.2;
-    else if(event->direction == GdkScrollDirection::GDK_SCROLL_DOWN)
-      labelYMultiplier /= 1.2;
+  float* multiplier;
 
-    drawResultsGraph.queue_draw();
-  }
+  if(graphModifier == enumModifier::LABEL_Y)
+    multiplier = &labelYMultiplier;
+  else if(graphModifier == enumModifier::LABEL_X)
+    multiplier = &labelXMultiplier;
+  else
+    return true;
+
+  if(event->direction == GdkScrollDirection::GDK_SCROLL_UP)
+    *multiplier *= 1.2;
+  else if(event->direction == GdkScrollDirection::GDK_SCROLL_DOWN)
+    *multiplier /= 1.2;
+
+  drawResultsGraph.queue_draw();
   return true;
 }
 
@@ -418,6 +425,12 @@ Results::drawResultsGraphMotionEvent(GdkEventMotion* event) throw()
      and event->y
          < drawResultsGraph.get_height() - graphOffsetStart - graphFooterHeight)
     graphModifier = enumModifier::LABEL_Y;
+  else if(event->y
+          >= drawResultsGraph.get_height() - graphBorder - graphFooterHeight
+          and event->y < drawResultsGraph.get_height() - graphBorder
+          and event->x >= graphBorder + graphLeftBorder
+          and event->x < drawResultsGraph.get_width() - graphBorder)
+    graphModifier = enumModifier::LABEL_X;
   else
     graphModifier = enumModifier::NOTHING;
 

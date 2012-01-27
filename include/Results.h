@@ -73,6 +73,7 @@ namespace PstpFinder
       float maxPocketLength;
       vector<Gdk::Color> colors;
       float labelYMultiplier;
+      float labelXMultiplier;
 
       const int graphLineWidth;
       const int graphBorder;
