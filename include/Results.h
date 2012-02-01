@@ -32,11 +32,11 @@ namespace PstpFinder
 
   struct PocketResidue
   {
-    Residue* residue;
+    const Residue* residue;
     vector<const Pocket*> pockets;
 
     PocketResidue(const Residue& residue) :
-      residue(const_cast<Residue* const>(&residue)) { ; }
+      residue(&residue) { ; }
 
     static bool sortByResidueIndex(const PocketResidue& a,
                                    const PocketResidue& b)
