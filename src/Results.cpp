@@ -44,6 +44,7 @@ Results::Results(NewAnalysis& parent, const Pittpi& pittpi,
   labelYMultiplier = 1.;
   labelXMultiplier = 0.16;
   graphModifier = enumModifier::NOTHING;
+  graphLeftBorder = 0;
 
   init();
 }
@@ -85,12 +86,7 @@ Results::init() throw()
   streamData << setfill(' ') << setw(11) << left << "duration";
   streamData << "group members" << endl;
 
-  for
-  (
-    vector<PocketResidue>::const_iterator i = residues.begin();
-    i < residues.end();
-    i++
-  )
+  for(auto i = residues.cbegin(); i < residues.cend(); i++)
   {
     vector<const Pocket*>::const_iterator bestPocket = i->pockets.end();
     bool writtenHeader = false;
@@ -235,14 +231,17 @@ Results::drawResultsGraphExposeEvent(GdkEventExpose* event) throw()
   context->set_source_rgb(1.0, 1.0, 1.0);
   context->paint();
 
-  // Draw grawph
+  // Draw graph
   graphFooterHeight = area_paint.get_height() * labelXMultiplier;
   if(area_paint.get_height() - graphFooterHeight / 0.8 - graphBorder
      - graphOffsetStart
      < 0)
   {
-    graphFooterHeight = (area_paint.get_height() - graphOffsetStart - graphBorder) * 0.8;
-    labelXMultiplier = static_cast<float>(graphFooterHeight) / area_paint.get_height();
+    graphFooterHeight = (area_paint.get_height() - graphOffsetStart
+                         - graphBorder)
+                        * 0.8;
+    labelXMultiplier = static_cast<float>(graphFooterHeight)
+                       / area_paint.get_height();
   }
 
   float graphLabelYSize;
@@ -260,9 +259,9 @@ Results::drawResultsGraphExposeEvent(GdkEventExpose* event) throw()
 
     context->set_font_size(graphLabelYSize * labelYMultiplier);
     context->get_text_extents("000", extents);
-    if(extents.height > graphLeftBorder * 0.6)
+    if(graphLeftBorder != 0 and extents.height > graphLeftBorder * 0.4)
     {
-      float fontSize = graphLeftBorder * 0.6 * graphLabelYSize
+      float fontSize = graphLeftBorder * 0.4 * graphLabelYSize
                        * labelYMultiplier
                        / extents.height;
       labelYMultiplier = fontSize / graphLabelYSize;
