@@ -39,6 +39,7 @@ namespace PstpFinder
       Group(const PdbAtom& refAtomH, const Protein& protein);
       Group(const Group& group);
       Group(Group&& group);
+      Group(const Group& group, const Protein& protein);
       Group& operator =(const Group& group);
       Group& operator =(Group&& group);
       Group& operator <<(const Residue& value);

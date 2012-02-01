@@ -70,6 +70,22 @@ namespace PstpFinder
     zeros = move(group.zeros);
   }
 
+  Group::Group(const Group& group, const Protein& protein) :
+      referenceAtom(&protein.getAtomByIndex(group.referenceAtom->index)),
+      referenceRes(&protein.getResidueByIndex(group.referenceRes->index))
+  {
+    for
+    (
+        auto residue = group.residues.cbegin();
+        residue < group.residues.cend();
+        residue++
+    )
+      residues.push_back(&protein.getResidueByIndex((*residue)->index));
+
+    sas = group.sas;
+    zeros = group.zeros;
+  }
+
   Group&
   Group::operator =(const Group& group)
   {
@@ -208,19 +224,14 @@ namespace PstpFinder
 
     for(auto i = pittpi.groups.cbegin(); i < pittpi.groups.cend(); i++)
     {
-      Group group(*i);
-
-      const vector<const Residue*> residues(i->getResidues());
-      for(auto j = residues.cbegin(); j < residues.cend(); j++)
-        group << averageStructure.getResidueByIndex((*j)->index);
-      groups.push_back(move(group));
+      groups.emplace_back(*i, averageStructure);
 
       for(auto j = pittpi.pockets.cbegin(); j < pittpi.pockets.cend(); j++)
       {
         if(j->group == &(*i))
         {
           pockets.emplace_back(groups.back());
-          pockets.back() = *j;
+          pockets.back() << *j;
         }
       }
     }
