@@ -32,10 +32,10 @@
 using namespace std;
 using namespace PstpFinder;
 
-Results::Results(NewAnalysis& parent, const Pittpi& pittpi,
+Results::Results(NewAnalysis& parent, const shared_ptr<Pittpi>& pittpi,
                  const Gromacs& gromacs) :
     gromacs(gromacs),
-    pittpi(pittpi, this->gromacs),
+    pittpi(pittpi),
     parent(parent),
     graphLineWidth(1),
     graphBorder(10),
@@ -459,33 +459,23 @@ Results::drawResultsGraphMotionEvent(GdkEventMotion* event) throw()
 void
 Results::fillResidues()
 {
-  const vector<Pocket>& pockets = pittpi.getPockets();
+  const vector<Pocket>& pockets = pittpi->getPockets();
   maxPocketLength = 0;
   unsigned int maxPocketsPerResidue = 0;
 
-  for
-  (
-    vector<Pocket>::const_iterator i = pockets.begin();
-    i < pockets.end();
-    i++
-  )
+  for(auto& pocket : pockets)
   {
     bool exists = false;
-    const Residue& currentRes = i->group->getCentralRes();
+    const Residue& currentRes = pocket.group->getCentralRes();
 
-    for
-    (
-      vector<PocketResidue>::iterator j = residues.begin();
-      j < residues.end();
-      j++
-    )
+    for(auto& residue : residues)
     {
-      if(j->residue->index == currentRes.index)
+      if(residue.residue->index == currentRes.index)
       {
-        j->pockets.push_back(&(*i));
+        residue.pockets.push_back(&pocket);
 
-        if(j->pockets.size() > maxPocketsPerResidue)
-          maxPocketsPerResidue = j->pockets.size();
+        if(residue.pockets.size() > maxPocketsPerResidue)
+          maxPocketsPerResidue = residue.pockets.size();
 
         exists = true;
         break;
@@ -494,30 +484,20 @@ Results::fillResidues()
 
     if(not exists)
     {
-      PocketResidue pocket(currentRes);
-      pocket.pockets.push_back(&(*i));
+      PocketResidue pocketResidue(currentRes);
+      pocketResidue.pockets.push_back(&pocket);
 
-      residues.push_back(pocket);
+      residues.push_back(std::move(pocketResidue));
       if(maxPocketsPerResidue == 0)
         maxPocketsPerResidue = 1;
     }
   }
 
-  for
-  (
-    vector<PocketResidue>::const_iterator i = residues.begin();
-    i < residues.end();
-    i++
-  )
+  for(auto& residue : residues)
   {
     unsigned int residueLength = 0;
-    for
-    (
-      vector<const Pocket*>::const_iterator j = i->pockets.begin();
-      j < i->pockets.end();
-      j++
-    )
-      residueLength += (*j)->width;
+    for(auto& pocket : residue.pockets)
+      residueLength += pocket->width;
 
     if(maxPocketLength < residueLength)
       maxPocketLength = residueLength;

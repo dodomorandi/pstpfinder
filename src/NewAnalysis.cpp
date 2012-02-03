@@ -199,7 +199,6 @@ namespace PstpFinder
     vboxMain.pack_start(statusBar, PACK_SHRINK);
 
     add(vboxMain);
-    pittpi = 0;
     gromacs = 0;
     abortFlag = false;
 
@@ -231,7 +230,7 @@ namespace PstpFinder
     statusBar.show();
   }
 
-  shared_ptr<Pittpi>
+  void
   NewAnalysis::runPittpi(const string& SessionFileName, float radius,
                          float threshold)
   {
@@ -240,32 +239,29 @@ namespace PstpFinder
     while(Main::events_pending())
       Main::iteration();
 
-    pittpi = new Pittpi(*gromacs, SessionFileName, radius, threshold);
+    pittpiPtr = shared_ptr<Pittpi>
+      { new Pittpi(*gromacs, SessionFileName, radius, threshold) };
 
-    while(not pittpi->isFinished())
+    while(not pittpiPtr->isFinished())
     {
-      float status = pittpi->getStatus();
+      float status = pittpiPtr->getStatus();
       float oldStatus = progress.get_fraction();
       if(status <= oldStatus)
-        statusBar.push(pittpi->getStatusDescription(), statusBarContext);
+        statusBar.push(pittpiPtr->getStatusDescription(), statusBarContext);
       if(status >= 0)
         progress.set_fraction(status);
       else
         progress.pulse();
       while(Main::events_pending())
         Main::iteration();
-      pittpi->waitNextStatus();
+      pittpiPtr->waitNextStatus();
     }
 
     if(not abortFlag)
     {
-      progress.set_fraction(pittpi->getStatus());
-      statusBar.push(pittpi->getStatusDescription(), statusBarContext);
+      progress.set_fraction(pittpiPtr->getStatus());
+      statusBar.push(pittpiPtr->getStatusDescription(), statusBarContext);
     }
-
-    shared_ptr<Pittpi> pittpiPtr(pittpi);
-    pittpi = 0;
-    return pittpiPtr;
   }
 
   void
@@ -398,8 +394,8 @@ namespace PstpFinder
     while(Main::events_pending())
       Main::iteration();
 
-    shared_ptr<Pittpi> pittpiPtr = runPittpi("/tmp/sas.psf",
-              spinRadius.get_value(), spinPocketThreshold.get_value());
+    runPittpi("/tmp/sas.psf", spinRadius.get_value(),
+              spinPocketThreshold.get_value());
     if(abortFlag)
       return;
     fs::remove(fs::path("/tmp/sas.psf"));
@@ -408,7 +404,7 @@ namespace PstpFinder
     buttonRun.set_sensitive();
     std::locale::global(oldLocale);
 
-    resultsWindows.push_back(new Results(*this, *pittpiPtr, *gromacs));
+    resultsWindows.push_back(new Results(*this, pittpiPtr, *gromacs));
 
     delete gromacs;
     gromacs = 0;
@@ -574,8 +570,8 @@ namespace PstpFinder
     while(Main::events_pending())
       Main::iteration();
 
-    shared_ptr<Pittpi> pittiPtr = runPittpi(sessionFileName,
-              spinRadius.get_value(), spinPocketThreshold.get_value());
+    runPittpi(sessionFileName, spinRadius.get_value(),
+              spinPocketThreshold.get_value());
     if(abortFlag)
       return;
 
@@ -593,7 +589,7 @@ namespace PstpFinder
     while(Main::events_pending())
       Main::iteration();
 
-    resultsWindows.push_back(new Results(*this, *pittiPtr, *gromacs));
+    resultsWindows.push_back(new Results(*this, pittpiPtr, *gromacs));
     
     delete gromacs;
     gromacs = 0;
@@ -614,8 +610,8 @@ namespace PstpFinder
       if(response == RESPONSE_YES)
       {
         abortFlag = true;
-        if(pittpi)
-          pittpi->abort();
+        if(pittpiPtr)
+          pittpiPtr->abort();
         if(gromacs)
           gromacs->abort();
         closeApplication(event);

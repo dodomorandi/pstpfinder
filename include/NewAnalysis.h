@@ -69,7 +69,7 @@ namespace PstpFinder
       VSeparator vSeparator;
       Statusbar statusBar;
       unsigned int statusBarContext;
-      Pittpi* pittpi;
+      shared_ptr<Pittpi> pittpiPtr;
       Gromacs* gromacs;
       int __frames;
       float __timeStep;
@@ -86,8 +86,8 @@ namespace PstpFinder
       void buttonBrowseFileClicked() throw();
       void update_limits() throw();
       bool close_window(GdkEventAny* event) throw();
-      shared_ptr<Pittpi> runPittpi(const string& SessionFileName, float radius,
-                                   float threshold);
+      void runPittpi(const string& SessionFileName,
+                                    float radius, float threshold);
   };
 }
 

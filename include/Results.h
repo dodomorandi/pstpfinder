@@ -38,6 +38,12 @@ namespace PstpFinder
     PocketResidue(const Residue& residue) :
       residue(&residue) { ; }
 
+    PocketResidue(PocketResidue&& pocketResidue) :
+      residue(std::move(pocketResidue.residue))
+    {
+      pockets = std::move(pocketResidue.pockets);
+    }
+
     static bool sortByResidueIndex(const PocketResidue& a,
                                    const PocketResidue& b)
     {
@@ -48,7 +54,7 @@ namespace PstpFinder
   class Results: public Window
   {
     public:
-      Results(NewAnalysis& parent, const Pittpi& pittpi,
+      Results(NewAnalysis& parent, const shared_ptr<Pittpi>& pittpi,
               const Gromacs& gromacs);
       void init() throw();
     private:
@@ -67,7 +73,7 @@ namespace PstpFinder
       Statusbar drawResultsStatusBar;
 
       Gromacs gromacs;
-      Pittpi pittpi;
+      shared_ptr<Pittpi> pittpi;
       NewAnalysis& parent;
       vector<PocketResidue> residues;
       float maxPocketLength;
