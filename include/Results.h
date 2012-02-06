@@ -65,6 +65,11 @@ namespace PstpFinder
         LABEL_Y
       };
 
+      // FIXME: When the compiler will accept static initialization lists,
+      // FIXME: this must be changed in std::array<std::string, n> and
+      // FIXME: initialized here.
+      const std::string statusBarMessages[2];
+
       Notebook notebook;
       DrawingArea drawResultsGraph;
       TextView textViewData, textViewDetails;

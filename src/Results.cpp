@@ -34,6 +34,9 @@ using namespace PstpFinder;
 
 Results::Results(NewAnalysis& parent, const shared_ptr<Pittpi>& pittpi,
                  const Gromacs& gromacs) :
+    statusBarMessages
+      { "Move the pointer over graph bars or axis labels to get more information",
+        "Scroll mouse wheel to change font size" },
     gromacs(gromacs),
     pittpi(pittpi),
     parent(parent),
@@ -72,7 +75,7 @@ Results::init() throw()
   drawResultsGraph.add_events(
       Gdk::EventMask::SCROLL_MASK | Gdk::EventMask::POINTER_MOTION_MASK);
 
-  drawResultsStatusBar.push("Move the pointer over graph bars to get more information");
+  drawResultsStatusBar.push(statusBarMessages[0]);
 
   drawResultsVBox.pack_start(drawResultsGraph);
   drawResultsVBox.pack_start(drawResultsStatusBar, false, true);
@@ -472,7 +475,20 @@ Results::drawResultsGraphMotionEvent(GdkEventMotion* event) throw()
     graphModifier = enumModifier::NOTHING;
 
   if(graphModifier != oldModifier)
+  {
+    switch(graphModifier)
+    {
+      case enumModifier::LABEL_X:
+      case enumModifier::LABEL_Y:
+        drawResultsStatusBar.push(statusBarMessages[1]);
+        break;
+      case enumModifier::NOTHING:
+      default:
+        drawResultsStatusBar.push(statusBarMessages[0]);
+        break;
+    }
     drawResultsGraph.queue_draw();
+  }
   return true;
 }
 
