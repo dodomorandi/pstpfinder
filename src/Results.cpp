@@ -42,7 +42,7 @@ Results::Results(NewAnalysis& parent, const shared_ptr<Pittpi>& pittpi,
     graphOffsetStart(graphBorder + graphLineWidth)
 {
   labelYMultiplier = 1.;
-  labelXMultiplier = 0.16;
+  labelXMultiplier = 0.1;
   graphModifier = enumModifier::NOTHING;
   graphLeftBorder = 0;
 
@@ -238,8 +238,13 @@ Results::drawResultsGraphExposeEvent(GdkEventExpose* event) throw()
      < 0)
   {
     graphFooterHeight = (area_paint.get_height() - graphOffsetStart
-                         - graphBorder)
-                        * 0.8;
+                         - graphBorder) * 0.8;
+    labelXMultiplier = static_cast<float>(graphFooterHeight)
+                       / area_paint.get_height();
+  }
+  else if(graphFooterHeight < 8)
+  {
+    graphFooterHeight = 8;
     labelXMultiplier = static_cast<float>(graphFooterHeight)
                        / area_paint.get_height();
   }
@@ -259,9 +264,14 @@ Results::drawResultsGraphExposeEvent(GdkEventExpose* event) throw()
 
     context->set_font_size(graphLabelYSize * labelYMultiplier);
     context->get_text_extents("000", extents);
-    if(graphLeftBorder != 0 and extents.height > graphLeftBorder * 0.4)
+    if(graphLeftBorder != 0
+       and (extents.height > graphLeftBorder * 0.4 or extents.height < 5))
     {
-      float fontSize = graphLeftBorder * 0.4 * graphLabelYSize
+      float fontSize;
+      if(extents.height < 5.)
+        fontSize = 5.;
+      else
+        fontSize = graphLeftBorder * 0.4 * graphLabelYSize
                        * labelYMultiplier
                        / extents.height;
       labelYMultiplier = fontSize / graphLabelYSize;
@@ -336,8 +346,11 @@ Results::drawResultsGraphExposeEvent(GdkEventExpose* event) throw()
     Cairo::TextExtents extents;
     index << i->residue->index;
     string strIndex = index.str();
-    context->set_source_rgb(0, 0, 0);
-    context->set_font_size(graphFooterHeight * 0.6);
+    if(graphModifier == enumModifier::LABEL_X)
+      context->set_source_rgb(1, 0, 0);
+    else
+      context->set_source_rgb(0, 0, 0);
+    context->set_font_size(graphFooterHeight);
     context->get_text_extents(strIndex, extents);
     if(extents.width > columnModuleX * 2)
     {
@@ -348,8 +361,7 @@ Results::drawResultsGraphExposeEvent(GdkEventExpose* event) throw()
       extents.width = columnModuleX * 2;
     }
     context->move_to(columnOffsetX + columnModuleX - extents.width / 2,
-                     area_paint.get_height() - graphOffsetStart
-                     - graphFooterHeight * 0.2 );
+                     area_paint.get_height() - graphOffsetStart);
     context->show_text(strIndex);
   }
 
@@ -360,6 +372,10 @@ Results::drawResultsGraphExposeEvent(GdkEventExpose* event) throw()
     context->set_identity_matrix();
     context->rotate(-3.1415 / 2);
     context->set_font_size(graphLabelYSize);
+    if(graphModifier == enumModifier::LABEL_Y)
+      context->set_source_rgb(1, 0, 0);
+    else
+      context->set_source_rgb(0, 0, 0);
     context->get_text_extents("pocket opening time(ps)", extents);
 
     unsigned int spaceBeforeLabelY = (area_paint.get_height()
@@ -439,6 +455,8 @@ Results::drawResultsGraphScrollEvent(GdkEventScroll* event) throw ()
 bool
 Results::drawResultsGraphMotionEvent(GdkEventMotion* event) throw()
 {
+  enumModifier oldModifier = graphModifier;
+
   if(event->x >= graphBorder and event->x < graphBorder + graphLeftBorder
      and event->y >= graphHeaderHeight + graphBorder
      and event->y
@@ -453,6 +471,8 @@ Results::drawResultsGraphMotionEvent(GdkEventMotion* event) throw()
   else
     graphModifier = enumModifier::NOTHING;
 
+  if(graphModifier != oldModifier)
+    drawResultsGraph.queue_draw();
   return true;
 }
 
