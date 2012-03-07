@@ -75,7 +75,15 @@ namespace PstpFinder
       TextView textViewData, textViewDetails;
       ScrolledWindow scrollData, scrollDetails;
       VBox drawResultsVBox;
+      HPaned panedMain;
       Statusbar drawResultsStatusBar;
+      VBox vboxPocketInformation;
+      HBox hboxPocketCenter, hboxPocketStart,
+           hboxPocketEnd, hboxPocketWidth;
+      Label labelPocketCenter, labelPocketStart,
+            labelPocketEnd, labelPocketWidth;
+      Entry entryPocketCenter, entryPocketStart,
+            entryPocketEnd, entryPocketWidth;
 
       Gromacs gromacs;
       shared_ptr<Pittpi> pittpi;
@@ -83,6 +91,7 @@ namespace PstpFinder
       vector<PocketResidue> residues;
       float maxPocketLength;
       vector<Gdk::Color> colors;
+      const Pocket* selectedPocket;
       float labelYMultiplier;
       float labelXMultiplier;
 
@@ -96,8 +105,8 @@ namespace PstpFinder
 
       bool removeFromParent(GdkEventAny* event);
 #if GTKMM_MAJOR == 3
-      bool drawResultsGraphExposeEvent(
-          const Cairo::RefPtr<Cairo::Context>& event) throw ();
+      bool drawResultsGraphDrawEvent(
+          const Cairo::RefPtr<Cairo::Context>& context) throw ();
 #else
       bool drawResultsGraphExposeEvent(GdkEventExpose* event) throw();
 #endif

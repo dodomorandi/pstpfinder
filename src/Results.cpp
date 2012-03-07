@@ -59,13 +59,13 @@ Results::init() throw()
   signal_delete_event()
       .connect(sigc::mem_fun(*this, &Results::removeFromParent));
 
-  drawResultsGraph.set_size_request(500, 200);
+  drawResultsGraph.set_size_request(600, 200);
 #if GTKMM_MAJOR == 3
-  drawResultsGraph.signal_draw().connect(
-      sigc::mem_fun(*this, &Results::drawResultsGraphExposeEvent));
+  drawResultsGraph.signal_draw().
+      connect(sigc::mem_fun(*this, &Results::drawResultsGraphDrawEvent));
 #else
-  drawResultsGraph.signal_expose_event()
-    .connect(sigc::mem_fun(*this, &Results::drawResultsGraphExposeEvent));
+  drawResultsGraph.signal_expose_event().
+      connect(sigc::mem_fun(*this, &Results::drawResultsGraphExposeEvent));
 #endif
 
   drawResultsGraph.signal_scroll_event().connect(
@@ -75,9 +75,41 @@ Results::init() throw()
   drawResultsGraph.add_events(
       Gdk::EventMask::SCROLL_MASK | Gdk::EventMask::POINTER_MOTION_MASK);
 
-  drawResultsStatusBar.push(statusBarMessages[0]);
+  labelPocketCenter.set_text("Pocket centered on");
+  labelPocketStart.set_text("Pocket starts at ps");
+  labelPocketEnd.set_text("Pocket ends at ps");
+  labelPocketWidth.set_text("Pocket length in ps");
+  entryPocketCenter.set_width_chars(8);
+  entryPocketCenter.set_editable(false);
+  entryPocketStart.set_width_chars(8);
+  entryPocketStart.set_editable(false);
+  entryPocketEnd.set_width_chars(8);
+  entryPocketEnd.set_editable(false);
+  entryPocketWidth.set_width_chars(8);
+  entryPocketWidth.set_editable(false);
 
-  drawResultsVBox.pack_start(drawResultsGraph);
+  hboxPocketCenter.set_spacing(5);
+  hboxPocketCenter.pack_start(labelPocketCenter);
+  hboxPocketCenter.pack_start(entryPocketCenter, false, false, 0);
+  hboxPocketStart.set_spacing(5);
+  hboxPocketStart.pack_start(labelPocketStart);
+  hboxPocketStart.pack_start(entryPocketStart, false, false, 0);
+  hboxPocketEnd.set_spacing(5);
+  hboxPocketEnd.pack_start(labelPocketEnd);
+  hboxPocketEnd.pack_start(entryPocketEnd, false, false, 0);
+  hboxPocketWidth.set_spacing(5);
+  hboxPocketWidth.pack_start(labelPocketWidth);
+  hboxPocketWidth.pack_start(entryPocketWidth, false, false, 0);
+
+  vboxPocketInformation.pack_start(hboxPocketCenter, false, false, 0);
+  vboxPocketInformation.pack_start(hboxPocketStart, false, false, 0);
+  vboxPocketInformation.pack_start(hboxPocketEnd, false, false, 0);
+  vboxPocketInformation.pack_start(hboxPocketWidth, false, false, 0);
+
+  panedMain.add1(drawResultsGraph);
+  panedMain.add2(vboxPocketInformation);
+  drawResultsStatusBar.push(statusBarMessages[0]);
+  drawResultsVBox.pack_start(panedMain);
   drawResultsVBox.pack_start(drawResultsStatusBar, false, true);
   notebook.append_page(drawResultsVBox, "Results");
 
@@ -89,6 +121,7 @@ Results::init() throw()
   streamData << setfill(' ') << setw(11) << left << "duration";
   streamData << "group members" << endl;
 
+  selectedPocket = nullptr;
   for(auto i = residues.cbegin(); i < residues.cend(); i++)
   {
     vector<const Pocket*>::const_iterator bestPocket = i->pockets.end();
@@ -215,41 +248,46 @@ Results::removeFromParent(GdkEventAny* event)
 
 bool
 #if GTKMM_MAJOR == 3
-Results::drawResultsGraphExposeEvent(
-    const Cairo::RefPtr<Cairo::Context>& event) throw ()
+Results::drawResultsGraphDrawEvent(
+    const Cairo::RefPtr<Cairo::Context>& context) throw ()
 #else
 Results::drawResultsGraphExposeEvent(GdkEventExpose* event) throw()
 #endif
 {
-  Glib::RefPtr<Gdk::Window> window = drawResultsGraph.get_window();
-  Cairo::RefPtr<Cairo::Context> context = window->create_cairo_context();
-
 #if GTKMM_MAJOR == 2
+  Glib::RefPtr<Gdk::Window> window(drawResultsGraph.get_window());
   window->clear();
+  Cairo::RefPtr<Cairo::Context> context(window->create_cairo_context());
 #endif
 
-  Gdk::Rectangle area_paint(0, 0, window->get_width(), window->get_height());
+  int height(drawResultsGraph.get_height());
+  int width(drawResultsGraph.get_width());
+
+#if GTKMM_MAJOR == 2
+  Gdk::Rectangle area_paint(0, 0, width, height);
   window->begin_paint_rect(area_paint);
+#endif
+
   // Color background
   context->set_source_rgb(1.0, 1.0, 1.0);
   context->paint();
 
   // Draw graph
-  graphFooterHeight = area_paint.get_height() * labelXMultiplier;
-  if(area_paint.get_height() - graphFooterHeight / 0.8 - graphBorder
+  graphFooterHeight = height * labelXMultiplier;
+  if(height - graphFooterHeight / 0.8 - graphBorder
      - graphOffsetStart
      < 0)
   {
-    graphFooterHeight = (area_paint.get_height() - graphOffsetStart
+    graphFooterHeight = (height - graphOffsetStart
                          - graphBorder) * 0.8;
     labelXMultiplier = static_cast<float>(graphFooterHeight)
-                       / area_paint.get_height();
+                       / height;
   }
   else if(graphFooterHeight < 8)
   {
     graphFooterHeight = 8;
     labelXMultiplier = static_cast<float>(graphFooterHeight)
-                       / area_paint.get_height();
+                       / height;
   }
 
   float graphLabelYSize;
@@ -261,7 +299,7 @@ Results::drawResultsGraphExposeEvent(GdkEventExpose* event) throw()
     // We use an approximate value to evaluate graphHeaderHeight
     context->get_text_extents("pocket opening time(ps)", extents);
     graphLabelYSize = 10. / extents.width
-                      * (area_paint.get_height() - graphFooterHeight
+                      * (height - graphFooterHeight
                          - graphBorder
                          - graphOffsetStart);
 
@@ -291,7 +329,7 @@ Results::drawResultsGraphExposeEvent(GdkEventExpose* event) throw()
     context->set_font_size(graphLabelYSize);
     context->get_text_extents("pocket opening time(ps)", extents);
     graphLabelYSize = graphLabelYSize / extents.width
-                      * (area_paint.get_height() - graphFooterHeight
+                      * (height - graphFooterHeight
                          - graphBorder
                          - graphOffsetStart
                          - graphHeaderHeight) * 0.9;
@@ -308,26 +346,26 @@ Results::drawResultsGraphExposeEvent(GdkEventExpose* event) throw()
   context->set_source_rgb(0.0, 0.0, 0.0);
   context->set_line_width(graphLineWidth);
   context->move_to(graphBorder + graphLeftBorder,
-                   area_paint.get_height() - graphBorder - graphFooterHeight);
-  context->line_to(area_paint.get_width() - graphBorder,
-                   area_paint.get_height() - graphBorder - graphFooterHeight);
+                   height - graphBorder - graphFooterHeight);
+  context->line_to(width - graphBorder,
+                   height - graphBorder - graphFooterHeight);
   context->move_to(graphBorder + graphLeftBorder ,
-                   area_paint.get_height() - graphBorder - graphFooterHeight);
+                   height - graphBorder - graphFooterHeight);
   context->line_to(graphBorder + graphLeftBorder,
                    graphBorder + graphHeaderHeight);
   context->stroke();
 
   // Pockets
-  float columnModuleX = (float)(area_paint.get_width() - graphOffsetStart * 2 -
+  float columnModuleX = (float)(width - graphOffsetStart * 2 -
                         graphLeftBorder) / (residues.size() * 3 + 1);
-  float columnModuleY = (float)(area_paint.get_height() - graphOffsetStart * 2
+  float columnModuleY = (float)(height - graphOffsetStart * 2
                                 - graphHeaderHeight - graphFooterHeight)
                         / maxPocketLength;
   for(auto i = residues.cbegin(); i < residues.cend(); i++)
   {
     int columnOffsetX = graphOffsetStart + graphLeftBorder + columnModuleX *
         (3 * distance(residues.cbegin(), i) + 1);
-    int columnOffsetY = area_paint.get_height() - graphOffsetStart
+    int columnOffsetY = height - graphOffsetStart
                         - graphFooterHeight;
 
     for(auto j = i->pockets.cbegin(); j < i->pockets.cend(); j++)
@@ -341,6 +379,18 @@ Results::drawResultsGraphExposeEvent(GdkEventExpose* event) throw()
       context->rectangle(columnOffsetX, columnOffsetY - columnHeight,
                          columnModuleX * 2, columnHeight);
       context->fill();
+      if(*j == selectedPocket)
+      {
+        context->save();
+        context->set_line_width(2);
+        context->set_line_cap(Cairo::LineCap::LINE_CAP_ROUND);
+        context->rectangle(columnOffsetX, columnOffsetY - columnHeight,
+                           columnModuleX * 2, columnHeight);
+        context->set_source_rgb(0, 0, 0);
+        context->stroke();
+        context->restore();
+      }
+
       columnOffsetY -= columnHeight;
     }
 
@@ -364,7 +414,7 @@ Results::drawResultsGraphExposeEvent(GdkEventExpose* event) throw()
       extents.width = columnModuleX * 2;
     }
     context->move_to(columnOffsetX + columnModuleX - extents.width / 2,
-                     area_paint.get_height() - graphOffsetStart);
+                     height - graphOffsetStart);
     context->show_text(strIndex);
   }
 
@@ -381,7 +431,7 @@ Results::drawResultsGraphExposeEvent(GdkEventExpose* event) throw()
       context->set_source_rgb(0, 0, 0);
     context->get_text_extents("pocket opening time(ps)", extents);
 
-    unsigned int spaceBeforeLabelY = (area_paint.get_height()
+    unsigned int spaceBeforeLabelY = (height
                                       - graphHeaderHeight
                                       - graphFooterHeight
                                       - graphOffsetStart
@@ -400,13 +450,13 @@ Results::drawResultsGraphExposeEvent(GdkEventExpose* event) throw()
     context->get_text_extents("00", extents);
     numberWidth -= extents.width;
     context->move_to(
-        -area_paint.get_height() + graphOffsetStart + graphFooterHeight
+        -height + graphOffsetStart + graphFooterHeight
         - numberWidth / 2,
         graphBorder + graphLeftBorder * 0.8);
     context->show_text("0");
 
 
-    unsigned int graphMaxVerticalStep = (float)(area_paint.get_height()
+    unsigned int graphMaxVerticalStep = (float)(height
       - graphOffsetStart * 2 - graphHeaderHeight - graphFooterHeight)
       / (numberWidth * (log10(maxPocketLength + 1) + 2));
     for(unsigned int i = 1; i <= graphMaxVerticalStep; i++)
@@ -417,9 +467,9 @@ Results::drawResultsGraphExposeEvent(GdkEventExpose* event) throw()
       pocketSize = pocketSizeStream.str();
 
       context->get_text_extents(pocketSize, extents);
-      context->move_to(- (area_paint.get_height() - graphOffsetStart
+      context->move_to(- (height - graphOffsetStart
                           - graphFooterHeight)
-                       + (float)(area_paint.get_height() - graphOffsetStart * 2
+                       + (float)(height - graphOffsetStart * 2
                                  - graphHeaderHeight - graphFooterHeight)
                        / graphMaxVerticalStep * i - extents.width / 2,
                        graphBorder + graphLeftBorder * 0.8);
@@ -428,8 +478,6 @@ Results::drawResultsGraphExposeEvent(GdkEventExpose* event) throw()
 
   }
   context->restore();
-
-  window->end_paint();
 
   return true;
 }
@@ -459,20 +507,94 @@ bool
 Results::drawResultsGraphMotionEvent(GdkEventMotion* event) throw()
 {
   enumModifier oldModifier = graphModifier;
+  double cursorX = event->x;
+  double cursorY = event->y;
+
+  int width(drawResultsGraph.get_width());
+  int height(drawResultsGraph.get_height());
+  bool gotcha(false);
+  bool newSelection(false);
 
   if(event->x >= graphBorder and event->x < graphBorder + graphLeftBorder
      and event->y >= graphHeaderHeight + graphBorder
      and event->y
-         < drawResultsGraph.get_height() - graphOffsetStart - graphFooterHeight)
+         < height - graphOffsetStart - graphFooterHeight)
     graphModifier = enumModifier::LABEL_Y;
   else if(event->y
-          >= drawResultsGraph.get_height() - graphBorder - graphFooterHeight
-          and event->y < drawResultsGraph.get_height() - graphBorder
+          >= height - graphBorder - graphFooterHeight
+          and event->y < height - graphBorder
           and event->x >= graphBorder + graphLeftBorder
-          and event->x < drawResultsGraph.get_width() - graphBorder)
+          and event->x < width - graphBorder)
     graphModifier = enumModifier::LABEL_X;
   else
+  {
     graphModifier = enumModifier::NOTHING;
+
+    float columnModuleX = (float) (width - graphOffsetStart * 2
+                                   - graphLeftBorder)
+                          / (residues.size() * 3 + 1);
+    float columnModuleY = (float) (height - graphOffsetStart * 2
+                                   - graphHeaderHeight
+                                   - graphFooterHeight)
+                          / maxPocketLength;
+    for(auto i = residues.cbegin(); i < residues.cend(); i++)
+    {
+      if(gotcha) break;
+      int columnOffsetX = graphOffsetStart + graphLeftBorder
+                          + columnModuleX
+                            * (3 * distance(residues.cbegin(), i) + 1);
+      int columnOffsetY = height - graphOffsetStart
+                          - graphFooterHeight;
+      for(auto j = i->pockets.cbegin(); j < i->pockets.cend(); j++)
+      {
+        int columnHeight = (float)columnModuleY * (*j)->width;
+        if(not gotcha and cursorX >= columnOffsetX
+           and cursorX < columnOffsetX + columnModuleX * 2
+           and cursorY >= columnOffsetY - columnHeight
+           and cursorY < columnOffsetY)
+        {
+          if(selectedPocket != *j)
+          {
+            newSelection = true;
+            selectedPocket = *j;
+          }
+          stringstream ss;
+          const Residue centralRes((*j)->group->getCentralRes());
+          ss << centralRes.index << aminoacidTriplet[centralRes.type];
+          entryPocketCenter.set_text(ss.str());
+          ss.str("");
+          ss << (*j)->startPs;
+          entryPocketStart.set_text(ss.str());
+          ss.str("");
+          ss << (*j)->endPs;
+          entryPocketEnd.set_text(ss.str());
+          ss.str("");
+          ss << (*j)->endPs - (*j)->startPs;
+          entryPocketWidth.set_text(ss.str());
+          gotcha = true;
+          break;
+        }
+
+        columnOffsetY -= columnHeight;
+      }
+    }
+  }
+
+  if(not gotcha)
+  {
+    if(selectedPocket != nullptr)
+    {
+      newSelection = true;
+      selectedPocket = nullptr;
+    }
+    entryPocketCenter.set_text("");
+    entryPocketStart.set_text("");
+    entryPocketEnd.set_text("");
+    entryPocketWidth.set_text("");
+  }
+
+  if(graphModifier == oldModifier and newSelection)
+    drawResultsGraph.queue_draw();
 
   if(graphModifier != oldModifier)
   {

@@ -61,7 +61,7 @@ namespace PstpFinder
 #if GTKMM_MAJOR == 3
         return **gtkmmObject;
 #else
-        return &*gtkmmObject;
+        return *gtkmmObject;
 #endif
       }
 
