@@ -51,6 +51,13 @@ namespace PstpFinder
       Glib::Dispatcher signal_stop_spin;
       Glib::Dispatcher signal_update_limits;
     private:
+      enum enumAnalysisStatus
+      {
+        ANALYSIS_NOT_STARTED,
+        ANALYSIS_ONGOING,
+        ANALYSIS_FINISHED
+      };
+
       Frame mainFrame;
       VBox vboxFrame1, vboxFrame2, vboxMain;
       FileChooserButton trjChooser, tprChooser;
@@ -60,7 +67,7 @@ namespace PstpFinder
            hboxPocketThreshold, hboxSession;
       Entry entrySessionFile;
       HButtonBox buttonBoxRun;
-      Button buttonRun, buttonBrowseFile;
+      Button buttonRun, buttonBrowseFile, buttonShowResults;
       ProgressBar progress;
       Alignment progressAligner;
       SpinButton spinBegin, spinEnd, spinRadius, spinPocketThreshold;
@@ -71,6 +78,7 @@ namespace PstpFinder
       unsigned int statusBarContext;
       shared_ptr<Pittpi> pittpiPtr;
       Gromacs* gromacs;
+      enumAnalysisStatus analysisStatus;
       int __frames;
       float __timeStep;
       std::vector<Results*> resultsWindows;
@@ -84,6 +92,7 @@ namespace PstpFinder
       void stop_spin() throw();
       void checkParameters();
       void buttonBrowseFileClicked() throw();
+      void buttonShowResultsClicked() throw();
       void update_limits() throw();
       bool close_window(GdkEventAny* event) throw();
       void runPittpi(const string& SessionFileName,

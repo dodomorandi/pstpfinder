@@ -181,8 +181,14 @@ namespace PstpFinder
     buttonRun.set_sensitive(false);
     buttonRun.signal_clicked().connect(
         sigc::mem_fun(*this, &NewAnalysis::runAnalysis));
+    buttonShowResults.set_label("Show results");
+    buttonShowResults.set_sensitive(false);
+    buttonShowResults.signal_clicked().connect(
+        sigc::mem_fun(*this, &NewAnalysis::buttonShowResultsClicked));
     buttonBoxRun.set_layout(BUTTONBOX_END);
     buttonBoxRun.set_border_width(10);
+    buttonBoxRun.set_spacing(10);
+    buttonBoxRun.pack_end(buttonShowResults);
     buttonBoxRun.pack_end(buttonRun);
 
     progressAligner.add(progress);
@@ -199,8 +205,8 @@ namespace PstpFinder
     vboxMain.pack_start(statusBar, PACK_SHRINK);
 
     add(vboxMain);
-    gromacs = 0;
     abortFlag = false;
+    analysisStatus = enumAnalysisStatus::ANALYSIS_NOT_STARTED;
 
     signal_delete_event().connect(
         sigc::mem_fun(*this, &NewAnalysis::close_window));
@@ -271,12 +277,16 @@ namespace PstpFinder
     std::locale oldLocale;
     std::locale::global(std::locale("C"));
 
+    if(analysisStatus == enumAnalysisStatus::ANALYSIS_FINISHED)
+      delete gromacs;
+    analysisStatus = enumAnalysisStatus::ANALYSIS_ONGOING;
     gromacs = new Gromacs(trjChooser.get_filename(), tprChooser.get_filename());
 
     gromacs->setBegin(spinBegin.get_value());
     gromacs->setEnd(spinEnd.get_value());
 
     mainFrame.set_sensitive(false);
+    buttonShowResults.set_sensitive(false);
     buttonRun.set_sensitive(false);
 
     if(fs::exists(fs::path("/tmp/sas.psf")))
@@ -404,10 +414,10 @@ namespace PstpFinder
     buttonRun.set_sensitive();
     std::locale::global(oldLocale);
 
+    buttonShowResults.set_sensitive();
     resultsWindows.push_back(new Results(*this, pittpiPtr, *gromacs));
 
-    delete gromacs;
-    gromacs = 0;
+    analysisStatus = enumAnalysisStatus::ANALYSIS_FINISHED;
   }
 
   void
@@ -496,6 +506,15 @@ namespace PstpFinder
   }
 
   void
+  NewAnalysis::buttonShowResultsClicked() throw()
+  {
+    if(analysisStatus != enumAnalysisStatus::ANALYSIS_FINISHED)
+      return;
+
+    resultsWindows.push_back(new Results(*this, pittpiPtr, *gromacs));
+  }
+
+  void
   NewAnalysis::openSessionFile(const string& sessionFileName)
   {
     std::locale oldLocale;
@@ -519,11 +538,13 @@ namespace PstpFinder
     entrySessionFile.set_text(sessionFileName);
 
     mainFrame.set_sensitive(false);
+    buttonShowResults.set_sensitive(false);
     buttonRun.set_sensitive(false);
     start_spin();
     while(Main::events_pending())
       Main::iteration();
 
+    analysisStatus = enumAnalysisStatus::ANALYSIS_ONGOING;
     MetaStream& pdbStream = sessionFile.getPdbStream();
     char* chunk = new char[1024 * 1024 * 128];
     unsigned long nChunks = sessionFile.getPdbSize() / (1024 * 1024 * 128);
@@ -591,8 +612,8 @@ namespace PstpFinder
 
     resultsWindows.push_back(new Results(*this, pittpiPtr, *gromacs));
     
-    delete gromacs;
-    gromacs = 0;
+    buttonShowResults.set_sensitive();
+    analysisStatus = enumAnalysisStatus::ANALYSIS_FINISHED;
   }
 
 
@@ -612,8 +633,11 @@ namespace PstpFinder
         abortFlag = true;
         if(pittpiPtr)
           pittpiPtr->abort();
-        if(gromacs)
+        if(analysisStatus == enumAnalysisStatus::ANALYSIS_ONGOING)
+        {
           gromacs->abort();
+          analysisStatus = enumAnalysisStatus::ANALYSIS_NOT_STARTED;
+        }
         closeApplication(event);
         return false;
       }
