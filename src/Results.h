@@ -62,13 +62,14 @@ namespace PstpFinder
       {
         NOTHING,
         LABEL_X,
-        LABEL_Y
+        LABEL_Y,
+        POCKET_BAR
       };
 
       // FIXME: When the compiler will accept static initialization lists,
       // FIXME: this must be changed in std::array<std::string, n> and
       // FIXME: initialized here.
-      const std::string statusBarMessages[2];
+      const std::string statusBarMessages[6];
 
       Notebook notebook;
       DrawingArea drawResultsGraph;
@@ -94,6 +95,8 @@ namespace PstpFinder
       float maxPocketLength;
       vector<Gdk::Color> colors;
       const Pocket* selectedPocket;
+      const Pocket* hoveringOnPocket;
+      bool fixedSelection;
       float labelYMultiplier;
       float labelXMultiplier;
 
@@ -114,9 +117,11 @@ namespace PstpFinder
 #endif
       bool drawResultsGraphScrollEvent(GdkEventScroll* event) throw();
       bool drawResultsGraphMotionEvent(GdkEventMotion* event) throw();
+      bool drawResultsGraphButtonPressEvent(GdkEventButton* event) throw();
 
       void fillResidues();
       static inline Gdk::Color rainbow(double value);
+      void updateInformation();
   };
 };
 

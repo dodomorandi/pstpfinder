@@ -36,7 +36,11 @@ Results::Results(NewAnalysis& parent, const shared_ptr<Pittpi>& pittpi,
                  const Gromacs& gromacs) :
     statusBarMessages
       { "Move the pointer over graph bars or axis labels to get more information",
-        "Scroll mouse wheel to change font size" },
+        "Scroll mouse wheel to change font size",
+        "Click to fix selection on this pocket",
+        "Click to release selection",
+        "Click to change selection to this pocket",
+        "Move the pointer over axis labels or click on the graph to release selection"},
     gromacs(gromacs),
     pittpi(pittpi),
     parent(parent),
@@ -48,6 +52,7 @@ Results::Results(NewAnalysis& parent, const shared_ptr<Pittpi>& pittpi,
   labelXMultiplier = 0.1;
   graphModifier = enumModifier::NOTHING;
   graphLeftBorder = 0;
+  fixedSelection = false;
 
   init();
 }
@@ -72,8 +77,11 @@ Results::init() throw()
       sigc::mem_fun(*this, &Results::drawResultsGraphScrollEvent));
   drawResultsGraph.signal_motion_notify_event().connect(
       sigc::mem_fun(*this, &Results::drawResultsGraphMotionEvent));
+  drawResultsGraph.signal_button_press_event().connect(
+      sigc::mem_fun(*this, &Results::drawResultsGraphButtonPressEvent));
   drawResultsGraph.add_events(
-      Gdk::EventMask::SCROLL_MASK | Gdk::EventMask::POINTER_MOTION_MASK);
+      Gdk::EventMask::SCROLL_MASK | Gdk::EventMask::POINTER_MOTION_MASK
+      | Gdk::EventMask::BUTTON_PRESS_MASK);
 
   labelPocketCenter.set_text("Pocket centered on");
   labelPocketStart.set_text("Pocket starts at ps");
@@ -130,6 +138,7 @@ Results::init() throw()
   streamData << "group members" << endl;
 
   selectedPocket = nullptr;
+  hoveringOnPocket = nullptr;
   for(auto i = residues.cbegin(); i < residues.cend(); i++)
   {
     vector<const Pocket*>::const_iterator bestPocket = i->pockets.end();
@@ -387,7 +396,8 @@ Results::drawResultsGraphExposeEvent(GdkEventExpose* event) throw()
       context->rectangle(columnOffsetX, columnOffsetY - columnHeight,
                          columnModuleX * 2, columnHeight);
       context->fill();
-      if(*j == selectedPocket)
+      if((not fixedSelection and *j == hoveringOnPocket)
+         or (fixedSelection and *j == selectedPocket))
       {
         context->save();
         context->set_line_width(2);
@@ -536,8 +546,6 @@ Results::drawResultsGraphMotionEvent(GdkEventMotion* event) throw()
     graphModifier = enumModifier::LABEL_X;
   else
   {
-    graphModifier = enumModifier::NOTHING;
-
     float columnModuleX = (float) (width - graphOffsetStart * 2
                                    - graphLeftBorder)
                           / (residues.size() * 3 + 1);
@@ -561,29 +569,13 @@ Results::drawResultsGraphMotionEvent(GdkEventMotion* event) throw()
            and cursorY >= columnOffsetY - columnHeight
            and cursorY < columnOffsetY)
         {
-          if(selectedPocket != *j)
+          if(hoveringOnPocket != *j)
           {
             newSelection = true;
-            selectedPocket = *j;
+            hoveringOnPocket = *j;
           }
-          stringstream ss;
-          const Residue centralRes((*j)->group->getCentralRes());
-          ss << centralRes.index << aminoacidTriplet[centralRes.type];
-          entryPocketCenter.set_text(ss.str());
-          ss.str("");
-          ss << (*j)->startPs;
-          entryPocketStart.set_text(ss.str());
-          ss.str("");
-          ss << (*j)->endPs;
-          entryPocketEnd.set_text(ss.str());
-          ss.str("");
-          ss << (*j)->endPs - (*j)->startPs;
-          entryPocketWidth.set_text(ss.str());
-          ss.str("");
-          auto residues((*j)->group->getResidues());
-          for(auto residue : residues)
-            ss << residue->index << aminoacidTriplet[residue->type] << " ";
-          textPocketResidues.get_buffer()->set_text(ss.str());
+
+          graphModifier = enumModifier::POCKET_BAR;
           gotcha = true;
           break;
         }
@@ -591,40 +583,53 @@ Results::drawResultsGraphMotionEvent(GdkEventMotion* event) throw()
         columnOffsetY -= columnHeight;
       }
     }
+
+    if(not gotcha)
+      graphModifier = enumModifier::NOTHING;
   }
 
   if(not gotcha)
   {
-    if(selectedPocket != nullptr)
+    if(hoveringOnPocket != nullptr)
     {
       newSelection = true;
-      selectedPocket = nullptr;
+      hoveringOnPocket = nullptr;
     }
-    entryPocketCenter.set_text("");
-    entryPocketStart.set_text("");
-    entryPocketEnd.set_text("");
-    entryPocketWidth.set_text("");
-    textPocketResidues.get_buffer()->set_text("");
   }
 
-  if(graphModifier == oldModifier and newSelection)
-    drawResultsGraph.queue_draw();
-
-  if(graphModifier != oldModifier)
+  if(graphModifier != oldModifier or newSelection)
   {
-    switch(graphModifier)
-    {
-      case enumModifier::LABEL_X:
-      case enumModifier::LABEL_Y:
-        drawResultsStatusBar.push(statusBarMessages[1]);
-        break;
-      case enumModifier::NOTHING:
-      default:
-        drawResultsStatusBar.push(statusBarMessages[0]);
-        break;
-    }
+    updateInformation();
     drawResultsGraph.queue_draw();
   }
+  return true;
+}
+
+bool
+Results::drawResultsGraphButtonPressEvent(GdkEventButton* event) throw ()
+{
+  if(event->button == 1)
+  {
+    if(fixedSelection)
+    {
+      if(selectedPocket == hoveringOnPocket or hoveringOnPocket == nullptr)
+        fixedSelection = false;
+
+      selectedPocket = hoveringOnPocket;
+    }
+    else
+    {
+      if(hoveringOnPocket != nullptr)
+      {
+        selectedPocket = hoveringOnPocket;
+        fixedSelection = true;
+      }
+    }
+
+    updateInformation();
+    drawResultsGraph.queue_draw();
+  }
+
   return true;
 }
 
@@ -745,4 +750,70 @@ Results::rainbow(double value)
 
   color.set_rgb_p(red, green, blue);
   return color;
+}
+
+void
+Results::updateInformation()
+{
+  const Pocket* pocket;
+  if(fixedSelection)
+    pocket = selectedPocket;
+  else
+    pocket = hoveringOnPocket;
+
+  if(pocket)
+  {
+    stringstream ss;
+    const Residue centralRes(pocket->group->getCentralRes());
+    ss << centralRes.index << aminoacidTriplet[centralRes.type];
+    entryPocketCenter.set_text(ss.str());
+    ss.str("");
+    ss << pocket->startPs;
+    entryPocketStart.set_text(ss.str());
+    ss.str("");
+    ss << pocket->endPs;
+    entryPocketEnd.set_text(ss.str());
+    ss.str("");
+    ss << pocket->endPs - pocket->startPs;
+    entryPocketWidth.set_text(ss.str());
+    ss.str("");
+    auto residues(pocket->group->getResidues());
+    for(auto residue : residues)
+      ss << residue->index << aminoacidTriplet[residue->type] << " ";
+    textPocketResidues.get_buffer()->set_text(ss.str());
+  }
+  else
+  {
+    entryPocketCenter.set_text("");
+    entryPocketStart.set_text("");
+    entryPocketEnd.set_text("");
+    entryPocketWidth.set_text("");
+    textPocketResidues.get_buffer()->set_text("");
+  }
+
+  switch(graphModifier)
+  {
+    case enumModifier::LABEL_X:
+    case enumModifier::LABEL_Y:
+      drawResultsStatusBar.push(statusBarMessages[1]);
+      break;
+    case enumModifier::POCKET_BAR:
+      if(fixedSelection)
+      {
+        if(selectedPocket == hoveringOnPocket)
+          drawResultsStatusBar.push(statusBarMessages[3]);
+        else
+          drawResultsStatusBar.push(statusBarMessages[4]);
+      }
+      else
+        drawResultsStatusBar.push(statusBarMessages[2]);
+      break;
+    case enumModifier::NOTHING:
+    default:
+      if(fixedSelection)
+        drawResultsStatusBar.push(statusBarMessages[5]);
+      else
+        drawResultsStatusBar.push(statusBarMessages[0]);
+      break;
+  }
 }
