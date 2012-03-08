@@ -84,6 +84,8 @@ namespace PstpFinder
             labelPocketEnd, labelPocketWidth;
       Entry entryPocketCenter, entryPocketStart,
             entryPocketEnd, entryPocketWidth;
+      Label labelPocketResidues;
+      TextView textPocketResidues;
 
       Gromacs gromacs;
       shared_ptr<Pittpi> pittpi;

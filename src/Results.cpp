@@ -101,10 +101,18 @@ Results::init() throw()
   hboxPocketWidth.pack_start(labelPocketWidth);
   hboxPocketWidth.pack_start(entryPocketWidth, false, false, 0);
 
+  labelPocketResidues.set_text("Involved residues:");
+  labelPocketResidues.set_alignment(0, 0.5);
+  textPocketResidues.set_wrap_mode(WrapMode::WRAP_WORD);
+  textPocketResidues.set_editable(false);
+  textPocketResidues.set_border_width(1);
+
   vboxPocketInformation.pack_start(hboxPocketCenter, false, false, 0);
   vboxPocketInformation.pack_start(hboxPocketStart, false, false, 0);
   vboxPocketInformation.pack_start(hboxPocketEnd, false, false, 0);
   vboxPocketInformation.pack_start(hboxPocketWidth, false, false, 0);
+  vboxPocketInformation.pack_start(labelPocketResidues, false, false, 0);
+  vboxPocketInformation.pack_start(textPocketResidues, false, false, 0);
 
   panedMain.add1(drawResultsGraph);
   panedMain.add2(vboxPocketInformation);
@@ -571,6 +579,11 @@ Results::drawResultsGraphMotionEvent(GdkEventMotion* event) throw()
           ss.str("");
           ss << (*j)->endPs - (*j)->startPs;
           entryPocketWidth.set_text(ss.str());
+          ss.str("");
+          auto residues((*j)->group->getResidues());
+          for(auto residue : residues)
+            ss << residue->index << aminoacidTriplet[residue->type] << " ";
+          textPocketResidues.get_buffer()->set_text(ss.str());
           gotcha = true;
           break;
         }
@@ -591,6 +604,7 @@ Results::drawResultsGraphMotionEvent(GdkEventMotion* event) throw()
     entryPocketStart.set_text("");
     entryPocketEnd.set_text("");
     entryPocketWidth.set_text("");
+    textPocketResidues.get_buffer()->set_text("");
   }
 
   if(graphModifier == oldModifier and newSelection)
