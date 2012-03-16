@@ -350,7 +350,6 @@ namespace PstpFinder
       sessionFile << fs::file_size(fs::path("/tmp/sas.psf")) << endl;
       std::ifstream sasFile("/tmp/sas.psf", std::ios::in | std::ios::binary);
       sessionFile << sasFile.rdbuf();
-      sessionFile << endl;
     }
 
     progress.set_fraction(1);
@@ -391,7 +390,6 @@ namespace PstpFinder
       sessionFile << fs::file_size(fs::path("/tmp/aver.pdb")) << endl;
       std::ifstream pdbFile("/tmp/aver.pdb");
       sessionFile << pdbFile.rdbuf();
-      sessionFile << endl;
 
       sessionFile.flush();
       sessionFile.close();

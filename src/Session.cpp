@@ -187,6 +187,8 @@ namespace PstpFinder
       sessionFile.seekg(dataUInt, ios::cur);
       sasDataEnd = sessionFile.tellg();
       sasMetaStream = new MetaStream<ifstream>(sasStream, sasDataStart, sasDataEnd);
+      if(sessionFile.peek() == '\n')
+        (void) (sessionFile.get());
 
       sessionFile >> dataUInt;
       if(sessionFile.peek() == '\n')
@@ -195,6 +197,8 @@ namespace PstpFinder
       sessionFile.seekg(dataUInt, ios::cur);
       pdbDataEnd = sessionFile.tellg();
       pdbMetaStream = new MetaStream<ifstream>(pdbStream, pdbDataStart, pdbDataEnd);
+      if(sessionFile.peek() == '\n')
+        (void) (sessionFile.get());
     }
     else
     {
