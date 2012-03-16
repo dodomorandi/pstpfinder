@@ -105,7 +105,7 @@ namespace PstpFinder
     return pocketThreshold;
   }
 
-  MetaStream&
+  MetaStream<ifstream>&
   Session::getSasStream()
   {
     if(not ready)
@@ -127,7 +127,7 @@ namespace PstpFinder
     return(rawSasSession);
   }
 
-  MetaStream&
+  MetaStream<ifstream>&
   Session::getPdbStream()
   {
     if(not ready or rawSasSession)
@@ -186,7 +186,7 @@ namespace PstpFinder
       sasDataStart = sessionFile.tellg();
       sessionFile.seekg(dataUInt, ios::cur);
       sasDataEnd = sessionFile.tellg();
-      sasMetaStream = new MetaStream(sasStream, sasDataStart, sasDataEnd);
+      sasMetaStream = new MetaStream<ifstream>(sasStream, sasDataStart, sasDataEnd);
 
       sessionFile >> dataUInt;
       if(sessionFile.peek() == '\n')
@@ -194,7 +194,7 @@ namespace PstpFinder
       pdbDataStart = sessionFile.tellg();
       sessionFile.seekg(dataUInt, ios::cur);
       pdbDataEnd = sessionFile.tellg();
-      pdbMetaStream = new MetaStream(pdbStream, pdbDataStart, pdbDataEnd);
+      pdbMetaStream = new MetaStream<ifstream>(pdbStream, pdbDataStart, pdbDataEnd);
     }
     else
     {
@@ -203,7 +203,7 @@ namespace PstpFinder
       sasDataStart = sessionFile.tellg();
       sessionFile.seekg(0, ios_base::end);
       sasDataEnd = sessionFile.tellg();
-      sasMetaStream = new MetaStream(sasStream, sasDataStart, sasDataEnd);
+      sasMetaStream = new MetaStream<ifstream>(sasStream, sasDataStart, sasDataEnd);
     }
 
     std::locale::global(oldLocale);

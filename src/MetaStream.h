@@ -21,6 +21,8 @@
 #define METASTREAM_H_
 
 #include <string>
+#include <sstream>
+#include <iostream>
 #include <fstream>
 #include <iosfwd>
 #include <boost/iostreams/categories.hpp>
@@ -30,50 +32,161 @@ namespace io = boost::iostreams;
 
 namespace PstpFinder
 {
-
+  template<typename T>
   class MetaStream
   {
     public:
       typedef char char_type;
       typedef io::source_tag category;
 
-      MetaStream();
-      MetaStream(ifstream& modifiableStream, streampos begin = -1,
-                 streampos end = -1);
-      MetaStream(const MetaStream& metaStream);
+      MetaStream() :
+            stream(nullStream), valid(false), eofTrigger(false) {}
 
-      MetaStream& operator >>(string& out);
-      MetaStream& operator >>(bool& out);
-      MetaStream& operator >>(char& out);
-      MetaStream& operator >>(unsigned char& out);
-      MetaStream& operator >>(short& out);
-      MetaStream& operator >>(unsigned short& out);
-      MetaStream& operator >>(int& out);
-      MetaStream& operator >>(unsigned int& out);
-      MetaStream& operator >>(long& out);
-      MetaStream& operator >>(unsigned long& out);
-      MetaStream& operator >>(void*& out);
-      MetaStream& operator >>(float& out);
-      MetaStream& operator >>(double& out);
-      MetaStream& operator >>(long double& out);
+      MetaStream(T& modifiableStream, streampos begin = -1,
+                   streampos end = -1) :
+            stream(modifiableStream), valid(true), eofTrigger(false)
+      {
+        assert_basic_istream();
 
-      streamsize read(char* data, streamsize length);
-      MetaStream& seekg(streamsize pos);
-      MetaStream& seekg(streamsize off, ios_base::seek_dir way);
+        if(begin == -1)
+          streamBegin = stream.tellg();
+        else
+          streamBegin = begin;
 
-      streamsize tellg() const;
-      bool eof() const;
+        if(end == -1)
+        {
+          stream.seekg(0, ios_base::end);
+          streamEnd = stream.tellg();
+        }
+        else
+          streamEnd = end;
+
+        stream.seekg(streamBegin, ios_base::beg);
+      }
+
+      MetaStream(const MetaStream& metaStream) :
+            stream(metaStream.stream),
+            valid(metaStream.valid),
+            eofTrigger(false)
+      {
+        streamBegin = metaStream.streamBegin;
+        streamEnd = metaStream.streamEnd;
+      }
+
+      // basic_istream related functions. Needed a static_assert for these.
+      template<typename U>
+      MetaStream&
+      operator >>(U& out)
+      {
+        assert_basic_istream();
+
+        if(not valid or eofTrigger)
+          throw;
+
+        if(eof())
+          eofTrigger = true;
+        streamoff currentPosition = stream.tellg();
+        streampos finalPosition = currentPosition + sizeof(T);
+
+        if(finalPosition > streamEnd)
+        {
+          stringstream tempStream(stringstream::in | stringstream::out);
+          streamsize tempStreamSize = streamEnd - currentPosition;
+          char *remainingData = new char[tempStreamSize];
+          stream.read(remainingData, tempStreamSize);
+          tempStream.write(remainingData, tempStreamSize);
+          tempStream >> out;
+          delete[] remainingData;
+        }
+        else
+          stream >> out;
+      }
+
+      streamsize
+      read(char* data, streamsize length)
+      {
+        assert_basic_istream();
+
+        streamsize size;
+        if(not valid or eofTrigger)
+          throw;
+
+        streamoff currentPosition = stream.tellg();
+
+        if(currentPosition + length > streamEnd)
+        {
+          stream.read(data, streamEnd - currentPosition);
+          size = streamEnd - currentPosition;
+        }
+        else
+        {
+          stream.read(data, length);
+          size = length;
+        }
+
+        return size;
+      }
+
+      MetaStream&
+      seekg(streamsize pos)
+      {
+        assert_basic_istream();
+
+        stream.seekg(streamBegin + pos);
+        eofTrigger = false;
+        return *this;
+      }
+
+      MetaStream&
+      seekg(streamsize off, ios_base::seek_dir way)
+      {
+        assert_basic_istream();
+
+        if(way == ios_base::beg)
+          stream.seekg(streamBegin + off);
+        else if(way == ios_base::end)
+          stream.seekg(streamEnd - off);
+        else
+          stream.seekg(off, ios_base::cur);
+
+        eofTrigger = false;
+        return *this;
+      }
+
+      streamsize
+      tellg() const
+      {
+        assert_basic_istream();
+        return stream.tellg() - streamBegin;
+      }
+
+      bool
+      eof() const
+      {
+        assert_basic_istream();
+        streampos position = stream.tellg();
+        if(not eofTrigger and position < streamEnd and position >= streamBegin)
+          return false;
+        else
+          return true;
+      }
 
     private:
-      ifstream& inputStream;
-      ifstream nullStream;
+      T& stream;
+      T nullStream;
       streampos streamBegin;
       streampos streamEnd;
       const bool valid;
       bool eofTrigger;
 
-      template<typename T> void getFromStream(T& out);
+      void assert_basic_istream() const
+      {
+        static_assert(
+            is_base_of<
+            basic_istream<typename T::char_type, typename T::traits_type>,
+            T>::value,
+            "class derives from basic_istream");
+      }
   };
-
 } /* namespace PstpFinder */
 #endif /* METASTREAM_H_ */

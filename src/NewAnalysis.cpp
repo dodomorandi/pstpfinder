@@ -545,7 +545,7 @@ namespace PstpFinder
       Main::iteration();
 
     analysisStatus = enumAnalysisStatus::ANALYSIS_ONGOING;
-    MetaStream& pdbStream = sessionFile.getPdbStream();
+    MetaStream<ifstream>& pdbStream = sessionFile.getPdbStream();
     char* chunk = new char[1024 * 1024 * 128];
     unsigned long nChunks = sessionFile.getPdbSize() / (1024 * 1024 * 128);
     unsigned long remainChunk = sessionFile.getPdbSize() % (1024 * 1024 * 128);

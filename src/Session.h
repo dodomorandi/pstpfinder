@@ -22,6 +22,7 @@
 
 #include "MetaStream.h"
 #include <string>
+#include <iostream>
 #include <fstream>
 
 using namespace std;
@@ -40,10 +41,10 @@ namespace PstpFinder
       unsigned long getEndTime() const;
       double getRadius() const;
       double getPocketThreshold() const;
-      MetaStream& getSasStream();
+      MetaStream<ifstream>& getSasStream();
       unsigned long getSasSize() const;
       const bool isRawSasSession() const;
-      MetaStream& getPdbStream();
+      MetaStream<ifstream>& getPdbStream();
       unsigned long getPdbSize() const;
 
       Session& operator =(const Session& session);
@@ -65,8 +66,8 @@ namespace PstpFinder
       streampos sasDataEnd;
       streampos pdbDataStart;
       streampos pdbDataEnd;
-      MetaStream* sasMetaStream;
-      MetaStream* pdbMetaStream;
+      MetaStream<ifstream>* sasMetaStream;
+      MetaStream<ifstream>* pdbMetaStream;
 
       void
       readSession(const string& fileName);
