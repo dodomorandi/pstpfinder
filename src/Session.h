@@ -46,16 +46,21 @@ namespace PstpFinder
       const bool isRawSasSession() const;
       MetaStream<ifstream>& getPdbStream();
       unsigned long getPdbSize() const;
+      const bool isPittpiAvailable() const;
+      unsigned long getPittpiSize() const;
+      MetaStream<ifstream>& getPittpiStream();
 
       Session& operator =(const Session& session);
 
     private:
       const bool ready;
       bool rawSasSession;
+      bool pittpiAvailable;
       const string sessionFileName;
       ifstream sessionFile;
       ifstream sasStream;
       ifstream pdbStream;
+      ifstream pittpiStream;
       string trajectoryFileName;
       string topologyFileName;
       unsigned long beginTime;
@@ -66,8 +71,11 @@ namespace PstpFinder
       streampos sasDataEnd;
       streampos pdbDataStart;
       streampos pdbDataEnd;
+      streampos pittpiDataStart;
+      streampos pittpiDataEnd;
       MetaStream<ifstream>* sasMetaStream;
       MetaStream<ifstream>* pdbMetaStream;
+      MetaStream<ifstream>* pittpiMetaStream;
 
       void
       readSession(const string& fileName);

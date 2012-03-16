@@ -37,7 +37,8 @@ namespace PstpFinder
       sessionFileName(fileName),
       sessionFile(fileName.c_str(), ios::in | ios::binary),
       sasStream(fileName.c_str(), ios::in | ios::binary),
-      pdbStream(fileName.c_str(), ios::in | ios::binary)
+      pdbStream(fileName.c_str(), ios::in | ios::binary),
+      pittpiStream(fileName.c_str(), ios::in | ios::out | ios::binary)
   {
     readSession(fileName);
   }
@@ -52,6 +53,12 @@ namespace PstpFinder
       {
         delete pdbMetaStream;
         pdbStream.close();
+
+        if(pittpiAvailable)
+        {
+          delete pittpiMetaStream;
+          pittpiStream.close();
+        }
       }
       sessionFile.close();
     }
@@ -143,6 +150,28 @@ namespace PstpFinder
     return pdbDataEnd - pdbDataStart;
   }
 
+  const bool
+  Session::isPittpiAvailable() const
+  {
+    return(pittpiAvailable);
+  }
+
+  MetaStream<ifstream>&
+  Session::getPittpiStream()
+  {
+    if(not ready or not pittpiAvailable)
+      throw;
+    return *pittpiMetaStream;
+  }
+
+  unsigned long
+  Session::getPittpiSize() const
+  {
+    if(not ready or not pittpiAvailable)
+      throw;
+    return pittpiDataEnd - pittpiDataStart;
+  }
+
   Session&
   Session::operator =(const Session& session)
   {
@@ -157,7 +186,11 @@ namespace PstpFinder
       new (this) Session(session.sessionFileName);
       sasMetaStream->seekg(session.sasMetaStream->tellg());
       if(not session.rawSasSession)
+      {
         pdbMetaStream->seekg(session.pdbMetaStream->tellg());
+        if(pittpiAvailable)
+          pittpiMetaStream->seekg(session.pittpiMetaStream->tellg());
+      }
     }
 
     return *this;
@@ -199,6 +232,22 @@ namespace PstpFinder
       pdbMetaStream = new MetaStream<ifstream>(pdbStream, pdbDataStart, pdbDataEnd);
       if(sessionFile.peek() == '\n')
         (void) (sessionFile.get());
+
+      sessionFile.peek();
+      if(not sessionFile.eof())
+      {
+        pittpiAvailable = true;
+        sessionFile >> dataUInt;
+        if(sessionFile.peek() == '\n')
+          (void) (sessionFile.get());
+        pittpiDataStart = sessionFile.tellg();
+        sessionFile.seekg(dataUInt, ios::cur);
+        pittpiDataEnd = sessionFile.tellg();
+        pittpiMetaStream = new MetaStream<ifstream>(pittpiStream, pittpiDataStart,
+                                          pittpiDataEnd);
+      }
+      else
+        pittpiAvailable = false;
     }
     else
     {
@@ -208,6 +257,7 @@ namespace PstpFinder
       sessionFile.seekg(0, ios_base::end);
       sasDataEnd = sessionFile.tellg();
       sasMetaStream = new MetaStream<ifstream>(sasStream, sasDataStart, sasDataEnd);
+      pittpiAvailable = false;
     }
 
     std::locale::global(oldLocale);

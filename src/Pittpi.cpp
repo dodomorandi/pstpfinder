@@ -951,5 +951,144 @@ namespace PstpFinder
 
     return pockets;
   }
+
+  Pittpi::SerializablePockets::SerializablePockets(
+      const vector<Pocket>& pockets, const vector<Group>& groups)
+  {
+    for(auto& pocket : pockets)
+    {
+      if(pocket.group < groups.data()
+         or pocket.group >= groups.data() + groups.size())
+        throw;
+
+      SerializablePocket serializablePocket(pocket);
+      serializablePocket.groupIndex = groups.data() - pocket.group;
+      this->pockets.push_back(move(serializablePocket));
+    }
+  }
+
+  Pittpi::SerializableGroups::SerializableGroups(const vector<Group>& groups,
+                                                 const Protein& protein)
+  {
+    const vector<const PdbAtom*> atoms(protein.atoms());
+    const vector<Residue> residues(protein.residues());
+
+    for(auto& group : groups)
+    {
+      SerializableGroup serializableGroup(group);
+
+      if(serializableGroup.referenceAtom != nullptr)
+      {
+        bool atomFound(false);
+        for(auto& atom : atoms)
+        {
+          if(atom == serializableGroup.referenceAtom)
+          {
+            atomFound = true;
+            break;
+          }
+        }
+        if(not atomFound)
+          throw;
+      }
+
+      if(serializableGroup.referenceRes != nullptr
+         and (serializableGroup.referenceRes < residues.data()
+              or serializableGroup.referenceRes
+                 >= residues.data() + residues.size()))
+        throw;
+
+      serializableGroup.referenceAtomIndex = serializableGroup.referenceAtom
+          ->index;
+      serializableGroup.referenceResIndex = serializableGroup.referenceRes
+          ->index;
+
+      for(auto& residue : serializableGroup.residues)
+      {
+        if(residue < residues.data()
+           or residue >= residues.data() + residues.size())
+          throw;
+
+        serializableGroup.residuesIndex.push_back(residue->index);
+      }
+
+      this->groups.push_back(move(serializableGroup));
+    }
+  }
+}
+
+namespace boost
+{
+  namespace serialization
+  {
+    template<class Archive>
+    void
+    serialize(
+        Archive& ar,
+        PstpFinder::Pittpi::SerializablePockets::SerializablePocket pocket,
+        const unsigned int version)
+    {
+      ar & pocket.groupIndex;
+      ar & pocket.startFrame;
+      ar & pocket.startPs;
+      ar & pocket.endFrame;
+      ar & pocket.endPs;
+      ar & pocket.width;
+      ar & pocket.openingFraction;
+      ar & pocket.averageNearFrame;
+      ar & pocket.maxAreaFrame;
+      ar & pocket.maxAreaPs;
+    }
+
+    template<class Archive>
+    void
+    serialize(
+        Archive& ar,
+        PstpFinder::Pittpi::SerializableGroups::SerializableGroup group,
+        const unsigned int version)
+    {
+        ar & group.sas;
+        ar & group.zeros;
+        ar & group.referenceAtomIndex;
+        ar & group.referenceResIndex;
+        ar & group.residuesIndex;
+    }
+
+    template<class Archive>
+    void
+    save(Archive& ar, PstpFinder::Pittpi& pittpi,
+              const unsigned int version)
+    {
+        PstpFinder::Pittpi::SerializablePockets serializablePockets(
+            pittpi.pockets, pittpi.groups);
+        PstpFinder::Pittpi::SerializableGroups serializableGroups(pittpi.groups);
+
+        ar & pittpi.sessionFileName;
+        ar & pittpi.radius;
+        ar & pittpi.threshold;
+        ar & pittpi.averageStructure;
+        ar & serializablePockets;
+        ar & serializableGroups;
+    }
+
+    template<class Archive>
+    void
+    load(Archive& ar, PstpFinder::Pittpi& pittpi,
+              const unsigned int version)
+    {
+        PstpFinder::Pittpi::SerializablePockets serializablePockets;
+        PstpFinder::Pittpi::SerializableGroups serializableGroups;
+
+        ar & pittpi.sessionFileName;
+        ar & pittpi.radius;
+        ar & pittpi.threshold;
+        ar & pittpi.averageStructure;
+        ar & serializablePockets;
+        ar & serializableGroups;
+
+        serializablePockets.updatePockets(pittpi.pockets);
+        serializableGroups.updateGroups(pittpi.groups);
+    }
+  }
 }
 #endif
