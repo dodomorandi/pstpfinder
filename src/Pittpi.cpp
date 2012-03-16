@@ -339,7 +339,8 @@ namespace PstpFinder
           }
           else
           {
-            if(static_cast<float>(distance(startPocket, j)) * PS_PER_SAS
+            if(static_cast<float>(distance(startPocket, j - noZeroPass))
+               * PS_PER_SAS
                >= threshold)
             {
               Pocket pocket(*i);
@@ -398,7 +399,9 @@ namespace PstpFinder
           static_cast<float>(distance(groups.begin(), i) + 1) / groups.size());
     }
 
-    sort(pockets.begin(), pockets.end(), Pocket::sortByWidth);
+    sort(pockets.begin(), pockets.end(),
+         [](const Pocket& first, const Pocket& second)
+         { return first.width > second.width;});
     for(vector<Pocket>::iterator i = pockets.begin(); i < pockets.end(); i++)
     {
       if(abortFlag) return;
@@ -419,9 +422,6 @@ namespace PstpFinder
         }
       }
     }
-
-    ofstream pocketLog("/tmp/pockets.log", ios::out | ios::trunc);
-    ofstream pocketDetailLog("/tmp/pockets_details.log", ios::out | ios::trunc);
 
     {
       lock_guard<mutex> syncGuard(syncLock);

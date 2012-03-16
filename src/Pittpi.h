@@ -101,11 +101,6 @@ namespace PstpFinder
       return *this;
     }
 
-    static bool
-    sortByWidth(const Pocket& first, const Pocket& second)
-    {
-      return (first.width > second.width);
-    }
   };
 
   /**
