@@ -90,7 +90,7 @@ AC_SUBST([LIBS])
 
 # Checks for header files.
 
-CPPFLAGS=" -I../include/ $CPPFLAGS $BOOST_CPPFLAGS"
+CPPFLAGS="$CPPFLAGS $BOOST_CPPFLAGS"
 AC_SUBST([CPPFLAGS])
 
 # Checks for typedefs, structures, and compiler characteristics.

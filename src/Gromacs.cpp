@@ -26,16 +26,16 @@
 #include <fstream>
 #include <cstring>
 
-#include <tpxio.h>
-#include <mtop_util.h>
-#include <main.h>
-#include <rmpbc.h>
-#include <xtcio.h>
-#include <typedefs.h>
-#include <princ.h>
-#include <do_fit.h>
-#include <smalloc.h>
-#include <vec.h>
+#include <gromacs/tpxio.h>
+#include <gromacs/mtop_util.h>
+#include <gromacs/main.h>
+#include <gromacs/rmpbc.h>
+#include <gromacs/xtcio.h>
+#include <gromacs/typedefs.h>
+#include <gromacs/princ.h>
+#include <gromacs/do_fit.h>
+#include <gromacs/smalloc.h>
+#include <gromacs/vec.h>
 
 #include <boost/filesystem.hpp>
 #include <boost/interprocess/sync/scoped_lock.hpp>

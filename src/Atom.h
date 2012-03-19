@@ -24,7 +24,7 @@
 
 extern "C"
 {
-#include <typedefs.h>
+#include <gromacs/typedefs.h>
 }
 
 namespace PstpFinder

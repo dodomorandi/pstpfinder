@@ -30,8 +30,8 @@
 #include <thread>
 
 
-#include <atomprop.h>
-#include <statutil.h>
+#include <gromacs/atomprop.h>
+#include <gromacs/statutil.h>
 
 /* Taken from src/tools/nsc.h, Gromacs 4.5.2 */
 #define FLAG_ATOM_AREA  04

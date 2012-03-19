@@ -55,32 +55,25 @@ AC_DEFUN([AX_CONF_ARGS],[
       [ax_cv_optimization_level=default])
   
    if test x${ax_cv_enable_debug} = xyes; then
-      ax_cv_old_debug_flags="-g"
       CPPFLAGS="-g ${CPPFLAGS}"
       if test `echo x${ax_cv_enable_optimization}|cut -c -2` = xy; then
          if test x${ax_cv_optimization_level} = xdefault; then
             CPPFLAGS="-O3 ${CPPFLAGS}"
-            ax_cv_old_debug_flags="-O3 ${ax_cv_old_debug_flags}"
          else
             CPPFLAGS="-O${ax_cv_optimization_level} ${CPPFLAGS}"
-            ax_cv_old_debug_flags="-O${ax_cv_optimization_level} ${ax_cv_old_debug_flags}"
          fi
       else
          CPPFLAGS="-O0 ${CPPFLAGS}"
-         ax_cv_old_debug_flags="-O0 ${ax_cv_old_debug_flags}"
       fi
    else
       if test `echo x${ax_cv_enable_optimization}|cut -c -2` != xn; then
          if test x${ax_cv_optimization_level} = xdefault; then
-            CPPFLAGS="-O3 ${CPPFLAGS}"
-            ax_cv_old_debug_flags="-O3"
+            CPPFLAGS="-O3 -DNDEBUG ${CPPFLAGS}"
          else
-            CPPFLAGS="-O${ax_cv_optimization_level} ${CPPFLAGS}"
-            ax_cv_old_debug_flags="-O${ax_cv_optimization_level}"
+            CPPFLAGS="-O${ax_cv_optimization_level} -DNDEBUG ${CPPFLAGS}"
          fi
       else
-         CPPFLAGS="-O0 ${CPPFLAGS}"
-         ax_cv_old_debug_flags="-O0"
+         CPPFLAGS="-O0 -DNDEBUG ${CPPFLAGS}"
       fi
    fi
 
