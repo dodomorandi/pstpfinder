@@ -346,13 +346,6 @@ namespace PstpFinder
     while(Main::events_pending())
       Main::iteration();
 
-    if(writeSession)
-    {
-      sessionFile << fs::file_size(fs::path("/tmp/sas.psf")) << endl;
-      std::ifstream sasFile("/tmp/sas.psf", std::ios::in | std::ios::binary);
-      sessionFile << sasFile.rdbuf();
-    }
-
     progress.set_fraction(1);
     while(Main::events_pending())
       Main::iteration();
@@ -546,29 +539,18 @@ namespace PstpFinder
     analysisStatus = enumAnalysisStatus::ANALYSIS_ONGOING;
     MetaStream<ifstream>& pdbStream = sessionFile.getPdbStream();
     char* chunk = new char[1024 * 1024 * 128];
-    unsigned long nChunks = sessionFile.getPdbSize() / (1024 * 1024 * 128);
-    unsigned long remainChunk = sessionFile.getPdbSize() % (1024 * 1024 * 128);
     std::ofstream streamPdb("/tmp/aver.pdb",
                             std::ios::trunc | std::ios::out | std::ios::binary);
-    for(unsigned long i = 0; i < nChunks; i++)
+    while(not pdbStream.eof())
     {
       while(Main::events_pending())
         Main::iteration();
-      pdbStream.read(chunk, 1024 * 1024 * 128);
+      streamsize read = pdbStream.read(chunk, 1024 * 1024 * 128);
       while(Main::events_pending())
         Main::iteration();
-      streamPdb.write(chunk, 1024 * 1024 * 128);
+      streamPdb.write(chunk, read);
     }
 
-    if(remainChunk != 0)
-    {
-      while(Main::events_pending())
-        Main::iteration();
-      pdbStream.read(chunk, remainChunk);
-      while(Main::events_pending())
-        Main::iteration();
-      streamPdb.write(chunk, remainChunk);
-    }
     streamPdb.flush();
     streamPdb.close();
 
@@ -614,7 +596,6 @@ namespace PstpFinder
     buttonShowResults.set_sensitive();
     analysisStatus = enumAnalysisStatus::ANALYSIS_FINISHED;
   }
-
 
   bool
   NewAnalysis::close_window(GdkEventAny* event) throw()
