@@ -25,10 +25,10 @@
 #endif
 
 #include "Protein.h"
+#include "Session.h"
 
 #include <string>
 #include <thread>
-
 
 #include <gromacs/atomprop.h>
 #include <gromacs/statutil.h>
@@ -82,7 +82,7 @@ namespace PstpFinder
       ~Gromacs();
       // FIXME: It will have to return an object Molecular Dynamics with SAS
       // FIXME: additional informations
-      void calculateSas();
+      void calculateSas(Session<ofstream>& session);
     
       string getTrajectoryFile() const;
       string getTopologyFile() const;
@@ -111,7 +111,7 @@ namespace PstpFinder
        */
       void waitNextFrame(unsigned int refFrame) const;
 
-      void __calculateSas();
+      void __calculateSas(Session<ofstream>& session);
       const Protein& __calculateAverageStructure();
       void calculateAverageStructure();
       const Protein& getAverageStructure() const;

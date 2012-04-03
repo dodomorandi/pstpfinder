@@ -23,14 +23,12 @@
 #include "SasAtom.h"
 #include "Gromacs.h"
 #include "Session.h"
+#include "OperationThread.h"
 
 #include <thread>
+#include <sys/sysinfo.h>
 #include <boost/circular_buffer.hpp>
 #include <boost/filesystem.hpp>
-#include <boost/iostreams/filtering_stream.hpp>
-#include <boost/iostreams/device/file_descriptor.hpp>
-#include <boost/iostreams/filter/zlib.hpp>
-#include <boost/range/iterator_range.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
 
@@ -39,16 +37,26 @@
 #include <iostream>
 #include <sstream>
 
+namespace archive = boost::archive;
+namespace fs = boost::filesystem;
+
 namespace PstpFinder
 {
+  template<typename T, typename>
+  class OperationThread;
+
+  template<typename T>
   class SasAnalysis
   {
     public:
       SasAnalysis(unsigned int nAtoms, const Gromacs& gromacs,
-                  std::string filename = "/tmp/sas.psf",
+                  Session<T>& sessionFile,
                   bool savingMode = true);
 
-      SasAnalysis(const Gromacs& gromacs, std::string filename = "/tmp/sas.psf",
+      SasAnalysis(const Gromacs& gromacs, Session<T>& sessionFile,
+                  bool savingMode = true);
+
+      SasAnalysis(const Gromacs& gromacs, const string& sessionFileName,
                   bool savingMode = true);
 
       ~SasAnalysis();
@@ -75,9 +83,8 @@ namespace PstpFinder
       boost::circular_buffer<std::vector<SasAtom*> > chunks;
       std::vector<SasAtom*> frames;
       unsigned int nAtoms;
-      std::string filename;
-      boost::iostreams::file_descriptor fileIO;
-      Session sessionFile;
+      Session<T> rawSession;
+      MetaStream<T>& sasMetaStream;
       std::streampos fileStreamEnd;
       const Gromacs* gromacs;
       unsigned long maxFrames, maxBytes, maxChunk;
@@ -86,9 +93,7 @@ namespace PstpFinder
       mutable condition_variable bufferCountCondition;
       mutable mutex bufferMutex, bufferCountMutex;
       bool changeable;
-      boost::iostreams::filtering_istream inFilter;
       boost::archive::binary_iarchive* inArchive;
-      boost::iostreams::filtering_ostream outFilter;
       boost::archive::binary_oarchive* outArchive;
 
       enum
@@ -97,37 +102,13 @@ namespace PstpFinder
         MODE_SAVE
       } mode;
 
-      class OperationThread
-      {
-        public:
-          OperationThread(SasAnalysis& parent);
-          ~OperationThread();
-
-          void
-          wakeUp();
-
-          void
-          stop();
-
-          void
-          threadSave();
-
-          void
-          threadOpen();
-
-        private:
-          SasAnalysis* parent;
-          bool isStopped;
-          thread operationThread;
-          condition_variable wakeCondition;
-          mutex wakeMutex;
-      };
-
-      friend class OperationThread;
-      OperationThread* operationThread;
+      template<typename> friend class OperationThread_Base;
+      template<typename, typename> friend class OperationThread;
+      typedef OperationThread<T> OperationThreadType;
+      OperationThreadType* operationThread;
 
       void
-      init(string saveFile, bool savingMode = true);
+      init(bool savingMode = true);
 
       void
       dumpChunk(const std::vector<SasAtom*>& chunk,
@@ -151,8 +132,381 @@ namespace PstpFinder
       void
       updateChunks();
   };
-}
-;
 
+  template<typename T>
+  SasAnalysis<T>::SasAnalysis(unsigned int nAtoms, const Gromacs& gromacs,
+                           Session<T>& session, bool savingMode) :
+      sasMetaStream(session.getSasStream())
+  {
+    this->nAtoms = nAtoms;
+    this->gromacs = &gromacs;
+    init(savingMode);
+  }
+
+  template<typename T>
+  SasAnalysis<T>::SasAnalysis(const Gromacs& gromacs, Session<T>& session,
+                           bool savingMode) :
+      sasMetaStream(session.getSasStream())
+  {
+    nAtoms = gromacs.getGroup("Protein").size();
+    this->gromacs = &gromacs;
+    init(savingMode);
+  }
+
+  template<typename T>
+  SasAnalysis<T>::SasAnalysis(const Gromacs& gromacs,
+                              const string& sessionFileName, bool savingMode) :
+      rawSession(sessionFileName), sasMetaStream(rawSession.getSasStream())
+  {
+    nAtoms = gromacs.getGroup("Protein").size();
+    this->gromacs = &gromacs;
+    init(savingMode);
+  }
+
+  template<typename T>
+  void
+  SasAnalysis<T>::init(bool savingMode)
+  {
+    changeable = true;
+    if(savingMode)
+      mode = MODE_SAVE;
+    else
+      mode = MODE_OPEN;
+
+    struct sysinfo info;
+    if(sysinfo(&info) == 0)
+    {
+      maxBytes = info.freeram * 0.8; // 80% of free ram
+      if(maxBytes > 1073741824) // 1 GB
+        maxBytes = 1073741824;
+    }
+    else
+      maxBytes = 134217728;
+
+    maxChunk = 8388608;
+
+    updateChunks();
+  }
+
+  template<typename T>
+  SasAnalysis<T>::~SasAnalysis()
+  {
+    if(changeable)
+      return;
+
+    if(mode == MODE_SAVE)
+    {
+      if(frames.size() != 0)
+        flush();
+      operationThread->stop();
+      delete operationThread;
+
+      delete outArchive;
+    }
+    else
+    {
+      operationThread->stop();
+      delete operationThread;
+
+      delete inArchive;
+    }
+  }
+
+  template<typename T>
+  const SasAnalysis<T>&
+  SasAnalysis<T>::operator <<(SasAtom* sasAtoms)
+  {
+    SasAtom* tmpFrame = new SasAtom[nAtoms];
+    if(changeable)
+    {
+      changeable = false;
+      outArchive = new archive::binary_oarchive(sasMetaStream);
+
+      operationThread = new OperationThreadType(*this);
+    }
+
+    std::copy(sasAtoms, sasAtoms + nAtoms, tmpFrame);
+    bufferMutex.lock();
+    frames.push_back(tmpFrame);
+
+    bool cond = (frames.size() == maxFrames);
+    bufferMutex.unlock();
+
+    if(cond)
+      flush();
+    return *this;
+  }
+
+  template<typename T>
+  SasAnalysis<T>&
+  SasAnalysis<T>::operator >>(SasAtom*& sasAtom)
+  {
+    static std::vector<SasAtom*>::const_iterator i;
+
+    if(changeable)
+    {
+      changeable = false;
+      inArchive = new archive::binary_iarchive(sasMetaStream);
+
+      operationThread = new OperationThreadType(*this);
+    }
+
+    if(frames.size() == 0)
+    {
+      bufferMutex.lock();
+      while(bufferCount == 0)
+      {
+        unique_lock<mutex> bufferCountLock(bufferCountMutex);
+        bufferMutex.unlock();
+        bufferCountCondition.wait(bufferCountLock);
+        bufferMutex.lock();
+      }
+      frames = chunks.front();
+      i = frames.begin();
+
+      bufferCount--;
+      bufferMutex.unlock();
+    }
+    else if(i == frames.end())
+    {
+      bufferMutex.lock();
+
+      for(i = frames.begin(); i < frames.end(); i++)
+        delete[] *i;
+      frames.clear();
+
+      chunks.pop_front();
+
+      if(bufferCount == 0)
+      {
+        bufferMutex.unlock();
+        unique_lock<mutex> bufferCountLock(bufferCountMutex);
+        bufferCountCondition.wait(bufferCountLock);
+        bufferMutex.lock();
+      }
+
+      bufferCount--;
+
+      if(chunks.size() == 0)
+      {
+        bufferMutex.unlock();
+        sasAtom = 0;
+        return *this;
+      }
+
+      frames = chunks.front();
+      i = frames.begin();
+
+      operationThread->wakeUp();
+      bufferMutex.unlock();
+    }
+
+    sasAtom = *(i++);
+
+    return *this;
+  }
+
+  template<typename T>
+  void
+  SasAnalysis<T>::flush()
+  {
+    if(mode != MODE_SAVE)
+      return;
+
+    if(changeable)
+    {
+      changeable = false;
+      outArchive = new archive::binary_oarchive(sasMetaStream);
+
+      operationThread = new OperationThreadType(*this);
+    }
+
+    bufferMutex.lock();
+    while(bufferCount == 0)
+    {
+      unique_lock<mutex> bufferCountLock(bufferCountMutex);
+      bufferMutex.unlock();
+      bufferCountCondition.wait(bufferCountLock);
+      bufferMutex.lock();
+    }
+    bufferCount--;
+    chunks.push_back(frames);
+
+    frames.clear();
+    operationThread->wakeUp();
+    bufferMutex.unlock();
+
+  }
+
+  template<typename T>
+  bool
+  SasAnalysis<T>::save()
+  {
+    if(mode != MODE_SAVE)
+      return false;
+
+    if(chunks.empty())
+      return false;
+
+    dumpChunk(chunks.front(), *outArchive);
+
+    return true;
+  }
+
+  template<typename T>
+  bool
+  SasAnalysis<T>::open()
+  {
+    if(mode != MODE_OPEN)
+      return false;
+
+    sasMetaStream.peek();
+    if(sasMetaStream.eof())
+      return false;
+
+    vector<SasAtom*> chunk = loadChunk(*inArchive);
+    unsigned long chunkSize = chunk.capacity()
+                              * (sizeof(SasAtom*) + sizeof(SasAtom) * nAtoms)
+                              + sizeof(vector<SasAtom*>);
+    if(chunkSize > maxChunk)
+    {
+      // bufferMutex already lock_upgrade from ThreadOpen
+      while(bufferCount != 0)
+      {
+        unique_lock<mutex> lock(bufferCountMutex);
+        bufferMutex.unlock();
+        bufferCountCondition.wait(lock);
+        bufferMutex.lock();
+      }
+      maxChunk = chunkSize;
+      updateChunks();
+    }
+    chunks.push_back(chunk);
+
+    return true;
+  }
+
+  template<typename T>
+  void
+  SasAnalysis<T>::dumpChunk(const std::vector<SasAtom*>& chunk,
+                         archive::binary_oarchive& out) const
+  {
+    unsigned int size = chunk.size();
+    out << size;
+
+    for(std::vector<SasAtom*>::const_iterator i = chunk.begin();
+        i < chunk.end(); i++)
+    {
+      if(gromacs and gromacs->isAborting())
+        break;
+      const SasAtom* end = *i + nAtoms;
+      for(SasAtom* j = *i; j < end; j++)
+        out << *j;
+    }
+  }
+
+  template<typename T>
+  std::vector<SasAtom*>
+  SasAnalysis<T>::loadChunk(archive::binary_iarchive& in)
+  {
+    unsigned int size;
+    std::vector<SasAtom*> chunk;
+    SasAtom* atoms;
+    SasAtom* atom;
+
+    in >> size;
+    chunk.reserve(size);
+
+    for(unsigned int i = 0; i < size; i++)
+    {
+      atoms = new SasAtom[nAtoms];
+      atom = atoms;
+
+      for(unsigned int k = 0; k < nAtoms; k++, atom++)
+      {
+        if(gromacs and gromacs->isAborting())
+          return chunk;
+        try
+        {
+          in >> *atom;
+        }
+        catch(int e)
+        {
+          std::cerr << "Warning: inconsistent binary file." << std::endl;
+          SasAtom* tmpatoms = new SasAtom[k];
+          std::copy(atoms, atoms + k, tmpatoms);
+          delete[] atoms;
+          atoms = tmpatoms;
+          break;
+        }
+      }
+
+      chunk.push_back(atoms);
+    }
+
+    return chunk;
+  }
+
+  template<typename T>
+  bool
+  SasAnalysis<T>::setMaxBytes(unsigned long bytes)
+  {
+    if(not changeable)
+      return false;
+
+    maxBytes = bytes;
+    updateChunks();
+
+    return true;
+  }
+
+  template<typename T>
+  unsigned long
+  SasAnalysis<T>::getMaxBytes()
+  {
+    return maxBytes;
+  }
+
+  template<typename T>
+  bool
+  SasAnalysis<T>::setMaxChunkSize(unsigned long bytes)
+  {
+    if(not changeable)
+      return false;
+
+    maxChunk = bytes;
+    updateChunks();
+
+    return true;
+  }
+
+  template<typename T>
+  unsigned long
+  SasAnalysis<T>::getMaxChunkSize()
+  {
+    return maxChunk;
+  }
+
+  template<typename T>
+  void
+  SasAnalysis<T>::updateChunks()
+  {
+    // SasAtom serialization produces real * 4
+    maxFrames = maxChunk / (nAtoms * sizeof(real) * 4);
+    vector<SasAtom*> testVector(maxFrames);
+    unsigned int vectorSize = testVector.capacity()
+                              * (sizeof(SasAtom*) + sizeof(SasAtom) * nAtoms)
+                              + sizeof(vector<SasAtom*> );
+
+    bufferMax = maxBytes / vectorSize;
+
+    if(mode == MODE_SAVE)
+      bufferCount = bufferMax - 1;
+    else
+      bufferCount = 0;
+
+    chunks = boost::circular_buffer<std::vector<SasAtom*> >(bufferMax);
+  }
+}
 #endif
 

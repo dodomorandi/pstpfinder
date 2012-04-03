@@ -627,7 +627,7 @@ namespace PstpFinder
     float* meanSas;
     float* fIndex;
     SasAtom* sasAtoms = 0;
-    SasAnalysis* sasAnalysis;
+    SasAnalysis<fstream>* sasAnalysis;
     unsigned int counter = 0;
 
     const float frames = gromacs.getFramesCount();
@@ -640,7 +640,7 @@ namespace PstpFinder
     /* First of all we need to calculate SAS means */
     setStatusDescription("Calculating SAS means");
     setStatus(0);
-    sasAnalysis = new SasAnalysis(gromacs, sessionFileName, false);
+    sasAnalysis = new SasAnalysis<fstream>(gromacs, sessionFileName, false);
     (*sasAnalysis) >> sasAtoms;
     while(sasAtoms != 0)
     {
@@ -679,7 +679,7 @@ namespace PstpFinder
     setStatusDescription("Searching for zeros and normalizing SAS");
     setStatus(0);
     counter = 0;
-    sasAnalysis = new SasAnalysis(gromacs, sessionFileName, false);
+    sasAnalysis = new SasAnalysis<fstream>(gromacs, sessionFileName, false);
     (*sasAnalysis) >> sasAtoms;
     while(sasAtoms != 0)
     {

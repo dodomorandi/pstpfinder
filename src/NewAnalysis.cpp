@@ -300,6 +300,7 @@ namespace PstpFinder
     if(entrySessionFile.get_text().empty())
       writeSession = false;
 
+    Session<ofstream> session;
     std::ofstream sessionFile;
     if(writeSession)
     {
@@ -324,7 +325,7 @@ namespace PstpFinder
 
     if(abortFlag)
       return;
-    gromacs->calculateSas();
+    gromacs->calculateSas(session);
 
     while((currentFrame = gromacs->getCurrentFrame()) < count)
     {
@@ -523,7 +524,7 @@ namespace PstpFinder
     while(Main::events_pending())
       Main::iteration();
 
-    Session sessionFile(sessionFileName);
+    Session<ifstream> sessionFile(sessionFileName);
     std::string tmpString;
 
     trjChooser.set_filename(sessionFile.getTrajectoryFileName());

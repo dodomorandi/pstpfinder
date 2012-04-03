@@ -214,9 +214,10 @@ namespace PstpFinder
   }
 
   void
-  Gromacs::calculateSas()
+  Gromacs::calculateSas(Session<ofstream>& session)
   {
-    operationThread = thread(bind(&Gromacs::__calculateSas, ref(*this)));
+    operationThread = thread(
+        bind(&Gromacs::__calculateSas, ref(*this), ref(session)));
   }
 
   void
@@ -234,7 +235,7 @@ namespace PstpFinder
   }
 
   void
-  Gromacs::__calculateSas()
+  Gromacs::__calculateSas(Session<ofstream>& session)
   {
     bool bTop, bDGsol;
     real totarea, totvolume;
@@ -288,7 +289,7 @@ namespace PstpFinder
     }
 
     gpbc = gmx_rmpbc_init(&top.idef, ePBC, natoms, box);
-    SasAnalysis sasAnalysis(nx, *this);
+    SasAnalysis<ofstream> sasAnalysis(nx, *this, session);
 
     do
     {
