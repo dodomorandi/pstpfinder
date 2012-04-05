@@ -23,7 +23,7 @@
 #include "SasAtom.h"
 #include "Gromacs.h"
 #include "Session.h"
-#include "OperationThread.h"
+#include "SasAnalysisThread.h"
 
 #include <thread>
 #include <sys/sysinfo.h>
@@ -43,7 +43,7 @@ namespace fs = boost::filesystem;
 namespace PstpFinder
 {
   template<typename T, typename>
-  class OperationThread;
+  class SasAnalysisThread;
 
   template<typename T>
   class SasAnalysis
@@ -102,10 +102,10 @@ namespace PstpFinder
         MODE_SAVE
       } mode;
 
-      template<typename> friend class OperationThread_Base;
-      template<typename, typename> friend class OperationThread;
-      typedef OperationThread<T> OperationThreadType;
-      OperationThreadType* operationThread;
+      template<typename> friend class SasAnalysisThread_Base;
+      template<typename, typename> friend class SasAnalysisThread;
+      typedef SasAnalysisThread<T> SasAnalysisThreadType;
+      SasAnalysisThreadType* analysisThread;
 
       void
       init(bool savingMode = true);
@@ -198,15 +198,15 @@ namespace PstpFinder
     {
       if(frames.size() != 0)
         flush();
-      operationThread->stop();
-      delete operationThread;
+      analysisThread->stop();
+      delete analysisThread;
 
       delete outArchive;
     }
     else
     {
-      operationThread->stop();
-      delete operationThread;
+      analysisThread->stop();
+      delete analysisThread;
 
       delete inArchive;
     }
@@ -222,7 +222,7 @@ namespace PstpFinder
       changeable = false;
       outArchive = new archive::binary_oarchive(sasMetaStream);
 
-      operationThread = new OperationThreadType(*this);
+      analysisThread = new SasAnalysisThreadType(*this);
     }
 
     std::copy(sasAtoms, sasAtoms + nAtoms, tmpFrame);
@@ -248,7 +248,7 @@ namespace PstpFinder
       changeable = false;
       inArchive = new archive::binary_iarchive(sasMetaStream);
 
-      operationThread = new OperationThreadType(*this);
+      analysisThread = new SasAnalysisThreadType(*this);
     }
 
     if(frames.size() == 0)
@@ -297,7 +297,7 @@ namespace PstpFinder
       frames = chunks.front();
       i = frames.begin();
 
-      operationThread->wakeUp();
+      analysisThread->wakeUp();
       bufferMutex.unlock();
     }
 
@@ -318,7 +318,7 @@ namespace PstpFinder
       changeable = false;
       outArchive = new archive::binary_oarchive(sasMetaStream);
 
-      operationThread = new OperationThreadType(*this);
+      analysisThread = new SasAnalysisThreadType(*this);
     }
 
     bufferMutex.lock();
@@ -333,7 +333,7 @@ namespace PstpFinder
     chunks.push_back(frames);
 
     frames.clear();
-    operationThread->wakeUp();
+    analysisThread->wakeUp();
     bufferMutex.unlock();
 
   }

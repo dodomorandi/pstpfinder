@@ -17,8 +17,8 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _OPERATIONTHREAD_H
-#define _OPERATIONTHREAD_H
+#ifndef _SASANALYSISTHREAD_H
+#define _SASANALYSISTHREAD_H
 
 #include "SasAnalysis.h"
 
@@ -28,11 +28,11 @@ namespace PstpFinder
   class SasAnalysis;
 
   template<typename T>
-  class OperationThread_Base
+  class SasAnalysisThread_Base
   {
     public:
-      OperationThread_Base(SasAnalysis<T>& parent);
-      virtual ~OperationThread_Base();
+      SasAnalysisThread_Base(SasAnalysis<T>& parent);
+      virtual ~SasAnalysisThread_Base();
       virtual void wakeUp();
       virtual void stop();
       void threadSave();
@@ -41,27 +41,27 @@ namespace PstpFinder
     protected:
       SasAnalysis<T>* parent;
       bool isStopped;
-      thread operationThread;
+      thread analysisThread;
       condition_variable wakeCondition;
       mutex wakeMutex;
   };
 
   template<typename T>
-  OperationThread_Base<T>::OperationThread_Base(SasAnalysis<T>& parent)
+  SasAnalysisThread_Base<T>::SasAnalysisThread_Base(SasAnalysis<T>& parent)
   {
     this->parent = &parent;
     isStopped = false;
   }
 
   template<typename T>
-  OperationThread_Base<T>::~OperationThread_Base()
+  SasAnalysisThread_Base<T>::~SasAnalysisThread_Base()
   {
     stop();
   }
 
   template<typename T>
   void
-  OperationThread_Base<T>::threadSave()
+  SasAnalysisThread_Base<T>::threadSave()
   {
     while(not isStopped)
     {
@@ -113,7 +113,7 @@ namespace PstpFinder
 
   template<typename T>
   void
-  OperationThread_Base<T>::threadOpen()
+  SasAnalysisThread_Base<T>::threadOpen()
   {
     while(not isStopped)
     {
@@ -155,19 +155,19 @@ namespace PstpFinder
 
   template<typename T>
   void
-  OperationThread_Base<T>::wakeUp()
+  SasAnalysisThread_Base<T>::wakeUp()
   {
     wakeCondition.notify_one();
   }
 
   template<typename T>
   void
-  OperationThread_Base<T>::stop()
+  SasAnalysisThread_Base<T>::stop()
   {
     if(isStopped)
     {
-      if(operationThread.joinable())
-        operationThread.join();
+      if(analysisThread.joinable())
+        analysisThread.join();
       return;
     }
 
@@ -176,71 +176,71 @@ namespace PstpFinder
     wakeCondition.notify_one();
     parent->bufferMutex.unlock();
 
-    if(operationThread.joinable())
-      operationThread.join();
+    if(analysisThread.joinable())
+      analysisThread.join();
   }
 
   template<typename T, typename = void>
-  class OperationThread;
+  class SasAnalysisThread;
 
   template<typename T>
-  class OperationThread<T, typename enable_if<
+  class SasAnalysisThread<T, typename enable_if<
     is_base_of<base_stream(basic_istream), T>::value and
     not is_base_of<base_stream(basic_ostream), T>::value>::type>
-    : public OperationThread_Base<T>
+    : public SasAnalysisThread_Base<T>
   {
     public:
-      OperationThread(SasAnalysis<T>& parent) :
-        OperationThread_Base<T>(parent)
+      SasAnalysisThread(SasAnalysis<T>& parent) :
+        SasAnalysisThread_Base<T>(parent)
       {
-        this->operationThread = thread(
-              bind(&OperationThread_Base<T>::threadOpen, ref(*this)));
+        this->analysisThread = thread(
+              bind(&SasAnalysisThread_Base<T>::threadOpen, ref(*this)));
       }
-      virtual ~OperationThread() {}
-      virtual void threadOpen() { OperationThread_Base<T>::threadOpen(); }
+      virtual ~SasAnalysisThread() {}
+      virtual void threadOpen() { SasAnalysisThread_Base<T>::threadOpen(); }
   };
 
   template<typename T>
-  class OperationThread<T, typename enable_if<
+  class SasAnalysisThread<T, typename enable_if<
     not is_base_of<base_stream(basic_istream), T>::value and
     is_base_of<base_stream(basic_ostream), T>::value>::type>
-    : public OperationThread_Base<T>
+    : public SasAnalysisThread_Base<T>
   {
     public:
-      OperationThread(SasAnalysis<T>& parent):
-        OperationThread_Base<T>(parent)
+      SasAnalysisThread(SasAnalysis<T>& parent):
+        SasAnalysisThread_Base<T>(parent)
       {
-        this->operationThread = thread(
-            bind(&OperationThread_Base<T>::threadSave, ref(*this)));
+        this->analysisThread = thread(
+            bind(&SasAnalysisThread_Base<T>::threadSave, ref(*this)));
       }
-      virtual ~OperationThread() {}
-      virtual void threadSave() { OperationThread_Base<T>::threadSave(); }
+      virtual ~SasAnalysisThread() {}
+      virtual void threadSave() { SasAnalysisThread_Base<T>::threadSave(); }
   };
 
   template<typename T>
-  class OperationThread<T, typename enable_if<
+  class SasAnalysisThread<T, typename enable_if<
     is_base_of<base_stream(basic_istream), T>::value and
     is_base_of<base_stream(basic_ostream), T>::value>::type>
-    : public OperationThread_Base<T>
+    : public SasAnalysisThread_Base<T>
   {
     public:
-      OperationThread(SasAnalysis<T>& parent):
-        OperationThread_Base<T>(parent)
+      SasAnalysisThread(SasAnalysis<T>& parent):
+        SasAnalysisThread_Base<T>(parent)
       {
         if(parent.mode == SasAnalysis<T>::MODE_OPEN)
         {
-          this->operationThread = thread(
-                bind(&OperationThread_Base<T>::threadOpen, ref(*this)));
+          this->analysisThread = thread(
+                bind(&SasAnalysisThread_Base<T>::threadOpen, ref(*this)));
         }
         else
         {
-          this->operationThread = thread(
-              bind(&OperationThread_Base<T>::threadSave, ref(*this)));
+          this->analysisThread = thread(
+              bind(&SasAnalysisThread_Base<T>::threadSave, ref(*this)));
         }
       }
-      virtual ~OperationThread() {}
-      virtual void threadSave() { OperationThread_Base<T>::threadSave(); }
+      virtual ~SasAnalysisThread() {}
+      virtual void threadSave() { SasAnalysisThread_Base<T>::threadSave(); }
   };
 }
 
-#endif /* _OPERATIONTHREAD_H */
+#endif /* _SASANALYSISTHREAD_H */
