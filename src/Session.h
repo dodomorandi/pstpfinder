@@ -49,12 +49,16 @@ namespace PstpFinder
       const bool isRawSasSession() const;
       MetaStream<T>& getPdbStream();
       unsigned long getPdbSize() const;
+      const bool isPittpiAvailable() const;
+      unsigned long getPittpiSize() const;
+      MetaStream<T>& getPittpiStream();
 
       Session& operator =(const Session& session);
 
     private:
       const bool ready;
       bool rawSasSession;
+      bool pittpiAvailable;
       const string sessionFileName;
       T sessionFile;
       string trajectoryFileName;
@@ -67,8 +71,11 @@ namespace PstpFinder
       streampos sasDataEnd;
       streampos pdbDataStart;
       streampos pdbDataEnd;
+      streampos pittpiDataStart;
+      streampos pittpiDataEnd;
       unique_ptr<MetaStream<T>> sasMetaStream;
       unique_ptr<MetaStream<T>> pdbMetaStream;
+      unique_ptr<MetaStream<T>> pittpiMetaStream;
 
       void readSession(const string& fileName);
       inline void assertRegularType() const;
@@ -188,6 +195,33 @@ namespace PstpFinder
   }
 
   template<typename T>
+  const bool
+  Session<T>::isPittpiAvailable() const
+  {
+    return pittpiAvailable;
+  }
+
+  template<typename T>
+  MetaStream<T>&
+  Session<T>::getPittpiStream()
+  {
+    assert(ready);
+    assert(not rawSasSession);
+    assert(pittpiAvailable);
+    return *pittpiMetaStream;
+  }
+
+  template<typename T>
+  unsigned long
+  Session<T>::getPittpiSize() const
+  {
+    assert(ready);
+    assert(not rawSasSession);
+    assert(pittpiAvailable);
+    return pittpiDataEnd - pittpiDataStart;
+  }
+
+  template<typename T>
   Session<T>&
   Session<T>::operator =(const Session<T>& session)
   {
@@ -202,7 +236,11 @@ namespace PstpFinder
       new (this) Session(session.sessionFileName);
       sasMetaStream->seekg(session.sasMetaStream->tellg());
       if(not session.rawSasSession)
+      {
         pdbMetaStream->seekg(session.pdbMetaStream->tellg());
+        if(pittpiAvailable)
+          pittpiMetaStream->seekg(session.pittpiMetaStream->tellg());
+      }
     }
 
     return *this;
@@ -253,10 +291,30 @@ namespace PstpFinder
                               pdbDataEnd));
       if(sessionFile.peek() == '\n')
         (void) (sessionFile.get());
+
+      sessionFile.peek();
+      if(not sessionFile.eof())
+      {
+        pittpiAvailable = true;
+        sessionFile >> dataUInt;
+        if(sessionFile.peek() == '\n')
+          (void) (sessionFile.get());
+        pittpiDataStart = sessionFile.tellg();
+        sessionFile.seekg(dataUInt, ios::cur);
+        pittpiDataEnd = sessionFile.tellg();
+        pittpiMetaStream = unique_ptr<MetaStream<T>>(
+              new MetaStream<T>(fileName,
+                                ios_base::in | ios_base::out | ios_base::binary,
+                                enumStreamType::STREAMTYPE_FIXED,
+                                pittpiDataStart, pittpiDataEnd));
+      }
+      else
+        pittpiAvailable = false;
     }
     else
     {
       rawSasSession = true;
+      pittpiAvailable = false;
       sessionFile.seekg(0);
       sasDataStart = sessionFile.tellg();
       sessionFile.seekg(0, ios_base::end);

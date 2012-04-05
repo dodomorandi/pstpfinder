@@ -24,6 +24,9 @@
 #include "Gromacs.h"
 #include "Protein.h"
 
+#include <boost/archive/binary_oarchive.hpp>
+#include <boost/archive/binary_iarchive.hpp>
+
 #include <vector>
 #include <thread>
 
@@ -51,7 +54,9 @@ namespace PstpFinder
 
       vector<float> sas;
       unsigned int zeros;
-    private:
+    protected:
+      Group() : referenceAtom(nullptr), referenceRes(nullptr) {}
+
       const PdbAtom* referenceAtom;
       const Residue* referenceRes;
       vector<const Residue*> residues;
@@ -101,6 +106,8 @@ namespace PstpFinder
       return *this;
     }
 
+    protected:
+      Pocket() : group(nullptr) {}
   };
 
   /**
@@ -134,6 +141,50 @@ namespace PstpFinder
       void abort();
       const vector<Pocket>& getPockets() const;
     private:
+      class SerializablePockets
+      {
+        public:
+          struct SerializablePocket : public Pocket
+          {
+            friend class boost::serialization::access;
+            long groupIndex;
+
+            SerializablePocket() = default;
+            SerializablePocket(const Pocket& pocket) : Pocket(pocket) {}
+          };
+
+          SerializablePockets() = default;
+          SerializablePockets(const vector<Pocket>& pockets,
+                              const vector<Group>& groups);
+          void updatePockets(vector<Pocket>& pocketsToUpdate) const;
+
+        private:
+          vector<SerializablePocket> pockets;
+      };
+
+      class SerializableGroups
+      {
+        public:
+          class SerializableGroup : public Group
+          {
+            public:
+              friend class boost::serialization::access;
+              friend class Pittpi::SerializableGroups;
+              long referenceAtomIndex, referenceResIndex;
+              vector<long> residuesIndex;
+
+              SerializableGroup() = default;
+              SerializableGroup(const Group& group) : Group(group) {}
+          };
+
+          SerializableGroups() = default;
+          SerializableGroups(const vector<Group>& groups,
+                             const Protein& protein);
+          void updateGroups(vector<Group>& groupsToUpdate) const;
+
+        private:
+          vector<SerializableGroup> groups;
+      };
       void makeGroups(float radius);
       void fillGroups(const string& sessionFileName, unsigned int timeStep);
       std::vector<Group> makeGroupsByDistance(const std::vector<Atom>& centers,
@@ -149,6 +200,7 @@ namespace PstpFinder
       Protein runSadic(const Protein& structure) const;
 #endif
 
+      friend class boost::serialization::access;
       Gromacs gromacs;
       std::string sessionFileName;
       float radius;
