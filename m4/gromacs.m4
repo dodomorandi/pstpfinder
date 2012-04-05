@@ -30,7 +30,6 @@ AC_CHECK_LIB([gmx],[read_tpx],,
      [Install it or set the environment variable GROMACS_LIBRARY_PATH]])])
 
 ax_cv_gromacs=ax_cv_gromacs
-CPPFLAGS="$CPPFLAGS -D_assert_h"
 
 AC_SUBST([CPPFLAGS])
 AC_SUBST([LDFLAGS])
