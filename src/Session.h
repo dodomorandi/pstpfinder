@@ -38,6 +38,7 @@ namespace PstpFinder
     public:
       Session();
       Session(const string& fileName);
+      Session& operator =(const Session&) = delete;
       string getTrajectoryFileName() const;
       string getTopologyFileName() const;
       unsigned long getBeginTime() const;
@@ -52,8 +53,6 @@ namespace PstpFinder
       const bool isPittpiAvailable() const;
       unsigned long getPittpiSize() const;
       MetaStream<T>& getPittpiStream();
-
-      Session& operator =(const Session& session);
 
     private:
       const bool ready;
@@ -219,31 +218,6 @@ namespace PstpFinder
     assert(not rawSasSession);
     assert(pittpiAvailable);
     return pittpiDataEnd - pittpiDataStart;
-  }
-
-  template<typename T>
-  Session<T>&
-  Session<T>::operator =(const Session<T>& session)
-  {
-    if(&session == this)
-      return *this;
-
-    this->~Session();
-    if(session.sessionFileName == "")
-      new (this) Session();
-    else
-    {
-      new (this) Session(session.sessionFileName);
-      sasMetaStream->seekg(session.sasMetaStream->tellg());
-      if(not session.rawSasSession)
-      {
-        pdbMetaStream->seekg(session.pdbMetaStream->tellg());
-        if(pittpiAvailable)
-          pittpiMetaStream->seekg(session.pittpiMetaStream->tellg());
-      }
-    }
-
-    return *this;
   }
 
   template<typename T>
