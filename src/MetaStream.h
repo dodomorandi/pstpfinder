@@ -386,9 +386,10 @@ namespace PstpFinder
         init(begin, end, streamType);
       }
 
-      template<typename U>
-      MetaStream& operator >>(const U& out) { Base::operator >>(out); return *this;}
 #ifdef NDEBUG
+      template<typename U>
+      virtual MetaStream& operator >>(const U& out)
+        { Base::operator >>(out); return *this;}
       virtual streamsize read(char* data, streamsize length)
         { return Base::read(data, length);}
       virtual MetaStream& seekg(streamsize pos)
@@ -451,9 +452,10 @@ namespace PstpFinder
         init(begin, end, streamType);
       }
 
-      template<typename U>
-      MetaStream& operator <<(const U& in) { Base::operator <<(in); return *this;}
 #ifdef NDEBUG
+      template<typename U>
+      virtual MetaStream& operator <<(const U& in)
+        { Base::operator <<(in); return *this;}
       virtual MetaStream& write(const char_type* data, streamsize length)
         { Base::write(data, length); return *this;}
       virtual streamsize tellp() { return Base::tellp();}
@@ -517,11 +519,10 @@ namespace PstpFinder
         init(begin, end, streamType);
       }
 
-      template<typename U>
-      MetaStream& operator >>(const U& out) { Base::operator >>(out); return *this;}
-      template<typename U>
-      MetaStream& operator <<(const U& in) { Base::operator <<(in); return *this;}
 #ifdef NDEBUG
+      template<typename U>
+      virtual MetaStream& operator >>(const U& out)
+        { Base::operator >>(out); return *this;}
       virtual streamsize read(char* data, streamsize length)
         { return Base::read(data, length);}
       virtual MetaStream& seekg(streamsize pos)
@@ -530,6 +531,9 @@ namespace PstpFinder
         { Base::seekg(pos, way); return *this;}
       virtual streamsize tellg() { return Base::tellg();}
       virtual int_type peek() { return Base::peek(); }
+      template<typename U>
+      virtual MetaStream& operator <<(const U& in)
+        { Base::operator <<(in); return *this;}
       virtual MetaStream& write(const char_type* data, streamsize length)
         { Base::write(data, length); return *this;}
       virtual streamsize tellp() { return Base::tellp();}
