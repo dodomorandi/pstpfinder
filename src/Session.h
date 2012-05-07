@@ -21,6 +21,7 @@
 #define SESSION_H_
 
 #include "MetaStream.h"
+#include "stream_utils.h"
 #include <string>
 #include <iostream>
 #include <memory>
@@ -307,8 +308,8 @@ namespace PstpFinder
   inline void
   Session<T>::assertRegularType() const
   {
-    static_assert(is_base_of<base_stream(basic_istream), T>::value or
-                  is_base_of<base_stream(basic_ostream), T>::value,
+    static_assert(is_base_of<base_stream(basic_istream, T), T>::value or
+                  is_base_of<base_stream(basic_ostream, T), T>::value,
                   "T must have basic_istream or basic_ostream as base class");
   }
 } /* namespace PstpFinder */

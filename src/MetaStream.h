@@ -20,6 +20,8 @@
 #ifndef METASTREAM_H_
 #define METASTREAM_H_
 
+#include "stream_utils.h"
+
 #include <string>
 #include <sstream>
 #include <iostream>
@@ -36,8 +38,6 @@ namespace io = boost::iostreams;
 
 namespace PstpFinder
 {
-#define base_stream(stream) stream<typename T::char_type, \
-                                    typename T::traits_type>
   enum enumStreamType
   {
     STREAMTYPE_FIXED,
@@ -334,22 +334,22 @@ namespace PstpFinder
       inline void
       assert_basic_istream() const
       {
-        static_assert(is_base_of<base_stream(basic_istream), T>::value,
+        static_assert(is_base_of<base_stream(basic_istream, T), T>::value,
                       "class derives from basic_istream");
       }
 
       inline void
       assert_basic_ostream() const
       {
-        static_assert(is_base_of<base_stream(basic_ostream), T>::value,
+        static_assert(is_base_of<base_stream(basic_ostream, T), T>::value,
                       "class derives from basic_ostream");
       }
 
       inline void
       assert_basic_stream() const
       {
-        static_assert(is_base_of<base_stream(basic_istream), T>::value or
-                      is_base_of<base_stream(basic_ostream), T>::value,
+        static_assert(is_base_of<base_stream(basic_istream, T), T>::value or
+                      is_base_of<base_stream(basic_ostream, T), T>::value,
                       "class derives from basic_istream or basic_ostream");
       }
   };
@@ -359,8 +359,8 @@ namespace PstpFinder
 
   template<typename T>
   class MetaStream<T, typename enable_if<
-            is_base_of<base_stream(basic_istream), T>::value and
-            not is_base_of<base_stream(basic_ostream), T>::value>::type>
+            is_base_of<base_stream(basic_istream, T), T>::value and
+            not is_base_of<base_stream(basic_ostream, T), T>::value>::type>
     : public MetaStream_Base<T>
   {
     public:
@@ -425,8 +425,8 @@ namespace PstpFinder
 
   template<typename T>
   class MetaStream<T, typename enable_if<
-            not is_base_of<base_stream(basic_istream), T>::value and
-            is_base_of<base_stream(basic_ostream), T>::value>::type>
+            not is_base_of<base_stream(basic_istream, T), T>::value and
+            is_base_of<base_stream(basic_ostream, T), T>::value>::type>
     : public MetaStream_Base<T>
   {
     public:
@@ -492,8 +492,8 @@ namespace PstpFinder
 
   template<typename T>
   class MetaStream<T, typename enable_if<
-            is_base_of<base_stream(basic_istream), T>::value and
-            is_base_of<base_stream(basic_ostream), T>::value>::type>
+            is_base_of<base_stream(basic_istream, T), T>::value and
+            is_base_of<base_stream(basic_ostream, T), T>::value>::type>
     : public MetaStream_Base<T>
   {
     public:
