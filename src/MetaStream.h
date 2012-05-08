@@ -38,7 +38,7 @@ namespace io = boost::iostreams;
 
 namespace PstpFinder
 {
-  enum enumStreamType
+  enum class enumStreamType
   {
     STREAMTYPE_FIXED,
     STREAMTYPE_ADJUST
@@ -67,7 +67,7 @@ namespace PstpFinder
       */
 
       MetaStream_Base() :
-            T(), streamType(STREAMTYPE_FIXED), valid(false)
+          T(), streamType(enumStreamType::STREAMTYPE_FIXED), valid(false)
       {
       }
 
@@ -81,7 +81,9 @@ namespace PstpFinder
       MetaStream_Base(const string& filename,
                         ios_base::ios_base::openmode flags,
                         enumStreamType streamType) :
-            T(filename, flags), streamType(STREAMTYPE_FIXED), valid(true)
+        T(filename, flags),
+        streamType(enumStreamType::STREAMTYPE_FIXED),
+        valid(true)
       {
       }
 
@@ -366,6 +368,7 @@ namespace PstpFinder
     public:
       typedef typename T::char_type char_type;
       typedef typename T::off_type off_type;
+      typedef typename T::int_type int_type;
 
       MetaStream() : Base() {}
       MetaStream(const MetaStream& metaStream) : Base(metaStream) {}
@@ -386,9 +389,9 @@ namespace PstpFinder
         init(begin, end, streamType);
       }
 
-#ifdef NDEBUG
+#ifndef NDEBUG
       template<typename U>
-      virtual MetaStream& operator >>(const U& out)
+      MetaStream& operator >>(const U& out)
         { Base::operator >>(out); return *this;}
       virtual streamsize read(char* data, streamsize length)
         { return Base::read(data, length);}
@@ -432,6 +435,7 @@ namespace PstpFinder
     public:
       typedef typename T::char_type char_type;
       typedef typename T::off_type off_type;
+      typedef typename T::int_type int_type;
 
       MetaStream() : Base() {}
       MetaStream(const MetaStream& metaStream) : Base(metaStream) {}
@@ -452,9 +456,9 @@ namespace PstpFinder
         init(begin, end, streamType);
       }
 
-#ifdef NDEBUG
+#ifndef NDEBUG
       template<typename U>
-      virtual MetaStream& operator <<(const U& in)
+      MetaStream& operator <<(const U& in)
         { Base::operator <<(in); return *this;}
       virtual MetaStream& write(const char_type* data, streamsize length)
         { Base::write(data, length); return *this;}
@@ -474,9 +478,9 @@ namespace PstpFinder
                 end == -1));
 
         if(begin == -1)
-        Base::streamBegin = T::tellp();
+          Base::streamBegin = T::tellp();
         else
-        Base::streamBegin = begin;
+          Base::streamBegin = begin;
 
         if(end == -1)
         {
@@ -484,7 +488,7 @@ namespace PstpFinder
           Base::streamEnd = T::tellp();
         }
         else
-        Base::streamEnd = end;
+          Base::streamEnd = end;
 
         T::seekp(Base::streamBegin, ios_base::beg);
       }
@@ -499,6 +503,7 @@ namespace PstpFinder
     public:
       typedef typename T::char_type char_type;
       typedef typename T::off_type off_type;
+      typedef typename T::int_type int_type;
 
       MetaStream() : Base() {}
       MetaStream(const MetaStream& metaStream) : Base(metaStream) {}
@@ -519,9 +524,9 @@ namespace PstpFinder
         init(begin, end, streamType);
       }
 
-#ifdef NDEBUG
+#ifndef NDEBUG
       template<typename U>
-      virtual MetaStream& operator >>(const U& out)
+      MetaStream& operator >>(const U& out)
         { Base::operator >>(out); return *this;}
       virtual streamsize read(char* data, streamsize length)
         { return Base::read(data, length);}
@@ -532,7 +537,7 @@ namespace PstpFinder
       virtual streamsize tellg() { return Base::tellg();}
       virtual int_type peek() { return Base::peek(); }
       template<typename U>
-      virtual MetaStream& operator <<(const U& in)
+      MetaStream& operator <<(const U& in)
         { Base::operator <<(in); return *this;}
       virtual MetaStream& write(const char_type* data, streamsize length)
         { Base::write(data, length); return *this;}
