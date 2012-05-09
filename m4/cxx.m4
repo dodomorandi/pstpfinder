@@ -21,11 +21,9 @@ AC_DEFUN([AX_CXX_CHECK_STD], [
   	
   CPPFLAGS="-std=c++0x"
   AC_MSG_CHECKING([if C++ compiler supports -std=c++0x])
-  AC_LANG_CONFTEST(
-    [AC_LANG_SOURCE([int main(){return 0;}])])
   AC_COMPILE_IFELSE(
-    [AC_LANG_PROGRAM([#include <initializer_list>],
-     [std::initializer_list<int> list;])],[
+    [AC_LANG_PROGRAM([[#include <initializer_list>]],
+     [[std::initializer_list<int> list;]])],[
     AC_MSG_RESULT([yes])
     AC_SUBST([CXX_SUPPORTS_CXX0X], [1])
   ],[
