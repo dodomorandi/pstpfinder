@@ -17,10 +17,12 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef STREAM_UTILS_H_
-#define STREAM_UTILS_H_
+#ifndef UTILS_H_
+#define UTILS_H_
 
-#define base_stream(stream, T) stream<typename T::char_type, \
-                                    typename T::traits_type>
-
-#endif /* STREAM_UTILS_H_ */
+namespace PstpFinder
+{
+  #define base_stream(stream, T) stream<typename T::char_type, \
+                                      typename T::traits_type>
+}
+#endif /* UTILS_H_ */

@@ -32,7 +32,7 @@ namespace PstpFinder
 #include "Gromacs.h"
 #include "Session.h"
 #include "SasAnalysisThread.h"
-#include "stream_utils.h"
+#include "utils.h"
 
 #include <thread>
 #include <sys/sysinfo.h>

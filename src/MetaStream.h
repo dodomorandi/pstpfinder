@@ -20,21 +20,18 @@
 #ifndef METASTREAM_H_
 #define METASTREAM_H_
 
-#include "stream_utils.h"
+#include "utils.h"
 
 #include <string>
 #include <sstream>
 #include <iostream>
+#include <iomanip>
 #include <fstream>
-#include <iosfwd>
 #include <cassert>
 #include <type_traits>
 #include <functional>
-#include <algorithm>
-#include <boost/iostreams/categories.hpp>
 
 using namespace std;
-namespace io = boost::iostreams;
 
 namespace PstpFinder
 {
@@ -44,16 +41,23 @@ namespace PstpFinder
     STREAMTYPE_ADJUST
   };
 
+  template<typename T, typename = void>
+  class MetaStream;
+
   template<typename T>
   class MetaStream_Base : public T
   {
     public:
       typedef typename T::off_type off_type;
       typedef typename T::char_type char_type;
+      typedef typename T::traits_type traits_type;
       typedef typename T::int_type int_type;
-      typedef io::source_tag category;
-      function<void(size_t)> eventBeforeExtendingStream;
-      function<void()> eventAfterExtendingStream;
+
+      function<void(size_t)> callbackBeforeExtending;
+      function<void()> callbackAfterExtending;
+      function<void()> callbackClose;
+      function<void()> callbackDestroy;
+
       /*
        * FIXME
        * Can't use this... g++ 4.6.1 still doesn't support template aliases.
@@ -82,7 +86,7 @@ namespace PstpFinder
                         ios_base::ios_base::openmode flags,
                         enumStreamType streamType) :
         T(filename, flags),
-        streamType(enumStreamType::STREAMTYPE_FIXED),
+        streamType(streamType),
         valid(true)
       {
       }
@@ -92,6 +96,23 @@ namespace PstpFinder
         T(move(stream)), streamType(streamType),
         valid(true)
       {
+      }
+
+      ~MetaStream_Base()
+      {
+        if(T::is_open())
+          close();
+        if(callbackDestroy)
+        {
+          try
+          {
+            callbackDestroy();
+          }
+          catch(const bad_function_call& e)
+          {
+            cerr << "Warning: " << e.what() << endl;
+          }
+        }
       }
 
       // basic_istream related functions.
@@ -124,6 +145,8 @@ namespace PstpFinder
         }
         else
           T::operator>>(out);
+
+        return *this;
       }
 
       streamsize
@@ -198,17 +221,49 @@ namespace PstpFinder
       // basic_ostream related functions.
       template<typename U>
       MetaStream_Base&
-      operator <<(U& in)
+      operator <<(U in)
+      {
+        return dumpStream(in);
+      }
+
+      MetaStream_Base&
+      operator <<(base_stream(basic_ostream, T)&(*pf)
+                  (base_stream(basic_ostream, T)&))
+      {
+        return dumpStream(pf);
+      }
+
+      MetaStream_Base&
+      operator <<(ios_base&(*pf)(ios_base&))
+      {
+        return dumpStream(pf);
+      }
+
+      MetaStream_Base&
+      operator <<(basic_ios<char_type, traits_type>&(*pf)
+                  (basic_ios<char_type, traits_type>&))
+      {
+        return dumpStream(pf);
+      }
+
+      template<typename U>
+      inline MetaStream_Base&
+      dumpStream(U in)
       {
         assert_basic_ostream();
         assert(valid);
 
         streamoff currentPosition = T::tellp();
         off_type finalPosition = currentPosition;
+        static basic_stringstream<char_type> tempBuffer;
         {
-          streambuf tempBuffer;
           tempBuffer << in;
-          currentPosition += tempBuffer.pubseekpos(0);
+          streamoff tempOffset(tempBuffer.tellp());
+          if(tempOffset > 0)
+          {
+            currentPosition += tempOffset;
+            tempBuffer.str("");
+          }
         }
 
         if(finalPosition > streamEnd)
@@ -216,11 +271,11 @@ namespace PstpFinder
           if(streamType == enumStreamType::STREAMTYPE_FIXED)
             throw;
 
-          if(eventBeforeExtendingStream)
+          if(callbackBeforeExtending)
           {
             try
             {
-              eventBeforeExtendingStream(finalPosition - streamEnd);
+              callbackBeforeExtending(finalPosition - streamEnd);
             }
             catch(const bad_function_call& e)
             {
@@ -228,13 +283,14 @@ namespace PstpFinder
             }
           }
 
-          T::operator<<(in);
+          static_cast<T&>(*this) << in;
+          streamEnd = T::tellp();
 
-          if(eventAfterExtendingStream)
+          if(callbackAfterExtending)
           {
             try
             {
-              eventAfterExtendingStream();
+              callbackAfterExtending();
             }
             catch(const bad_function_call& e)
             {
@@ -243,7 +299,9 @@ namespace PstpFinder
           }
         }
         else
-          T::operator<<(in);
+          static_cast<T&>(*this) << in;
+
+        return *this;
       }
 
       MetaStream_Base&
@@ -255,18 +313,22 @@ namespace PstpFinder
         streamoff currentPosition = T::tellp();
         if(currentPosition + length > streamEnd)
         {
-          streamsize writtenBytes { streamEnd - currentPosition };
+          streamsize writtenBytes;
+          if(streamEnd - currentPosition >= 0)
+              writtenBytes = streamEnd - currentPosition;
+          else
+              writtenBytes = 0;
           streamsize remainingBytes { length - writtenBytes };
           T::write(data, writtenBytes);
 
           if(streamType == enumStreamType::STREAMTYPE_FIXED)
             throw;
 
-          if(eventBeforeExtendingStream)
+          if(callbackBeforeExtending)
           {
             try
             {
-              eventBeforeExtendingStream(remainingBytes);
+              callbackBeforeExtending(remainingBytes);
             }
             catch(const bad_function_call& e)
             {
@@ -275,12 +337,13 @@ namespace PstpFinder
           }
 
           T::write(data + writtenBytes, remainingBytes);
+          streamEnd += remainingBytes;
 
-          if(eventAfterExtendingStream)
+          if(callbackAfterExtending)
           {
             try
             {
-              eventAfterExtendingStream();
+              callbackAfterExtending();
             }
             catch(const bad_function_call& e)
             {
@@ -325,6 +388,25 @@ namespace PstpFinder
         return T::tellp() - streamBegin;
       }
 
+      void close()
+      {
+        if(T::is_open())
+        {
+          if(callbackClose)
+          {
+            try
+            {
+              callbackClose();
+            }
+            catch(const bad_function_call& e)
+            {
+              cerr << "Warning: " << e.what() << endl;
+            }
+          }
+        }
+        T::close();
+      }
+
     protected:
       off_type streamBegin;
       off_type streamEnd;
@@ -356,9 +438,6 @@ namespace PstpFinder
       }
   };
 
-  template<typename T, typename = void>
-  class MetaStream;
-
   template<typename T>
   class MetaStream<T, typename enable_if<
             is_base_of<base_stream(basic_istream, T), T>::value and
@@ -366,9 +445,7 @@ namespace PstpFinder
     : public MetaStream_Base<T>
   {
     public:
-      typedef typename T::char_type char_type;
       typedef typename T::off_type off_type;
-      typedef typename T::int_type int_type;
 
       MetaStream() : Base() {}
       MetaStream(const MetaStream& metaStream) : Base(metaStream) {}
@@ -388,20 +465,6 @@ namespace PstpFinder
       {
         init(begin, end, streamType);
       }
-
-#ifndef NDEBUG
-      template<typename U>
-      MetaStream& operator >>(const U& out)
-        { Base::operator >>(out); return *this;}
-      virtual streamsize read(char* data, streamsize length)
-        { return Base::read(data, length);}
-      virtual MetaStream& seekg(streamsize pos)
-        { Base::seekg(pos); return *this;}
-      virtual MetaStream& seekg(streamsize pos, ios_base::seek_dir way)
-        { Base::seekg(pos, way); return *this;}
-      virtual streamsize tellg() { return Base::tellg();}
-      virtual int_type peek() { return Base::peek(); }
-#endif
 
     private:
       typedef MetaStream_Base<T> Base;
@@ -433,9 +496,7 @@ namespace PstpFinder
     : public MetaStream_Base<T>
   {
     public:
-      typedef typename T::char_type char_type;
       typedef typename T::off_type off_type;
-      typedef typename T::int_type int_type;
 
       MetaStream() : Base() {}
       MetaStream(const MetaStream& metaStream) : Base(metaStream) {}
@@ -456,18 +517,12 @@ namespace PstpFinder
         init(begin, end, streamType);
       }
 
-#ifndef NDEBUG
-      template<typename U>
-      MetaStream& operator <<(const U& in)
-        { Base::operator <<(in); return *this;}
-      virtual MetaStream& write(const char_type* data, streamsize length)
-        { Base::write(data, length); return *this;}
-      virtual streamsize tellp() { return Base::tellp();}
-      virtual MetaStream& seekp(off_type pos)
-        { Base::seekp(pos); return *this;}
-      virtual MetaStream& seekp(off_type pos, ios_base::seek_dir way)
-        { Base::seekp(pos, way); return *this;}
-#endif
+      static MetaStream_Base<T>&
+      endl(MetaStream_Base<T>& stream)
+      {
+        std::endl(static_cast<T&>(stream));
+        return stream;
+      }
 
     private:
       typedef MetaStream_Base<T> Base;
@@ -501,9 +556,7 @@ namespace PstpFinder
     : public MetaStream_Base<T>
   {
     public:
-      typedef typename T::char_type char_type;
       typedef typename T::off_type off_type;
-      typedef typename T::int_type int_type;
 
       MetaStream() : Base() {}
       MetaStream(const MetaStream& metaStream) : Base(metaStream) {}
@@ -523,30 +576,6 @@ namespace PstpFinder
       {
         init(begin, end, streamType);
       }
-
-#ifndef NDEBUG
-      template<typename U>
-      MetaStream& operator >>(const U& out)
-        { Base::operator >>(out); return *this;}
-      virtual streamsize read(char* data, streamsize length)
-        { return Base::read(data, length);}
-      virtual MetaStream& seekg(streamsize pos)
-        { Base::seekg(pos); return *this;}
-      virtual MetaStream& seekg(streamsize pos, ios_base::seek_dir way)
-        { Base::seekg(pos, way); return *this;}
-      virtual streamsize tellg() { return Base::tellg();}
-      virtual int_type peek() { return Base::peek(); }
-      template<typename U>
-      MetaStream& operator <<(const U& in)
-        { Base::operator <<(in); return *this;}
-      virtual MetaStream& write(const char_type* data, streamsize length)
-        { Base::write(data, length); return *this;}
-      virtual streamsize tellp() { return Base::tellp();}
-      virtual MetaStream& seekp(off_type pos)
-        { Base::seekp(pos); return *this;}
-      virtual MetaStream& seekp(off_type pos, ios_base::seek_dir way)
-        { Base::seekp(pos, way); return *this;}
-#endif
 
     private:
       typedef MetaStream_Base<T> Base;

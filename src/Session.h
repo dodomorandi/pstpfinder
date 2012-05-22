@@ -21,7 +21,7 @@
 #define SESSION_H_
 
 #include "MetaStream.h"
-#include "stream_utils.h"
+#include "utils.h"
 #include <string>
 #include <iostream>
 #include <memory>
