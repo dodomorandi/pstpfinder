@@ -24,16 +24,15 @@
 #include "Results.h"
 #include "Session.h"
 #include "GtkmmWrapper.h"
+#include "utils.h"
 
 #include <gtkmm.h>
 #include <glibmm.h>
 #include <gdkmm.h>
 #include <fstream>
 #include <string>
-#include <boost/filesystem.hpp>
 
 using namespace Gtk;
-namespace fs = boost::filesystem;
 
 namespace PstpFinder
 {
@@ -391,7 +390,7 @@ namespace PstpFinder
   void
   NewAnalysis::chooserTrajectoryClicked() throw()
   {
-    if(not fs::exists(fs::path(static_cast<string>(trjChooser.get_filename()))))
+    if(not exists(trjChooser.get_filename()))
     {
       spinBegin.set_sensitive(false);
       spinEnd.set_sensitive(false);
@@ -438,8 +437,7 @@ namespace PstpFinder
   void
   NewAnalysis::checkParameters()
   {
-    if(fs::exists(fs::path(static_cast<string>(tprChooser.get_filename())))
-       and fs::exists(fs::path(static_cast<string>(trjChooser.get_filename()))))
+    if(exists(tprChooser.get_filename()) and exists(trjChooser.get_filename()))
       buttonRun.set_sensitive(true);
     else
       buttonRun.set_sensitive(false);
@@ -464,8 +462,8 @@ namespace PstpFinder
       case RESPONSE_OK:
       {
         string filename = chooser.get_filename();
-        if(fs::extension(fs::path(filename)) != ".csf")
-          filename = fs::change_extension(fs::path(filename), ".csf").string();
+        if(file_extension(filename) != ".csf")
+          filename = change_extension(filename, ".csf");
 
         entrySessionFile.set_text(filename);
         break;

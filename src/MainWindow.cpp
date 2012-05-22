@@ -21,14 +21,12 @@
 #include "MainWindow.h"
 #include "NewAnalysis.h"
 #include "GtkmmWrapper.h"
+#include "utils.h"
 
 #include <gtkmm.h>
 #include <vector>
 
-#include <boost/filesystem.hpp>
-
 using namespace Gtk;
-namespace fs = boost::filesystem;
 
 namespace PstpFinder
 {
@@ -116,7 +114,7 @@ namespace PstpFinder
     switch(response)
     {
       case RESPONSE_OK:
-        if(fs::exists(fs::path(filename)) and newAnalysis == 0)
+        if(exists(filename) and newAnalysis == 0)
         {
           hide();
           newAnalysis = new NewAnalysis(*this);

@@ -20,9 +20,17 @@
 #ifndef UTILS_H_
 #define UTILS_H_
 
+#include <string>
+
+using namespace std;
+
 namespace PstpFinder
 {
   #define base_stream(stream, T) stream<typename T::char_type, \
                                       typename T::traits_type>
+
+  bool exists(const string& filename);
+  string file_extension(const string& filename);
+  string change_extension(string filename, const string& new_extension);
 }
 #endif /* UTILS_H_ */

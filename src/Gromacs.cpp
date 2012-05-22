@@ -20,6 +20,7 @@
 #include "Gromacs.h"
 #include "SasAtom.h"
 #include "SasAnalysis.h"
+#include "utils.h"
 
 #include <string>
 #include <iostream>
@@ -36,9 +37,6 @@
 #include <gromacs/do_fit.h>
 #include <gromacs/smalloc.h>
 #include <gromacs/vec.h>
-
-#include <boost/filesystem.hpp>
-#include <boost/interprocess/sync/scoped_lock.hpp>
 
 using namespace std;
 
@@ -686,8 +684,7 @@ namespace PstpFinder
       return cachedNFrames;
     }
 
-    namespace file = boost::filesystem;
-    if(not file::exists(file::path(trjName)))
+    if(not exists(trjName))
       return 0;
 
     int nFrames = 0;
@@ -815,8 +812,6 @@ namespace PstpFinder
   void
   Gromacs::waitNextFrame(unsigned int refFrame) const
   {
-    namespace ip = boost::interprocess;
-
     while(not abortFlag and getCurrentFrame() < refFrame + 1)
     {
       unique_lock<mutex> slock(wakeMutex);
@@ -827,8 +822,7 @@ namespace PstpFinder
   float
   Gromacs::getTimeStep() const
   {
-    namespace file = boost::filesystem;
-    if(not file::exists(file::path(trjName)))
+    if(not exists(trjName))
       return 0;
 
     if(timeStepCached != 0)
@@ -864,8 +858,7 @@ namespace PstpFinder
   unsigned int
   Gromacs::getFrameStep() const
   {
-    namespace file = boost::filesystem;
-    if(not file::exists(file::path(trjName)))
+    if(exists(trjName))
       return 0;
 
     output_env_t _oenv;
