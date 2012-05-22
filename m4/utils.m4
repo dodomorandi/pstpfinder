@@ -1,3 +1,27 @@
+AC_DEFUN([AX_ENDIAN],[
+   AC_LANG_PUSH([C])
+   AC_MSG_CHECKING([system endianness])
+   AC_RUN_IFELSE(
+       [AC_LANG_PROGRAM([],[
+             int main(){
+                 unsigned short cafe = 0xCAFE;
+                 unsigned char *p = (unsigned char*)&cafe;
+                 if(*p == 0xFE)
+                   return 0; // Little endian
+                 else
+                   return 1; // Big endian
+             }
+          ])],[
+       AC_MSG_RESULT([little endian])
+       AC_DEFINE([PSTPFINDER_LITTLE_ENDIAN],[],[Little endian])
+   ],[
+       AC_MSG_RESULT([big endian])
+       AC_DEFINE([PSTPFINDER_BIG_ENDIAN],[],[Big endian])
+   ])
+      
+   AC_LANG_POP([C])
+])
+
 AC_DEFUN([AX_ENABLE_WARNINGS],[
    CPPFLAGS="-Wall ${CPPFLAGS}"
    AC_SUBST([CPPFLAGS])])

@@ -22,6 +22,9 @@ AC_SUBST([CPPFLAGS])
 AC_SUBST([CXXFLAGS])
 AC_SUBST([CFLAGS])
 
+# Check for endianness
+AX_ENDIAN
+
 if test $CXX_SUPPORTS_CXX11 -eq 1; then
    CXXFLAGS="$CXXFLAGS -std=c++11"
 elif test $CXX_SUPPORTS_CXX0X -eq 1; then
