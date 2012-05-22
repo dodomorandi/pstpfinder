@@ -23,7 +23,6 @@
 #include <cstring>
 #include <utility>
 
-#include <boost/interprocess/sync/scoped_lock.hpp>
 #include <boost/python.hpp>
 #include <boost/python/stl_iterator.hpp>
 

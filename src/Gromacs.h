@@ -17,6 +17,9 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+// This must be included BEFORE defining _H scope
+#include "Session.h"
+
 #ifndef _GROMACS_H
 #define _GROMACS_H
 
@@ -25,7 +28,6 @@
 #endif
 
 #include "Protein.h"
-#include "Session.h"
 
 #include <string>
 #include <thread>

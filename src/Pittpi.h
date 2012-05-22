@@ -24,9 +24,6 @@
 #include "Gromacs.h"
 #include "Protein.h"
 
-#include <boost/archive/binary_oarchive.hpp>
-#include <boost/archive/binary_iarchive.hpp>
-
 #include <vector>
 #include <thread>
 
@@ -146,7 +143,7 @@ namespace PstpFinder
         public:
           struct SerializablePocket : public Pocket
           {
-            friend class boost::serialization::access;
+            template<typename, typename> friend class Serializer;
             long groupIndex;
 
             SerializablePocket() = default;
@@ -168,7 +165,7 @@ namespace PstpFinder
           class SerializableGroup : public Group
           {
             public:
-              friend class boost::serialization::access;
+              template<typename, typename> friend class Serializer;
               friend class Pittpi::SerializableGroups;
               long referenceAtomIndex, referenceResIndex;
               vector<long> residuesIndex;
@@ -200,7 +197,7 @@ namespace PstpFinder
       Protein runSadic(const Protein& structure) const;
 #endif
 
-      friend class boost::serialization::access;
+      template<typename, typename> friend class Serializer;
       Gromacs gromacs;
       std::string sessionFileName;
       float radius;

@@ -20,297 +20,599 @@
 #ifndef SESSION_H_
 #define SESSION_H_
 
+#define SESSION_VERSION 1
+namespace PstpFinder
+{
+  // Session forward declarations for Gromacs.h (and maybe others)
+  template<typename T, typename = void> class Session;
+}
+
 #include "MetaStream.h"
+#include "Gromacs.h"
 #include "utils.h"
+#include "Serializer.h"
+
 #include <string>
 #include <iostream>
+#include <sstream>
 #include <memory>
 #include <type_traits>
-
-#include <boost/filesystem.hpp>
+#include <bitset>
+#include <initializer_list>
+#include <tuple>
+#include <utility>
 
 using namespace std;
 
 namespace PstpFinder
 {
+  enum class SessionParameter
+  {
+    TRAJECTORY,
+    TOPOLOGY,
+    BEGIN,
+    END,
+    RADIUS,
+    THRESHOLD
+  };
+
+  // FIXME: I'd like to use a union, but std::string has non trivial
+  // constructor, copy constructor and destructor.
+  struct SessionParameterValue
+  {
+    string str;
+    unsigned long ulong;
+    double dbl;
+  };
+
+  inline tuple<SessionParameter, SessionParameterValue>
+  make_sessionParameter(SessionParameter parameter, const string& value)
+  {
+    SessionParameterValue spv;
+    spv.str = value;
+    return make_tuple(parameter, spv);
+  }
+
+  inline tuple<SessionParameter, SessionParameterValue>
+  make_sessionParameter(SessionParameter parameter, unsigned long value)
+  {
+    SessionParameterValue spv;
+    spv.ulong = value;
+    return make_tuple(parameter, spv);
+  }
+
+  inline tuple<SessionParameter, SessionParameterValue>
+  make_sessionParameter(SessionParameter parameter, double value)
+  {
+    SessionParameterValue spv;
+    spv.dbl = value;
+    return make_tuple(parameter, spv);
+  }
+
   template<typename T>
-  class Session
+  class Session_Base
   {
     public:
-      Session();
-      Session(const string& fileName);
-      Session& operator =(const Session&) = delete;
+      typedef MetaStream<T> stream_type;
+      Session_Base& operator =(const Session_Base&) = delete;
       string getTrajectoryFileName() const;
       string getTopologyFileName() const;
       unsigned long getBeginTime() const;
       unsigned long getEndTime() const;
       double getRadius() const;
       double getPocketThreshold() const;
-      MetaStream<T>& getSasStream();
+      stream_type& getSasStream();
       unsigned long getSasSize() const;
-      const bool isRawSasSession() const;
-      MetaStream<T>& getPdbStream();
+      stream_type& getPdbStream();
       unsigned long getPdbSize() const;
       const bool isPittpiAvailable() const;
       unsigned long getPittpiSize() const;
-      MetaStream<T>& getPittpiStream();
+      stream_type& getPittpiStream();
 
-    private:
-      const bool ready;
-      bool rawSasSession;
-      bool pittpiAvailable;
-      const string sessionFileName;
-      T sessionFile;
+      void eventSasStreamClosing();
+      void eventPdbStreamClosing();
+      void eventPittpiStreamClosing();
+
+    protected:
+      friend class MetaStream<T>;
+      unique_ptr<stream_type> sasMetaStream;
+      unique_ptr<stream_type> pdbMetaStream;
+      unique_ptr<stream_type> pittpiMetaStream;
+
       string trajectoryFileName;
       string topologyFileName;
       unsigned long beginTime;
       unsigned long endTime;
       double radius;
       double pocketThreshold;
+      bitset<6> parameterSet;
+
+      Session_Base();
+      Session_Base(const string& fileName, const ios_base::openmode& openmode);
+      Session_Base(const string& fileName, const ios_base::openmode& openmode,
+                   initializer_list<tuple<SessionParameter, SessionParameterValue>> parameters);
+      void readSession();
+      void prepareForWrite();
+      inline void assertRegularType() const;
+      inline void assertBaseIStream() const;
+      inline void assertBaseOStream() const;
+      inline void assertBaseIOStream() const;
+
+    private:
+      const bool ready;
+      unsigned short version;
+      const string sessionFileName;
+      T sessionFile;
+      unique_ptr<Serializer<T>> serializer;
+      // FIXME: a struct would be better for info, start and end
+      streampos sasDataInfo;
       streampos sasDataStart;
       streampos sasDataEnd;
+      streampos pdbDataInfo;
       streampos pdbDataStart;
       streampos pdbDataEnd;
+      streampos pittpiDataInfo;
       streampos pittpiDataStart;
       streampos pittpiDataEnd;
-      unique_ptr<MetaStream<T>> sasMetaStream;
-      unique_ptr<MetaStream<T>> pdbMetaStream;
-      unique_ptr<MetaStream<T>> pittpiMetaStream;
-
-      void readSession(const string& fileName);
-      inline void assertRegularType() const;
   };
 
   template<typename T>
-  Session<T>::Session() :
-      ready(false), rawSasSession(false), sessionFileName()
+  Session_Base<T>::Session_Base() :
+      ready(false), version(0), sessionFileName()
   {
     assertRegularType();
   }
 
   template<typename T>
-  Session<T>::Session(const string & fileName) :
+  Session_Base<T>::Session_Base(const string& fileName,
+                                const ios_base::openmode& openmode) :
       ready(true),
-      rawSasSession(false),
+      version(0),
       sessionFileName(fileName),
-      sessionFile(fileName.c_str(), ios::in | ios::binary)
+      sessionFile(fileName.c_str(), openmode),
+      serializer(
+          unique_ptr<Serializer<T>>(
+              new Serializer<T>(sessionFile)))
   {
     assertRegularType();
-    readSession(fileName);
+  }
+
+  template<typename T>
+  Session_Base<T>::Session_Base(
+        const string& fileName, const ios_base::openmode& openmode,
+        initializer_list<tuple<SessionParameter, SessionParameterValue>> parameters) :
+      ready(true),
+      version(0),
+      sessionFileName(fileName),
+      sessionFile(fileName.c_str(), openmode),
+      serializer(
+          unique_ptr<Serializer<T>>(
+              new Serializer<T>(sessionFile)))
+  {
+    assertRegularType();
+    for(auto& parameter : parameters)
+    {
+      switch(get<0>(parameter))
+      {
+        case SessionParameter::TRAJECTORY:
+          trajectoryFileName = get<1>(parameter).str;
+          parameterSet |= 1;
+          break;
+        case SessionParameter::TOPOLOGY:
+          topologyFileName = get<1>(parameter).str;
+          parameterSet |= 2;
+          break;
+        case SessionParameter::BEGIN:
+          beginTime = get<1>(parameter).ulong;
+          parameterSet |= 4;
+          break;
+        case SessionParameter::END:
+          endTime = get<1>(parameter).ulong;
+          parameterSet |= 8;
+          break;
+        case SessionParameter::RADIUS:
+          radius = get<1>(parameter).dbl;
+          parameterSet |= 16;
+          break;
+        case SessionParameter::THRESHOLD:
+          pocketThreshold = get<1>(parameter).dbl;
+          parameterSet |= 32;
+          break;
+      }
+    }
   }
 
   template<typename T>
   string
-  Session<T>::getTrajectoryFileName() const
+  Session_Base<T>::getTrajectoryFileName() const
   {
     assert(ready);
-    assert(not rawSasSession);
     return trajectoryFileName;
   }
 
   template<typename T>
   string
-  Session<T>::getTopologyFileName() const
+  Session_Base<T>::getTopologyFileName() const
   {
     assert(ready);
-    assert(not rawSasSession);
     return topologyFileName;
   }
 
   template<typename T>
   unsigned long
-  Session<T>::getBeginTime() const
+  Session_Base<T>::getBeginTime() const
   {
     assert(ready);
-    assert(not rawSasSession);
     return beginTime;
   }
 
   template<typename T>
   unsigned long
-  Session<T>::getEndTime() const
+  Session_Base<T>::getEndTime() const
   {
     assert(ready);
-    assert(not rawSasSession);
     return endTime;
   }
 
   template<typename T>
   double
-  Session<T>::getRadius() const
+  Session_Base<T>::getRadius() const
   {
     assert(ready);
-    assert(not rawSasSession);
     return radius;
   }
 
   template<typename T>
   double
-  Session<T>::getPocketThreshold() const
+  Session_Base<T>::getPocketThreshold() const
   {
     assert(ready);
-    assert(not rawSasSession);
     return pocketThreshold;
   }
 
   template<typename T>
-  MetaStream<T>&
-  Session<T>::getSasStream()
+  typename Session_Base<T>::stream_type&
+  Session_Base<T>::getSasStream()
   {
     assert(ready);
+    assert(sasMetaStream);
     return *sasMetaStream;
   }
 
   template<typename T>
   unsigned long
-  Session<T>::getSasSize() const
+  Session_Base<T>::getSasSize() const
   {
     assert(ready);
-    return sasDataEnd - sasDataStart;
+    if(sasMetaStream)
+      return sasDataEnd - sasDataStart;
+    else
+      return 0;
   }
 
   template<typename T>
-  const bool
-  Session<T>::isRawSasSession() const
-  {
-    return(rawSasSession);
-  }
-
-  template<typename T>
-  MetaStream<T>&
-  Session<T>::getPdbStream()
+  typename Session_Base<T>::stream_type&
+  Session_Base<T>::getPdbStream()
   {
     assert(ready);
-    assert(not rawSasSession);
+    assert(pdbMetaStream);
     return *pdbMetaStream;
   }
 
   template<typename T>
   unsigned long
-  Session<T>::getPdbSize() const
+  Session_Base<T>::getPdbSize() const
   {
     assert(ready);
-    assert(not rawSasSession);
-    return pdbDataEnd - pdbDataStart;
+    if(pdbMetaStream)
+      return pdbDataEnd - pdbDataStart;
+    else
+      return 0;
   }
 
   template<typename T>
   const bool
-  Session<T>::isPittpiAvailable() const
+  Session_Base<T>::isPittpiAvailable() const
   {
-    return pittpiAvailable;
+    return version > 1;
   }
 
   template<typename T>
-  MetaStream<T>&
-  Session<T>::getPittpiStream()
+  typename Session_Base<T>::stream_type&
+  Session_Base<T>::getPittpiStream()
   {
     assert(ready);
-    assert(not rawSasSession);
-    assert(pittpiAvailable);
+    assert(version > 1);
+    assert(pittpiMetaStream);
     return *pittpiMetaStream;
   }
 
   template<typename T>
   unsigned long
-  Session<T>::getPittpiSize() const
+  Session_Base<T>::getPittpiSize() const
   {
     assert(ready);
-    assert(not rawSasSession);
-    assert(pittpiAvailable);
-    return pittpiDataEnd - pittpiDataStart;
+    assert(version > 1);
+    if(pittpiMetaStream)
+      return pittpiDataEnd - pittpiDataStart;
+    else
+      return 0;
   }
 
   template<typename T>
   void
-  Session<T>::readSession(const string & fileName)
+  Session_Base<T>::readSession()
   {
-    std::locale oldLocale;
-    std::locale::global(std::locale("C"));
+    locale oldLocale;
+    locale::global(locale("C"));
 
     unsigned int dataUInt;
     sessionFile.seekg(0);
-    getline(sessionFile, trajectoryFileName);
-    if(boost::filesystem::exists(boost::filesystem::path(trajectoryFileName)))
+    sessionFile.peek();
+    if(sessionFile.eof())
     {
-      getline(sessionFile, topologyFileName);
-      sessionFile >> beginTime;
-      sessionFile >> endTime;
-      sessionFile >> radius;
-      sessionFile >> pocketThreshold;
-
-      sessionFile >> dataUInt;
-      if(sessionFile.peek() == '\n')
-        (void) (sessionFile.get());
-      sasDataStart = sessionFile.tellg();
-      sessionFile.seekg(dataUInt, ios::cur);
-      sasDataEnd = sessionFile.tellg();
-      sasMetaStream = unique_ptr<MetaStream<T>>(
-            new MetaStream<T>(fileName,
-                              ios_base::in | ios_base::out | ios_base::binary,
-                              enumStreamType::STREAMTYPE_FIXED, sasDataStart,
-                              sasDataEnd));
-      if(sessionFile.peek() == '\n')
-        (void) (sessionFile.get());
-
-      sessionFile >> dataUInt;
-      if(sessionFile.peek() == '\n')
-        (void) (sessionFile.get());
-      pdbDataStart = sessionFile.tellg();
-      sessionFile.seekg(dataUInt, ios::cur);
-      pdbDataEnd = sessionFile.tellg();
-      pdbMetaStream = unique_ptr<MetaStream<T>>(
-            new MetaStream<T>(fileName,
-                              ios_base::in | ios_base::out | ios_base::binary,
-                              enumStreamType::STREAMTYPE_FIXED, pdbDataStart,
-                              pdbDataEnd));
-      if(sessionFile.peek() == '\n')
-        (void) (sessionFile.get());
-
-      sessionFile.peek();
-      if(not sessionFile.eof())
-      {
-        pittpiAvailable = true;
-        sessionFile >> dataUInt;
-        if(sessionFile.peek() == '\n')
-          (void) (sessionFile.get());
-        pittpiDataStart = sessionFile.tellg();
-        sessionFile.seekg(dataUInt, ios::cur);
-        pittpiDataEnd = sessionFile.tellg();
-        pittpiMetaStream = unique_ptr<MetaStream<T>>(
-              new MetaStream<T>(fileName,
-                                ios_base::in | ios_base::out | ios_base::binary,
-                                enumStreamType::STREAMTYPE_FIXED,
-                                pittpiDataStart, pittpiDataEnd));
-      }
-      else
-        pittpiAvailable = false;
-    }
-    else
-    {
-      rawSasSession = true;
-      pittpiAvailable = false;
-      sessionFile.seekg(0);
-      sasDataStart = sessionFile.tellg();
-      sessionFile.seekg(0, ios_base::end);
-      sasDataEnd = sessionFile.tellg();
-      sasMetaStream = unique_ptr<MetaStream<T>>(
-            new MetaStream<T>(fileName,
-                              ios_base::in | ios_base::out | ios_base::binary,
-                              enumStreamType::STREAMTYPE_FIXED, sasDataStart,
-                              sasDataEnd));
+      locale::global(oldLocale);
+      return;
     }
 
-    std::locale::global(oldLocale);
+    *serializer >> version;
+    *serializer >> trajectoryFileName;
+    *serializer >> topologyFileName;
+    *serializer >> beginTime;
+    *serializer >> endTime;
+    *serializer >> radius;
+    *serializer >> pocketThreshold;
+
+    *serializer >> dataUInt;
+    sasDataStart = sessionFile.tellg();
+    sessionFile.seekg(dataUInt, ios_base::cur);
+    sasDataEnd = sessionFile.tellg();
+    sasMetaStream = unique_ptr<stream_type>(
+          new stream_type(sessionFileName,
+                            ios_base::in | ios_base::out | ios_base::binary,
+                            enumStreamType::STREAMTYPE_FIXED, sasDataStart,
+                            sasDataEnd));
+
+    *serializer >> dataUInt;
+    pdbDataStart = sessionFile.tellg();
+    sessionFile.seekg(dataUInt, ios_base::cur);
+    pdbDataEnd = sessionFile.tellg();
+    pdbMetaStream = unique_ptr<stream_type>(
+          new stream_type(sessionFileName,
+                            ios_base::in | ios_base::out | ios_base::binary,
+                            enumStreamType::STREAMTYPE_FIXED, pdbDataStart,
+                            pdbDataEnd));
+
+    if(version > 1)
+    {
+      *serializer >> dataUInt;;
+      pittpiDataStart = sessionFile.tellg();
+      sessionFile.seekg(dataUInt, ios_base::cur);
+      pittpiDataEnd = sessionFile.tellg();
+      pittpiMetaStream = unique_ptr<stream_type>(
+            new stream_type(sessionFileName,
+                              ios_base::in | ios_base::out |
+                              ios_base::binary,
+                              enumStreamType::STREAMTYPE_FIXED,
+                              pittpiDataStart, pittpiDataEnd));
+    }
+
+    locale::global(oldLocale);
+  }
+
+  template<typename T>
+  void
+  Session_Base<T>::prepareForWrite()
+  {
+    locale oldLocale;
+    locale::global(locale("C"));
+
+    assert(parameterSet.all()); // Has radius and pocketThreshold set
+
+    unsigned int dataUInt;
+    switch(version)
+    {
+      case 0:   // Session have not been read or session is empty
+        version = SESSION_VERSION;
+        *serializer << version;
+        *serializer << trajectoryFileName;
+        *serializer << topologyFileName;
+        *serializer << beginTime;
+        *serializer << endTime;
+        *serializer << radius;
+        *serializer << pocketThreshold;
+
+        sasDataInfo = sessionFile.tellp();
+        pdbDataInfo = -1;
+        pittpiDataInfo = -1;
+        dataUInt = 0;
+        *serializer << dataUInt;
+        sasDataStart = sessionFile.tellp();
+        sasMetaStream = unique_ptr<stream_type>(
+            new stream_type(sessionFileName,
+                            ios_base::in | ios_base::out | ios_base::binary,
+                            enumStreamType::STREAMTYPE_ADJUST, sasDataStart));
+
+        sasMetaStream->callbackClose = bind(
+              &Session_Base<T>::eventSasStreamClosing, ref(*this));
+        break;
+    }
+
+    locale::global(oldLocale);
   }
 
   template<typename T>
   inline void
-  Session<T>::assertRegularType() const
+  Session_Base<T>::assertRegularType() const
   {
     static_assert(is_base_of<base_stream(basic_istream, T), T>::value or
                   is_base_of<base_stream(basic_ostream, T), T>::value,
                   "T must have basic_istream or basic_ostream as base class");
   }
+
+  template<typename T>
+  inline void
+  Session_Base<T>::assertBaseIStream() const
+  {
+    static_assert(is_base_of<base_stream(basic_istream, T), T>::value,
+                  "T must have basic_istream as base class");
+  }
+
+  template<typename T>
+  inline void
+  Session_Base<T>::assertBaseOStream() const
+  {
+    static_assert(is_base_of<base_stream(basic_ostream, T), T>::value,
+                  "T must have basic_ostream as base class");
+  }
+
+  template<typename T>
+  inline void
+  Session_Base<T>::assertBaseIOStream() const
+  {
+    static_assert(is_base_of<base_stream(basic_istream, T), T>::value and
+                  is_base_of<base_stream(basic_ostream, T), T>::value,
+                  "T must have basic_istream and basic_ostream as base class");
+  }
+
+  template<typename T>
+  void
+  Session_Base<T>::eventSasStreamClosing()
+  {
+    if(not sasMetaStream->is_open())
+      return;
+
+    sasMetaStream->seekp(0, ios_base::end);
+    streampos endOfSas(sasMetaStream->tellp());
+    sasDataEnd = sasDataStart + endOfSas;
+    sessionFile.seekp(sasDataInfo);
+    unsigned int dataUInt(endOfSas);
+    *serializer << dataUInt;
+
+    sessionFile.seekp(sasDataEnd);
+    pdbDataInfo = sessionFile.tellp();
+    dataUInt = 0;
+    *serializer << dataUInt;
+    pdbDataStart = sessionFile.tellp();
+    pdbMetaStream = unique_ptr<stream_type>(
+        new stream_type(sessionFileName,
+                        ios_base::in | ios_base::out | ios_base::binary,
+                        enumStreamType::STREAMTYPE_ADJUST, pdbDataStart));
+
+    pdbMetaStream->callbackClose = bind(
+          &Session_Base<T>::eventPdbStreamClosing, ref(*this));
+  }
+
+  template<typename T>
+  void
+  Session_Base<T>::eventPdbStreamClosing()
+  {
+    if(not pdbMetaStream->is_open())
+      return;
+
+    pdbMetaStream->seekp(0, ios_base::end);
+    streampos endOfPdb(pdbMetaStream->tellp());
+    pdbDataEnd = pdbDataStart + endOfPdb;
+    sessionFile.seekp(pdbDataInfo);
+    unsigned int dataUInt(endOfPdb);
+    *serializer << dataUInt;
+
+    if(version > 1)
+    {
+      sessionFile.seekp(pdbDataEnd);
+      pittpiDataInfo = sessionFile.tellp();
+      dataUInt = 0;
+      *serializer << dataUInt;
+      pittpiDataStart = sessionFile.tellp();
+      pittpiMetaStream = unique_ptr<stream_type>(
+          new stream_type(sessionFileName,
+                          ios_base::in | ios_base::out | ios_base::binary,
+                          enumStreamType::STREAMTYPE_ADJUST, pittpiDataStart));
+
+      pittpiMetaStream->callbackClose = bind(
+            &Session_Base<T>::eventPittpiStreamClosing, ref(*this));
+    }
+  }
+
+  template<typename T>
+  void
+  Session_Base<T>::eventPittpiStreamClosing()
+  {
+    // TODO: closing a Pittpi Stream
+  }
+
+  template<typename T>
+  class Session<T, typename enable_if<
+          is_base_of<base_stream(basic_istream, T), T>::value and
+          not is_base_of<base_stream(basic_ostream, T), T>::value>::type>
+      : public Session_Base<T>
+  {
+    public:
+      Session() : Base() {}
+      Session(const string& fileName) :
+        Base(fileName, ios_base::in | ios_base::binary)
+      {
+        Base::assertBaseIStream();
+        Base::readSession();
+      }
+      Session& operator =(const Session&) = delete;
+    private:
+      typedef Session_Base<T> Base;
+  };
+
+  template<typename T>
+  class Session<T, typename enable_if<
+          not is_base_of<base_stream(basic_istream, T), T>::value and
+          is_base_of<base_stream(basic_ostream, T), T>::value>::type>
+      : public Session_Base<T>
+  {
+    public:
+      Session() : Base() {}
+      Session(const string& fileName, Gromacs& gromacs, double radius,
+                double pocketThreshold) :
+          Base(
+              fileName,
+              ios_base::out | ios_base::binary,
+                { make_sessionParameter(SessionParameter::TRAJECTORY,
+                                        gromacs.getTrajectoryFile()),
+                  make_sessionParameter(SessionParameter::TOPOLOGY,
+                                        gromacs.getTopologyFile()),
+                  make_sessionParameter(
+                      SessionParameter::BEGIN,
+                      static_cast<unsigned long>(gromacs.getBegin())),
+                  make_sessionParameter(
+                      SessionParameter::END,
+                      static_cast<unsigned long>(gromacs.getEnd())),
+                  make_sessionParameter(SessionParameter::RADIUS, radius),
+                  make_sessionParameter(SessionParameter::THRESHOLD,
+                                        pocketThreshold)
+        })
+      {
+        Base::assertBaseOStream();
+        Base::prepareForWrite();
+      }
+      Session& operator =(const Session&) = delete;
+    private:
+      typedef Session_Base<T> Base;
+  };
+
+  template<typename T>
+  class Session<T, typename enable_if<
+          is_base_of<base_stream(basic_istream, T), T>::value and
+          is_base_of<base_stream(basic_ostream, T), T>::value>::type>
+      : public Session_Base<T>
+  {
+    public:
+      Session() : Base() {}
+      Session(const string& fileName) :
+        Base(fileName, ios_base::in | ios_base::out | ios_base::binary)
+      {
+        Base::assertBaseIOStream();
+        Base::readSession();
+      }
+      Session& operator =(const Session&) = delete;
+    private:
+      typedef Session_Base<T> Base;
+  };
 } /* namespace PstpFinder */
 #endif /* SESSION_H_ */

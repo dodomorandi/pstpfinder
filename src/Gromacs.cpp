@@ -643,6 +643,18 @@ namespace PstpFinder
       return gotTrajectory = true;
   }
 
+  string
+  Gromacs::getTrajectoryFile() const
+  {
+    return trjName;
+  }
+
+  string
+  Gromacs::getTopologyFile() const
+  {
+    return tprName;
+  }
+
   bool
   Gromacs::readNextX()
   {

@@ -33,22 +33,17 @@ namespace PstpFinder
 #include "Session.h"
 #include "SasAnalysisThread.h"
 #include "utils.h"
+#include "Serializer.h"
 
 #include <thread>
 #include <sys/sysinfo.h>
 #include <boost/circular_buffer.hpp>
-#include <boost/filesystem.hpp>
-#include <boost/archive/binary_oarchive.hpp>
-#include <boost/archive/binary_iarchive.hpp>
 
 #include <vector>
 #include <string>
 #include <iostream>
 #include <sstream>
 #include <type_traits>
-
-namespace archive = boost::archive;
-namespace fs = boost::filesystem;
 
 namespace PstpFinder
 {
@@ -73,6 +68,7 @@ namespace PstpFinder
       unsigned int nAtoms;
       Session<T> rawSession;
       MetaStream<T>& sasMetaStream;
+      Serializer<MetaStream<T>>* serializer;
       std::streampos fileStreamEnd;
       const Gromacs* gromacs;
       unsigned long maxFrames, maxBytes, maxChunk;
@@ -111,9 +107,8 @@ namespace PstpFinder
       template<typename, typename> friend class SasAnalysisThread_Base;
       template<typename, typename> friend class SasAnalysisThread;
 
-      boost::archive::binary_iarchive* archive;
       virtual std::vector<SasAtom*>
-        loadChunk(boost::archive::binary_iarchive& in);
+        loadChunk(Serializer<MetaStream<T>>& in);
       bool open();
       virtual void updateChunks();
   };
@@ -136,12 +131,12 @@ namespace PstpFinder
 
     private:
       typedef SasAnalysis_Base<T> Base;
+      Serializer<MetaStream<T>>* serializer;
       template<typename, typename> friend class SasAnalysisThread_Base;
       template<typename, typename> friend class SasAnalysisThread;
 
-      boost::archive::binary_oarchive* archive;
       virtual void dumpChunk(const std::vector<SasAtom*>& chunk,
-                boost::archive::binary_oarchive& out) const;
+                Serializer<MetaStream<T>>& out) const;
       virtual void flush();
       virtual bool save();
       virtual void updateChunks();
@@ -238,7 +233,7 @@ namespace PstpFinder
     Base::analysisThread->stop();
     delete Base::analysisThread;
 
-    delete archive;
+    delete Base::serializer;
   }
 
   template<typename T>
@@ -252,7 +247,7 @@ namespace PstpFinder
     Base::analysisThread->stop();
     delete Base::analysisThread;
 
-    delete archive;
+    delete Base::serializer;
     Base::sasMetaStream.close();
   }
 
@@ -264,7 +259,7 @@ namespace PstpFinder
     if(Base::changeable)
     {
       Base::changeable = false;
-      archive = new archive::binary_oarchive(Base::sasMetaStream);
+      Base::serializer = new Serializer<MetaStream<T>>(Base::sasMetaStream);
 
       Base::analysisThread = new SasAnalysisThreadType(*this);
     }
@@ -290,7 +285,7 @@ namespace PstpFinder
     if(Base::changeable)
     {
       Base::changeable = false;
-      archive = new archive::binary_iarchive(Base::sasMetaStream);
+      Base::serializer = new Serializer<MetaStream<T>>(Base::sasMetaStream);
 
       Base::analysisThread = new SasAnalysisThreadType(*this);
     }
@@ -357,7 +352,7 @@ namespace PstpFinder
     if(Base::changeable)
     {
       Base::changeable = false;
-      archive = new archive::binary_oarchive(Base::sasMetaStream);
+      Base::serializer = new Serializer<MetaStream<T>>(Base::sasMetaStream);
 
       Base::analysisThread = new SasAnalysisThreadType(*this);
     }
@@ -385,7 +380,7 @@ namespace PstpFinder
     if(Base::chunks.empty())
       return false;
 
-    dumpChunk(Base::chunks.front(), *archive);
+    dumpChunk(Base::chunks.front(), *Base::serializer);
 
     return true;
   }
@@ -398,7 +393,7 @@ namespace PstpFinder
     if(Base::sasMetaStream.eof())
       return false;
 
-    vector<SasAtom*> chunk = loadChunk(*archive);
+    vector<SasAtom*> chunk = loadChunk(*Base::serializer);
     unsigned long chunkSize = chunk.capacity()
                               * (sizeof(SasAtom*)
                                  + sizeof(SasAtom) * Base::nAtoms)
@@ -424,7 +419,7 @@ namespace PstpFinder
   template<typename T>
   void
   SasAnalysis_Write<T>::dumpChunk(const std::vector<SasAtom*>& chunk,
-                         archive::binary_oarchive& out) const
+                         Serializer<MetaStream<T>>& out) const
   {
     unsigned int size = chunk.size();
     out << size;
@@ -442,7 +437,7 @@ namespace PstpFinder
 
   template<typename T>
   std::vector<SasAtom*>
-  SasAnalysis_Read<T>::loadChunk(archive::binary_iarchive& in)
+  SasAnalysis_Read<T>::loadChunk(Serializer<MetaStream<T>>& in)
   {
     unsigned int size;
     std::vector<SasAtom*> chunk;

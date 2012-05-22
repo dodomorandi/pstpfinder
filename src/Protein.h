@@ -26,6 +26,7 @@
 #include <vector>
 #include <fstream>
 #include <iostream>
+#include <iomanip>
 #include <locale>
 
 using namespace std;
@@ -237,26 +238,44 @@ namespace PstpFinder
       void
       dumpPdb(const string& filename) const
       {
-        FILE* pdb;
-        pdb = fopen(filename.c_str(), "w");
-        for(vector<Residue>::const_iterator i = pResidues.begin(); i
-            < pResidues.end(); i++)
+        ofstream pdb(filename, ios_base::out | ios_base::trunc);
+        dumpPdb(pdb);
+      }
+
+      template<typename Stream>
+      typename enable_if<is_base_of<base_stream(basic_ifstream, Stream),
+                                    Stream>::value
+                         or is_base_of<base_stream(basic_ofstream, Stream),
+                                    Stream>::value>::type
+      dumpPdb(Stream& stream) const
+      {
+        assert(stream.is_open());
+
+        for(auto& residue : pResidues)
         {
-          for(vector<PdbAtom>::const_iterator j = i->atoms.begin(); j
-              < i->atoms.end(); j++)
+          for(auto& atom : residue.atoms)
           {
-            string jType(j->type);
-            jType.erase(jType.begin() + 1, jType.end());
-            fprintf(pdb, "ATOM  %5d %-4s %-3s A%4d    %8.3f%8.3f%8.3f%6.2f"
-              "%6.2f            %2s\n", j->index, j->type,
-                    aminoacidTriplet[i->type].c_str(), i->index, j->x * 10.,
-                    j->y * 10., j->z * 10., isinf(j->occupancy) ? 99.99
-                                                                : j->occupancy,
-                    isinf(j->bFactor) ? 99.99 : j->bFactor, jType.c_str());
+            string atomType(atom.type);
+            atomType.erase(atomType.begin() + 1, atomType.end());
+            stream << "ATOM  " << setw(5) << atom.index << " ";
+            stream << setiosflags(ios::left) << setw(4) << atom.type << " ";
+            stream << setw(3) << aminoacidTriplet[residue.type] << " A";
+            stream << resetiosflags(ios::left) << setw(4) << residue.index;
+            stream << "    " << setiosflags(ios::right);
+            stream << setiosflags(ios::fixed);
+            stream << setprecision(3) << setw(8) << (atom.x * 10.);
+            stream << setprecision(3) << setw(8) << (atom.y * 10.);
+            stream << setprecision(3) << setw(8) << (atom.z * 10.);
+            stream << setprecision(2) << setw(6);
+            stream << ((atom.occupancy >= 100) ? 99.99 : atom.occupancy);
+            stream << setprecision(2) << setw(6);
+            stream << ((atom.bFactor >= 100) ? 99.99 : atom.bFactor);
+            stream << resetiosflags(ios::fixed);
+            stream << "            " << setw(2) << atomType;
+            stream << resetiosflags(ios::right) << endl;
           }
         }
-
-        fclose(pdb);
+        stream.close();
       }
 
       const PdbAtom&

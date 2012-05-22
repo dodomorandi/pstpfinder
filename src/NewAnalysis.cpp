@@ -273,7 +273,13 @@ namespace PstpFinder
   void
   NewAnalysis::runAnalysis() throw()
   {
-    bool writeSession = true;
+    if(entrySessionFile.get_text().empty())
+    {
+      MessageDialog msg("A valid session file is needed.", false,
+                        MessageType::MESSAGE_ERROR, ButtonsType::BUTTONS_OK);
+      return;
+    }
+
     std::locale oldLocale;
     std::locale::global(std::locale("C"));
 
@@ -289,34 +295,14 @@ namespace PstpFinder
     buttonShowResults.set_sensitive(false);
     buttonRun.set_sensitive(false);
 
-    if(fs::exists(fs::path("/tmp/sas.psf")))
-      fs::remove(fs::path("/tmp/sas.psf"));
-
     statusBar.push("Calculating SAS using Gromacs", statusBarContext);
     progress.set_fraction(0);
     while(Main::events_pending())
       Main::iteration();
 
-    if(entrySessionFile.get_text().empty())
-      writeSession = false;
-
-    Session<ofstream> session;
-    std::ofstream sessionFile;
-    if(writeSession)
-    {
-      sessionFile.open(entrySessionFile.get_text().c_str(),
-                       std::ios::trunc | std::ios::out | std::ios::binary);
-
-      sessionFile << trjChooser.get_filename() << endl;
-      sessionFile << tprChooser.get_filename() << endl;
-      sessionFile << spinBegin.get_value() << endl;
-      sessionFile << spinEnd.get_value() << endl;
-      sessionFile << spinRadius.get_value() << endl;
-      sessionFile << spinPocketThreshold.get_value() << endl;
-    }
-
-    while(Main::events_pending())
-      Main::iteration();
+    string sessionFileName(entrySessionFile.get_text());
+    Session<ofstream> session(sessionFileName, *gromacs, spinRadius.get_value(),
+                              spinPocketThreshold.get_value());
 
     unsigned int currentFrame;
     unsigned int count = gromacs->getFramesCount();
@@ -375,20 +361,11 @@ namespace PstpFinder
     while(Main::events_pending())
       Main::iteration();
 
-    gromacs->getAverageStructure().dumpPdb("/tmp/aver.pdb");
-
     if(abortFlag)
       return;
-    if(writeSession)
-    {
-      sessionFile << fs::file_size(fs::path("/tmp/aver.pdb")) << endl;
-      std::ifstream pdbFile("/tmp/aver.pdb");
-      sessionFile << pdbFile.rdbuf();
 
-      sessionFile.flush();
-      sessionFile.close();
-    }
-    fs::remove(fs::path("/tmp/aver.pdb"));
+    gromacs->getAverageStructure().dumpPdb(session.getPdbStream());
+
     if(abortFlag)
       return;
 
@@ -396,11 +373,10 @@ namespace PstpFinder
     while(Main::events_pending())
       Main::iteration();
 
-    runPittpi("/tmp/sas.psf", spinRadius.get_value(),
+    runPittpi(sessionFileName, spinRadius.get_value(),
               spinPocketThreshold.get_value());
     if(abortFlag)
       return;
-    fs::remove(fs::path("/tmp/sas.psf"));
 
     mainFrame.set_sensitive();
     buttonRun.set_sensitive();
@@ -537,7 +513,7 @@ namespace PstpFinder
       Main::iteration();
 
     analysisStatus = enumAnalysisStatus::ANALYSIS_ONGOING;
-    MetaStream<ifstream>& pdbStream = sessionFile.getPdbStream();
+    auto& pdbStream(sessionFile.getPdbStream());
     char* chunk = new char[1024 * 1024 * 128];
     std::ofstream streamPdb("/tmp/aver.pdb",
                             std::ios::trunc | std::ios::out | std::ios::binary);
