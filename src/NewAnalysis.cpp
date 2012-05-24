@@ -272,12 +272,23 @@ namespace PstpFinder
   void
   NewAnalysis::runAnalysis() throw()
   {
-    if(entrySessionFile.get_text().empty())
+    Glib::ustring sessionFileName(entrySessionFile.get_text());
+    if(sessionFileName.empty())
     {
       MessageDialog msg("A valid session file is needed.", false,
                         MessageType::MESSAGE_ERROR, ButtonsType::BUTTONS_OK);
       msg.run();
       return;
+    }
+
+    if(exists(sessionFileName))
+    {
+      MessageDialog question("The old session file will be overwritten. "
+                        "Are you sure?", false, MessageType::MESSAGE_QUESTION,
+                        ButtonsType::BUTTONS_YES_NO);
+      int returnValue(question.run());
+      if(returnValue == ResponseType::RESPONSE_NO)
+        return;
     }
 
     std::locale oldLocale;
@@ -300,7 +311,6 @@ namespace PstpFinder
     while(Main::events_pending())
       Main::iteration();
 
-    string sessionFileName(entrySessionFile.get_text());
     Session<ofstream> session(sessionFileName, *gromacs, spinRadius.get_value(),
                               spinPocketThreshold.get_value());
 
