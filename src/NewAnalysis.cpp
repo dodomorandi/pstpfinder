@@ -276,6 +276,7 @@ namespace PstpFinder
     {
       MessageDialog msg("A valid session file is needed.", false,
                         MessageType::MESSAGE_ERROR, ButtonsType::BUTTONS_OK);
+      msg.run();
       return;
     }
 
