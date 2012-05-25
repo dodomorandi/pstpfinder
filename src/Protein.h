@@ -134,65 +134,21 @@ namespace PstpFinder
         locked = false;
       }
 
-      Protein(const string& pdbFilename)
+      Protein(const string& fileName)
       {
-        FILE* pdb;
-        pdb = fopen(pdbFilename.c_str(), "r");
-        Residue res;
-        res.index = 0;
+        ifstream pdbFile(fileName);
+        // FIXME: I should move pdbFile, but I can't until streams
+        //        will be moveable
+        readFromStream(pdbFile);
+      }
 
-        locale oldLocale;
-        locale::global(locale("C"));
-
-        locked = false;
-        while(not feof(pdb))
-        {
-          char resName[5], altLoc, chainId, iCode, element[2], charge[2];
-          char line[256];
-          char* linePtr;
-          int resNdx;
-          Aminoacids resType;
-          PdbAtom atom;
-          int ret;
-
-          linePtr = fgets(line, 256, pdb);
-          if(linePtr == 0)
-            break;
-
-          ret
-              = sscanf(line, "ATOM  %5d %4s%c%3s %c%4d%c   "
-                "%8f%8f%8f%6f%6f%*10c%2s%2s\n", &atom.index, atom.type,
-                       &altLoc, resName, &chainId, &resNdx, &iCode, &atom.x,
-                       &atom.y, &atom.z, &atom.occupancy, &atom.bFactor,
-                       element, charge);
-
-          if(ret <= 0)
-            continue;
-
-          atom.x /= 10.;
-          atom.y /= 10.;
-          atom.z /= 10.;
-
-          resType = Residue::getTypeByName(string(resName));
-          if(res.index == 0)
-          {
-            res.type = resType;
-            res.index = resNdx;
-          }
-          else if(resNdx != res.index)
-          {
-            pResidues.push_back(res);
-            res.atoms.clear();
-            res.type = resType;
-            res.index = resNdx;
-          }
-
-          res.atoms.push_back(atom);
-        }
-        pResidues.push_back(res);
-
-        fclose(pdb);
-        locale::global(oldLocale);
+      template<typename Stream>
+      Protein(typename enable_if<is_base_of<
+                base_stream(basic_istream, Stream),
+                Stream>::value,
+              Stream>::type&& stream)
+      {
+        readFromStream(forward<Stream>(stream));
       }
 
       const vector<Residue>&
@@ -370,6 +326,101 @@ namespace PstpFinder
       vector<Residue> pResidues;
       mutable vector<const PdbAtom*> pAtoms;
       mutable bool locked;
+
+      template<typename Stream,
+               typename Type = typename remove_reference<Stream>::type>
+        typename enable_if<is_base_of<base_stream(basic_ifstream, Type),
+                                      Type>::value>::type
+      readFromStream(Stream&& stream)
+      {
+        stringstream streamLine;
+        Residue residue;
+        string buffer;
+        Aminoacids residueType;
+
+        residue.index = 0;
+        streamLine.exceptions(ios_base::failbit);
+
+        while(not stream.eof())
+        {
+          getline(stream, buffer);
+          streamLine.clear();
+          streamLine.str(buffer);
+          PdbAtom atom;
+          int residueIndex;
+
+          // Mandatory atom section
+          try
+          {
+            streamLine >> setw(6) >> buffer;
+            if(buffer != "ATOM")
+              continue;
+
+            streamLine >> setw(5) >> atom.index;
+            streamLine.seekg(1, ios_base::cur); // Empty space
+            streamLine >> setw(5) >> atom.type;
+            streamLine.seekg(1, ios_base::cur); // Alternate location indicator
+            streamLine >> setw(3) >> buffer;
+            residueType = Residue::getTypeByName(buffer);
+            streamLine.seekg(2, ios_base::cur); // Empty space + Chain ID
+            streamLine >> setw(4) >> residueIndex;
+            streamLine.seekg(4, ios_base::cur); // Code for insertion
+                                                // of residues + 3 spaces
+            streamLine >> setw(8) >> atom.x;
+            streamLine >> setw(8) >> atom.y;
+            streamLine >> setw(8) >> atom.z;
+
+            atom.x /= 10.;
+            atom.y /= 10.;
+            atom.z /= 10.;
+          }
+          catch(ios_base::failure& fail)
+          {
+            continue;
+          }
+
+          // Non-mandatory atom section
+          try
+          {
+            streamLine >> setw(6) >> atom.occupancy;
+          }
+          catch(ios_base::failure& fail)
+          {
+            atom.occupancy = 0;
+          }
+
+          try
+          {
+            streamLine >> setw(6) >> atom.bFactor;
+          }
+          catch(ios_base::failure& fail)
+          {
+            atom.bFactor = 0;
+          }
+          // Then element and charge... but I don't mind of them
+
+          if(residue.index == 0)
+          {
+            residue.type = residueType;
+            residue.index = residueIndex;
+          }
+          else if(residueIndex != residue.index)
+          {
+            pResidues.push_back(move(residue));
+            residue = Residue();
+            residue.type = residueType;
+            residue.index = residueIndex;
+          }
+
+          residue.atoms.push_back(move(atom));
+        }
+
+        if(residue.atoms.size() > 0)
+          pResidues.push_back(move(residue));
+
+        locked = false;
+        stream.close();
+      }
   };
 }
 
