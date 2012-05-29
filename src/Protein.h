@@ -21,7 +21,6 @@
 #define _PROTEIN_H
 
 #include "Atom.h"
-#include <cstring>
 #include <string>
 #include <vector>
 #include <fstream>
@@ -81,6 +80,19 @@ namespace PstpFinder
       float bFactor;
       float occupancy;
       float sas;
+
+      PdbAtom() = default;
+      explicit PdbAtom(const string& type)
+      {
+        type.copy(this->type, 5);
+      }
+
+      explicit PdbAtom(int index) : index(index) {}
+
+      inline bool isType(const string& type) const
+      {
+        return type == this->type;
+      }
   };
 
   struct Residue
@@ -89,17 +101,18 @@ namespace PstpFinder
       int index;
       vector<PdbAtom> atoms;
 
+      Residue() = default;
+      explicit Residue(Aminoacids aminoacid) : type(aminoacid) {}
+
       const PdbAtom&
       getAtomByType(string atomType) const
       {
+        static PdbAtom unknown("UNK");
         for(vector<PdbAtom>::const_iterator i = atoms.begin(); i < atoms.end(); i++)
           if(i->type == atomType)
             return *i;
 
-        static PdbAtom unk;
-        strcpy(unk.type, "UNK");
-
-        return unk;
+        return unknown;
       }
 
       static Aminoacids
@@ -238,9 +251,7 @@ namespace PstpFinder
       const PdbAtom&
       getAtomByIndex(unsigned int index) const
       {
-        static PdbAtom unkAtom;
-        unkAtom.index = -1;
-
+        static PdbAtom unknown(-1);
         for(vector<const PdbAtom*>::const_iterator i = atoms().begin(); i
             < atoms().end(); i++)
         {
@@ -248,7 +259,7 @@ namespace PstpFinder
             return **i;
         }
 
-        return unkAtom;
+        return unknown;
       }
 
       const Residue&
@@ -260,8 +271,7 @@ namespace PstpFinder
       const Residue&
       getResidueByAtom(const PdbAtom& atom) const
       {
-        static Residue unkRes;
-        unkRes.type = AA_UNK;
+        static Residue unknown(AA_UNK);
 
         for(vector<Residue>::const_iterator i = pResidues.begin(); i
             < pResidues.end(); i++)
@@ -273,10 +283,10 @@ namespace PstpFinder
               if(j->index == atom.index)
                 return *i;
 
-            return unkRes;
+            return unknown;
           }
 
-        return unkRes;
+        return unknown;
       }
 
       Protein&
@@ -291,6 +301,8 @@ namespace PstpFinder
 
       const Residue& getResidueByIndex(int index) const
       {
+        static Residue unknown(AA_UNK);
+
         if(index >= 1
            and index - 1 < static_cast<int>(pResidues.size())
            and pResidues[index - 1].index == index)
@@ -312,9 +324,7 @@ namespace PstpFinder
               return *i;
           }
 
-          static Residue unk;
-          unk.type = AA_UNK;
-          return unk;
+          return unknown;
         }
       }
 

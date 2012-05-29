@@ -20,7 +20,6 @@
 #include "Pittpi.h"
 #include "SasAtom.h"
 #include "SasAnalysis.h"
-#include <cstring>
 #include <utility>
 
 #include <boost/python.hpp>
@@ -448,7 +447,7 @@ namespace PstpFinder
       Atom center(0);
       const vector<PdbAtom>& atoms = i->atoms;
 
-      if(strcmp(i->getAtomByType("H1").type, "UNK") != 0 or i->type == AA_PRO)
+      if(not i->getAtomByType("H1").isType("UNK") or i->type == AA_PRO)
       {
         centers.push_back(center);
         continue;
@@ -462,11 +461,9 @@ namespace PstpFinder
       for(vector<PdbAtom>::const_iterator j = atoms.begin(); j < atoms.end();
           j++)
       {
-        if(strcmp(j->type, "N") != 0 and strcmp(j->type, "CA") != 0
-           and strcmp(j->type, "H") != 0
-           and strcmp(j->type, "C") != 0
-           and strcmp(j->type, "O") != 0
-           and strcmp(j->type, "HA") != 0)
+        if(not j->isType("N") != 0 and not j->isType("CA") and
+           not j->isType("H") and not j->isType("C") and
+           not j->isType("O") and not j->isType("HA"))
         {
           center += *j;
           count++;
@@ -544,7 +541,7 @@ namespace PstpFinder
       if(abortFlag) return vector<Group>();
       const PdbAtom& hAtom = i->getAtomByType("H");
 
-      if(strcmp(hAtom.type, "UNK") == 0)
+      if(hAtom.isType("UNK"))
         continue;
       /*
        * NOTE:
@@ -578,7 +575,7 @@ namespace PstpFinder
         resIterator < residues.end(); resIterator++, refIterator++)
     {
       if(abortFlag) return vector<Group>();
-      if(strcmp(resIterator->getAtomByType("H").type, "UNK") == 0)
+      if(resIterator->getAtomByType("H").isType("UNK"))
       {
         refIterator--;
         continue;
@@ -601,7 +598,7 @@ namespace PstpFinder
     const vector<Residue>& residues = averageStructure.residues();
     Group group(atom);
 
-    if(strcmp(atom.type, "UNK") == 0)
+    if(atom.isType("UNK"))
       return group;
 
     for(vector<Atom>::const_iterator j = centers.begin(); j < centers.end();
@@ -741,7 +738,7 @@ namespace PstpFinder
           {
             if(abortFlag) return;
             const PdbAtom& atomH = (*j)->getAtomByType("H");
-            if(strcmp(atomH.type, "UNK") == 0)
+            if(atomH.isType("UNK"))
               continue;
 
             if(meanSas[atomH.index - 1] != 0)
@@ -787,7 +784,7 @@ namespace PstpFinder
         {
           if(abortFlag) return;
           const PdbAtom& atomH = (*j)->getAtomByType("H");
-          if(strcmp(atomH.type, "UNK") == 0)
+          if(atomH.isType("UNK"))
             continue;
 
           if(meanSas[atomH.index - 1] != 0)
