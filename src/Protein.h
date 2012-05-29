@@ -142,11 +142,12 @@ namespace PstpFinder
         readFromStream(pdbFile);
       }
 
-      template<typename Stream>
-      Protein(typename enable_if<is_base_of<
-                base_stream(basic_istream, Stream),
-                Stream>::value,
-              Stream>::type&& stream)
+      template<typename Stream,
+               typename Type = typename remove_cv<
+                 typename remove_reference<Stream>::type>::type,
+               typename = typename enable_if<is_base_of<
+                 base_stream(basic_ifstream, Type),Type>::value>::type>
+      Protein(Stream&& stream)
       {
         readFromStream(forward<Stream>(stream));
       }
@@ -328,9 +329,10 @@ namespace PstpFinder
       mutable bool locked;
 
       template<typename Stream,
-               typename Type = typename remove_reference<Stream>::type>
-        typename enable_if<is_base_of<base_stream(basic_ifstream, Type),
-                                      Type>::value>::type
+               typename Type = typename remove_cv<
+                 typename remove_reference<Stream>::type>::type>
+      typename enable_if<is_base_of<base_stream(basic_ifstream, Type),
+                                    Type>::value>::type
       readFromStream(Stream&& stream)
       {
         stringstream streamLine;

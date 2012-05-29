@@ -494,8 +494,6 @@ namespace PstpFinder
   void
   NewAnalysis::openSessionFile(const string& sessionFileName)
   {
-    std::locale oldLocale;
-    std::locale::global(std::locale("C"));
     double beginTime, endTime;
 
     start_spin();
@@ -503,7 +501,6 @@ namespace PstpFinder
       Main::iteration();
 
     Session<ifstream> sessionFile(sessionFileName);
-    std::string tmpString;
 
     trjChooser.set_filename(sessionFile.getTrajectoryFileName());
     tprChooser.set_filename(sessionFile.getTopologyFileName());
@@ -522,24 +519,6 @@ namespace PstpFinder
       Main::iteration();
 
     analysisStatus = enumAnalysisStatus::ANALYSIS_ONGOING;
-    auto& pdbStream(sessionFile.getPdbStream());
-    char* chunk = new char[1024 * 1024 * 128];
-    std::ofstream streamPdb("/tmp/aver.pdb",
-                            std::ios::trunc | std::ios::out | std::ios::binary);
-    while(not pdbStream.eof())
-    {
-      while(Main::events_pending())
-        Main::iteration();
-      streamsize read = pdbStream.read(chunk, 1024 * 1024 * 128);
-      while(Main::events_pending())
-        Main::iteration();
-      streamPdb.write(chunk, read);
-    }
-
-    streamPdb.flush();
-    streamPdb.close();
-
-    delete[] chunk;
 
     gromacs = new Gromacs(sessionFile.getTrajectoryFileName(),
                           sessionFile.getTopologyFileName());
@@ -547,7 +526,10 @@ namespace PstpFinder
     __frames = gromacs->getFramesCount();
     gromacs->setBegin(beginTime);
     gromacs->setEnd(endTime);
-    gromacs->setAverageStructure(Protein("/tmp/aver.pdb"));
+
+    while(Main::events_pending())
+      Main::iteration();
+    gromacs->setAverageStructure(Protein(sessionFile.getPdbStream()));
 
     stop_spin();
     while(Main::events_pending())
@@ -561,8 +543,6 @@ namespace PstpFinder
               spinPocketThreshold.get_value());
     if(abortFlag)
       return;
-
-    std::locale::global(oldLocale);
 
     mainFrame.set_sensitive();
     buttonRun.set_sensitive();
