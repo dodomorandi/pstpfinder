@@ -485,6 +485,9 @@ namespace PstpFinder
         else
           Base::streamEnd = end;
 
+        if(Base::streamEnd < Base::streamBegin)
+          Base::streamEnd = Base::streamBegin;
+
         T::seekg(Base::streamBegin, ios_base::beg);
       }
   };
@@ -545,6 +548,9 @@ namespace PstpFinder
         else
           Base::streamEnd = end;
 
+        if(Base::streamEnd < Base::streamBegin)
+          Base::streamEnd = Base::streamBegin;
+
         T::seekp(Base::streamBegin, ios_base::beg);
       }
   };
@@ -604,6 +610,9 @@ namespace PstpFinder
         }
         else
           Base::streamEnd = end;
+
+        if(Base::streamEnd < Base::streamBegin)
+          Base::streamEnd = Base::streamBegin;
 
         T::seekg(Base::streamBegin, ios_base::beg);
       }
