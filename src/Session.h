@@ -128,9 +128,10 @@ namespace PstpFinder
       bitset<6> parameterSet;
 
       Session_Base();
-      Session_Base(const string& fileName, const ios_base::openmode& openmode);
-      Session_Base(const string& fileName, const ios_base::openmode& openmode,
-                   initializer_list<tuple<SessionParameter, SessionParameterValue>> parameters);
+      Session_Base(const string& fileName);
+      Session_Base(const string& fileName,
+          initializer_list<tuple<SessionParameter,
+                                 SessionParameterValue>>&& parameters);
       void readSession();
       void prepareForWrite();
       inline void assertRegularType() const;
@@ -142,7 +143,7 @@ namespace PstpFinder
       const bool ready;
       unsigned short version;
       const string sessionFileName;
-      T sessionFile;
+      unique_ptr<T> sessionFile;
       unique_ptr<Serializer<T>> serializer;
       // FIXME: a struct would be better for info, start and end
       streampos sasDataInfo;
@@ -164,32 +165,43 @@ namespace PstpFinder
   }
 
   template<typename T>
-  Session_Base<T>::Session_Base(const string& fileName,
-                                const ios_base::openmode& openmode) :
+  Session_Base<T>::Session_Base(const string& fileName) :
       ready(true),
       version(0),
-      sessionFileName(fileName),
-      sessionFile(fileName.c_str(), openmode),
-      serializer(
-          unique_ptr<Serializer<T>>(
-              new Serializer<T>(sessionFile)))
+      sessionFileName(fileName)
   {
     assertRegularType();
+
+    if(is_base_of<base_stream(basic_ifstream, T), T>::value)
+      sessionFile = unique_ptr<T>(new T(fileName,
+                                        ios_base::in bitor ios_base::out bitor
+                                        ios_base::binary));
+    else
+      sessionFile = unique_ptr<T>(new T(fileName,
+                                        ios_base::out bitor ios_base::binary));
+    serializer = unique_ptr<Serializer<T>>(new Serializer<T>(*sessionFile));
   }
 
   template<typename T>
   Session_Base<T>::Session_Base(
-        const string& fileName, const ios_base::openmode& openmode,
-        initializer_list<tuple<SessionParameter, SessionParameterValue>> parameters) :
+        const string& fileName,
+        initializer_list<tuple<SessionParameter,
+                               SessionParameterValue>>&& parameters) :
       ready(true),
       version(0),
-      sessionFileName(fileName),
-      sessionFile(fileName.c_str(), openmode),
-      serializer(
-          unique_ptr<Serializer<T>>(
-              new Serializer<T>(sessionFile)))
+      sessionFileName(fileName)
   {
     assertRegularType();
+
+    if(is_base_of<base_stream(basic_ifstream, T), T>::value)
+      sessionFile = unique_ptr<T>(new T(fileName,
+                                        ios_base::in bitor ios_base::out bitor
+                                        ios_base::binary));
+    else
+      sessionFile = unique_ptr<T>(new T(fileName,
+                                        ios_base::out bitor ios_base::binary));
+    serializer = unique_ptr<Serializer<T>>(new Serializer<T>(*sessionFile));
+
     for(auto& parameter : parameters)
     {
       switch(get<0>(parameter))
@@ -343,17 +355,11 @@ namespace PstpFinder
   void
   Session_Base<T>::readSession()
   {
-    locale oldLocale;
-    locale::global(locale("C"));
-
     unsigned int dataUInt;
-    sessionFile.seekg(0);
-    sessionFile.peek();
-    if(sessionFile.eof())
-    {
-      locale::global(oldLocale);
+    sessionFile->seekg(0);
+    sessionFile->peek();
+    if(sessionFile->eof())
       return;
-    }
 
     *serializer >> version;
     *serializer >> trajectoryFileName;
@@ -364,9 +370,9 @@ namespace PstpFinder
     *serializer >> pocketThreshold;
 
     *serializer >> dataUInt;
-    sasDataStart = sessionFile.tellg();
-    sessionFile.seekg(dataUInt, ios_base::cur);
-    sasDataEnd = sessionFile.tellg();
+    sasDataStart = sessionFile->tellg();
+    sessionFile->seekg(dataUInt, ios_base::cur);
+    sasDataEnd = sessionFile->tellg();
     sasMetaStream = unique_ptr<stream_type>(
           new stream_type(sessionFileName,
                             ios_base::in | ios_base::out | ios_base::binary,
@@ -374,9 +380,9 @@ namespace PstpFinder
                             sasDataEnd));
 
     *serializer >> dataUInt;
-    pdbDataStart = sessionFile.tellg();
-    sessionFile.seekg(dataUInt, ios_base::cur);
-    pdbDataEnd = sessionFile.tellg();
+    pdbDataStart = sessionFile->tellg();
+    sessionFile->seekg(dataUInt, ios_base::cur);
+    pdbDataEnd = sessionFile->tellg();
     pdbMetaStream = unique_ptr<stream_type>(
           new stream_type(sessionFileName,
                             ios_base::in | ios_base::out | ios_base::binary,
@@ -386,9 +392,9 @@ namespace PstpFinder
     if(version > 1)
     {
       *serializer >> dataUInt;;
-      pittpiDataStart = sessionFile.tellg();
-      sessionFile.seekg(dataUInt, ios_base::cur);
-      pittpiDataEnd = sessionFile.tellg();
+      pittpiDataStart = sessionFile->tellg();
+      sessionFile->seekg(dataUInt, ios_base::cur);
+      pittpiDataEnd = sessionFile->tellg();
       pittpiMetaStream = unique_ptr<stream_type>(
             new stream_type(sessionFileName,
                               ios_base::in | ios_base::out |
@@ -396,17 +402,12 @@ namespace PstpFinder
                               enumStreamType::STREAMTYPE_FIXED,
                               pittpiDataStart, pittpiDataEnd));
     }
-
-    locale::global(oldLocale);
   }
 
   template<typename T>
   void
   Session_Base<T>::prepareForWrite()
   {
-    locale oldLocale;
-    locale::global(locale("C"));
-
     assert(parameterSet.all()); // Has radius and pocketThreshold set
 
     unsigned int dataUInt;
@@ -422,12 +423,12 @@ namespace PstpFinder
         *serializer << radius;
         *serializer << pocketThreshold;
 
-        sasDataInfo = sessionFile.tellp();
+        sasDataInfo = sessionFile->tellp();
         pdbDataInfo = -1;
         pittpiDataInfo = -1;
         dataUInt = 0;
         *serializer << dataUInt;
-        sasDataStart = sessionFile.tellp();
+        sasDataStart = sessionFile->tellp();
         sasMetaStream = unique_ptr<stream_type>(
             new stream_type(sessionFileName,
                             ios_base::in | ios_base::out | ios_base::binary,
@@ -437,8 +438,6 @@ namespace PstpFinder
               &Session_Base<T>::eventSasStreamClosing, ref(*this));
         break;
     }
-
-    locale::global(oldLocale);
   }
 
   template<typename T>
@@ -485,15 +484,15 @@ namespace PstpFinder
     sasMetaStream->seekp(0, ios_base::end);
     streampos endOfSas(sasMetaStream->tellp());
     sasDataEnd = sasDataStart + endOfSas;
-    sessionFile.seekp(sasDataInfo);
+    sessionFile->seekp(sasDataInfo);
     unsigned int dataUInt(endOfSas);
     *serializer << dataUInt;
 
-    sessionFile.seekp(sasDataEnd);
-    pdbDataInfo = sessionFile.tellp();
+    sessionFile->seekp(sasDataEnd);
+    pdbDataInfo = sessionFile->tellp();
     dataUInt = 0;
     *serializer << dataUInt;
-    pdbDataStart = sessionFile.tellp();
+    pdbDataStart = sessionFile->tellp();
     pdbMetaStream = unique_ptr<stream_type>(
         new stream_type(sessionFileName,
                         ios_base::in | ios_base::out | ios_base::binary,
@@ -513,17 +512,17 @@ namespace PstpFinder
     pdbMetaStream->seekp(0, ios_base::end);
     streampos endOfPdb(pdbMetaStream->tellp());
     pdbDataEnd = pdbDataStart + endOfPdb;
-    sessionFile.seekp(pdbDataInfo);
+    sessionFile->seekp(pdbDataInfo);
     unsigned int dataUInt(endOfPdb);
     *serializer << dataUInt;
 
     if(version > 1)
     {
-      sessionFile.seekp(pdbDataEnd);
-      pittpiDataInfo = sessionFile.tellp();
+      sessionFile->seekp(pdbDataEnd);
+      pittpiDataInfo = sessionFile->tellp();
       dataUInt = 0;
       *serializer << dataUInt;
-      pittpiDataStart = sessionFile.tellp();
+      pittpiDataStart = sessionFile->tellp();
       pittpiMetaStream = unique_ptr<stream_type>(
           new stream_type(sessionFileName,
                           ios_base::in | ios_base::out | ios_base::binary,
@@ -532,6 +531,8 @@ namespace PstpFinder
       pittpiMetaStream->callbackClose = bind(
             &Session_Base<T>::eventPittpiStreamClosing, ref(*this));
     }
+    else
+      sessionFile->close();
   }
 
   template<typename T>
@@ -549,8 +550,7 @@ namespace PstpFinder
   {
     public:
       Session() : Base() {}
-      Session(const string& fileName) :
-        Base(fileName, ios_base::in | ios_base::binary)
+      Session(const string& fileName) : Base(fileName)
       {
         Base::assertBaseIStream();
         Base::readSession();
@@ -569,10 +569,8 @@ namespace PstpFinder
     public:
       Session() : Base() {}
       Session(const string& fileName, Gromacs& gromacs, double radius,
-                double pocketThreshold) :
-          Base(
-              fileName,
-              ios_base::out | ios_base::binary,
+              double pocketThreshold) :
+          Base(fileName,
                 { make_sessionParameter(SessionParameter::TRAJECTORY,
                                         gromacs.getTrajectoryFile()),
                   make_sessionParameter(SessionParameter::TOPOLOGY,
@@ -585,8 +583,7 @@ namespace PstpFinder
                       static_cast<unsigned long>(gromacs.getEnd())),
                   make_sessionParameter(SessionParameter::RADIUS, radius),
                   make_sessionParameter(SessionParameter::THRESHOLD,
-                                        pocketThreshold)
-        })
+                                        pocketThreshold) })
       {
         Base::assertBaseOStream();
         Base::prepareForWrite();
@@ -604,11 +601,11 @@ namespace PstpFinder
   {
     public:
       Session() : Base() {}
-      Session(const string& fileName) :
-        Base(fileName, ios_base::in | ios_base::out | ios_base::binary)
+      Session(const string& fileName) : Base(fileName)
       {
         Base::assertBaseIOStream();
         Base::readSession();
+        Base::prepareForWrite();
       }
       Session& operator =(const Session&) = delete;
     private:
