@@ -63,19 +63,54 @@ namespace PstpFinder
   class Serializer;
 
   template<typename Stream>
-  class Serializer<
-      Stream,
-      typename enable_if<
-          is_base_of<base_stream(basic_istream, Stream), Stream>::value>::type>
+  class SerializerHelper
   {
-    public:
+    protected:
       typedef typename Stream::char_type char_type;
-      Serializer(Stream& stream) :
+      Stream& stream;
+
+      SerializerHelper(Stream& stream) :
         stream(stream) {}
 
       template<typename Serializable>
-      typename enable_if<is_arithmetic<Serializable>::value, Serializer&>::type
-      operator &(Serializable& serializable)
+      typename enable_if<is_arithmetic<Serializable>::value,
+        SerializerHelper&>::type
+      serializeData(Serializable& serializable)
+      {
+        array<char_type, sizeof(Serializable)> buffer;
+        char_type* pointer((char_type*)&serializable);
+
+        for(auto byte(begin(buffer)); byte < end(buffer); byte++, pointer++)
+          *byte = *pointer;
+
+#ifdef PSTPFINDER_BIG_ENDIAN // Default little endian
+        reverse(begin(buffer), end(buffer));
+#endif
+        stream.write(buffer.data(), sizeof(Serializable));
+
+        return *this;
+      }
+
+      template<typename Serializable>
+      typename enable_if<is_class<Serializable>::value,
+        SerializerHelper&>::type
+      serializeData(Serializable& serializable)
+      {
+        stringstream sstream;
+        sstream << serializable;
+
+        string buffer(sstream.str());
+        size_t sz(buffer.size());
+        serializeData(sz);
+        stream << buffer;
+
+        return *this;
+      }
+
+      template<typename Serializable>
+      typename enable_if<is_arithmetic<Serializable>::value,
+        SerializerHelper&>::type
+      deserializeData(Serializable& serializable)
       {
         array<char_type, sizeof(Serializable)> buffer;
         stream.read(buffer.data(), sizeof(Serializable));
@@ -92,11 +127,12 @@ namespace PstpFinder
       }
 
       template<typename Serializable>
-      typename enable_if<is_class<Serializable>::value, Serializer&>::type
-      operator &(Serializable& serializable)
+      typename enable_if<is_class<Serializable>::value,
+        SerializerHelper&>::type
+      deserializeData(Serializable& serializable)
       {
         size_t sz;
-        *this & sz;
+        deserializeData(sz);
 
         char_type* buffer = new char_type[sz];
         stream.read(buffer, sz);
@@ -105,6 +141,36 @@ namespace PstpFinder
         sstream >> serializable;
         delete[] buffer;
 
+        return *this;
+      }
+  };
+
+  template<typename Stream>
+  class Serializer<
+      Stream,
+      typename enable_if<
+          is_base_of<base_stream(basic_istream, Stream), Stream>::value and
+          not is_base_of<base_stream(basic_ostream, Stream), Stream>::value>
+        ::type> : SerializerHelper<Stream>
+  {
+    public:
+      typedef typename Stream::char_type char_type;
+      Serializer(Stream& stream) :
+        SerializerHelper<Stream>(stream) {}
+
+      template<typename Serializable>
+      typename enable_if<is_arithmetic<Serializable>::value, Serializer&>::type
+      operator &(Serializable& serializable)
+      {
+        SerializerHelper<Stream>::deserializeData(serializable);
+        return *this;
+      }
+
+      template<typename Serializable>
+      typename enable_if<is_class<Serializable>::value, Serializer&>::type
+      operator &(Serializable& serializable)
+      {
+        SerializerHelper<Stream>::deserializeData(serializable);
         return *this;
       }
 
@@ -127,37 +193,26 @@ namespace PstpFinder
         *this & output;
         return *this;
       }
-
-    private:
-      Stream& stream;
   };
 
   template<typename Stream>
   class Serializer<
       Stream,
       typename enable_if<
-          is_base_of<base_stream(basic_ostream, Stream), Stream>::value>::type>
+          not is_base_of<base_stream(basic_istream, Stream), Stream>::value and
+          is_base_of<base_stream(basic_ostream, Stream), Stream>::value>
+        ::type> : SerializerHelper<Stream>
   {
     public:
       typedef typename Stream::char_type char_type;
       Serializer(Stream& stream) :
-        stream(stream) {}
+        SerializerHelper<Stream>(stream) {}
 
       template<typename Serializable>
       typename enable_if<is_arithmetic<Serializable>::value, Serializer&>::type
       operator &(Serializable& serializable)
       {
-        array<char_type, sizeof(Serializable)> buffer;
-        char_type* pointer((char_type*)&serializable);
-
-        for(auto byte(begin(buffer)); byte < end(buffer); byte++, pointer++)
-          *byte = *pointer;
-
-#ifdef PSTPFINDER_BIG_ENDIAN // Default little endian
-        reverse(begin(buffer), end(buffer));
-#endif
-        stream.write(buffer.data(), sizeof(Serializable));
-
+        SerializerHelper<Stream>::serializeData(serializable);
         return *this;
       }
 
@@ -165,14 +220,7 @@ namespace PstpFinder
       typename enable_if<is_class<Serializable>::value, Serializer&>::type
       operator &(Serializable& serializable)
       {
-        stringstream sstream;
-        sstream << serializable;
-
-        string buffer(sstream.str());
-        size_t sz(buffer.size());
-        *this & sz;
-        stream << buffer;
-
+        SerializerHelper<Stream>::serializeData(serializable);
         return *this;
       }
 
@@ -195,9 +243,95 @@ namespace PstpFinder
         *this & input;
         return *this;
       }
+  };
+
+  template<typename Stream>
+  class Serializer<
+      Stream,
+      typename enable_if<
+          is_base_of<base_stream(basic_istream, Stream), Stream>::value and
+          is_base_of<base_stream(basic_ostream, Stream), Stream>::value>
+        ::type> : SerializerHelper<Stream>
+  {
+    public:
+      typedef typename Stream::char_type char_type;
+      Serializer(Stream& stream) :
+        SerializerHelper<Stream>(stream) {}
+
+      template<typename Serializable>
+      typename enable_if<is_arithmetic<Serializable>::value, Serializer&>::type
+      operator &(Serializable& serializable)
+      {
+        if(mode == Mode::INPUT)
+          SerializerHelper<Stream>::deserializeData(serializable);
+        else
+          SerializerHelper<Stream>::serializeData(serializable);
+        return *this;
+      }
+
+      template<typename Serializable>
+      typename enable_if<is_class<Serializable>::value, Serializer&>::type
+      operator &(Serializable& serializable)
+      {
+        if(mode == Mode::INPUT)
+          SerializerHelper<Stream>::deserializeData(serializable);
+        else
+          SerializerHelper<Stream>::serializeData(serializable);
+        return *this;
+      }
+
+      template<typename Input>
+      typename enable_if<
+          has_serialize_member_function<Input>::value,
+          Serializer&>::type
+      operator <<(Input& input)
+      {
+        mode = Mode::OUTPUT;
+        input.serialize(*this);
+        return *this;
+      }
+
+      template<typename Input>
+      typename enable_if<
+          not has_serialize_member_function<Input>::value,
+          Serializer&>::type
+      operator <<(Input& input)
+      {
+        mode = Mode::OUTPUT;
+        *this & input;
+        return *this;
+      }
+
+      template<typename Output>
+      typename enable_if<
+            has_serialize_member_function<Output>::value,
+            Serializer&>::type
+      operator >>(Output& output)
+      {
+        mode = Mode::INPUT;
+        output.serialize(*this);
+        return *this;
+      }
+
+      template<typename Output>
+      typename enable_if<
+            not has_serialize_member_function<Output>::value,
+            Serializer&>::type
+      operator >>(Output& output)
+      {
+        mode = Mode::INPUT;
+        *this & output;
+        return *this;
+      }
 
     private:
-      Stream& stream;
+      enum class Mode
+      {
+          INPUT,
+          OUTPUT
+      };
+
+      Mode mode;
   };
 } /* namespace PstpFinder */
 #endif /* SERIALIZER_H_ */
