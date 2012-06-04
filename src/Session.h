@@ -371,36 +371,80 @@ namespace PstpFinder
 
     *serializer >> dataUInt;
     sasDataStart = sessionFile->tellg();
-    sessionFile->seekg(dataUInt, ios_base::cur);
-    sasDataEnd = sessionFile->tellg();
-    sasMetaStream = unique_ptr<stream_type>(
-          new stream_type(sessionFileName,
-                            ios_base::in | ios_base::out | ios_base::binary,
-                            enumStreamType::STREAMTYPE_FIXED, sasDataStart,
-                            sasDataEnd));
+
+    if(dataUInt > 0)
+    {
+      sessionFile->seekg(dataUInt, ios_base::cur);
+      sasDataEnd = sessionFile->tellg();
+      sasMetaStream = unique_ptr<stream_type>(
+        new stream_type(sessionFileName,
+                        ios_base::in | ios_base::out | ios_base::binary,
+                        enumStreamType::STREAMTYPE_FIXED, sasDataStart,
+                        sasDataEnd));
+    }
+    else
+    {
+      sessionFile->seekg(0, ios_base::end);
+      sasDataEnd = 0;
+      sasMetaStream = unique_ptr<stream_type>(
+        new stream_type(sessionFileName,
+                        ios_base::in | ios_base::out | ios_base::binary,
+                        enumStreamType::STREAMTYPE_ADJUST, sasDataStart));
+      return;
+    }
 
     *serializer >> dataUInt;
     pdbDataStart = sessionFile->tellg();
-    sessionFile->seekg(dataUInt, ios_base::cur);
-    pdbDataEnd = sessionFile->tellg();
-    pdbMetaStream = unique_ptr<stream_type>(
-          new stream_type(sessionFileName,
-                            ios_base::in | ios_base::out | ios_base::binary,
-                            enumStreamType::STREAMTYPE_FIXED, pdbDataStart,
-                            pdbDataEnd));
+    if(dataUInt > 0)
+    {
+      sessionFile->seekg(dataUInt, ios_base::cur);
+      pdbDataEnd = sessionFile->tellg();
+      pdbMetaStream = unique_ptr<stream_type>(
+        new stream_type(sessionFileName,
+                        ios_base::in | ios_base::out | ios_base::binary,
+                        enumStreamType::STREAMTYPE_FIXED, pdbDataStart,
+                        pdbDataEnd));
+    }
+    else
+    {
+      sessionFile->seekg(0, ios_base::end);
+      pdbDataEnd = 0;
+      pdbMetaStream = unique_ptr<stream_type>(
+        new stream_type(sessionFileName,
+                        ios_base::in | ios_base::out | ios_base::binary,
+                        enumStreamType::STREAMTYPE_ADJUST, pdbDataStart));
+      return;
+    }
 
     if(version > 1)
     {
+      sessionFile->peek();
+      if(sessionFile->eof())
+        return;
+
       *serializer >> dataUInt;;
       pittpiDataStart = sessionFile->tellg();
-      sessionFile->seekg(dataUInt, ios_base::cur);
-      pittpiDataEnd = sessionFile->tellg();
-      pittpiMetaStream = unique_ptr<stream_type>(
-            new stream_type(sessionFileName,
-                              ios_base::in | ios_base::out |
-                              ios_base::binary,
-                              enumStreamType::STREAMTYPE_FIXED,
-                              pittpiDataStart, pittpiDataEnd));
+      if(dataUInt > 0)
+      {
+        sessionFile->seekg(dataUInt, ios_base::cur);
+        pittpiDataEnd = sessionFile->tellg();
+        pittpiMetaStream = unique_ptr<stream_type>(
+          new stream_type(sessionFileName,
+                          ios_base::in | ios_base::out | ios_base::binary,
+                          enumStreamType::STREAMTYPE_FIXED, pittpiDataStart,
+                          pittpiDataEnd));
+      }
+      else
+      {
+        sessionFile->seekg(0, ios_base::end);
+        pittpiDataEnd = 0;
+        pittpiMetaStream = unique_ptr<stream_type>(
+          new stream_type(sessionFileName,
+                          ios_base::in | ios_base::out | ios_base::binary,
+                          enumStreamType::STREAMTYPE_ADJUST,
+                          pittpiDataStart));
+        return;
+      }
     }
   }
 
@@ -430,12 +474,36 @@ namespace PstpFinder
         *serializer << dataUInt;
         sasDataStart = sessionFile->tellp();
         sasMetaStream = unique_ptr<stream_type>(
-            new stream_type(sessionFileName,
-                            ios_base::in | ios_base::out | ios_base::binary,
-                            enumStreamType::STREAMTYPE_ADJUST, sasDataStart));
+          new stream_type(sessionFileName,
+                          ios_base::in | ios_base::out | ios_base::binary,
+                          enumStreamType::STREAMTYPE_ADJUST, sasDataStart));
 
         sasMetaStream->callbackClose = bind(
               &Session_Base<T>::eventSasStreamClosing, ref(*this));
+        break;
+      case 1:  // SAS + PDB
+        if(sasDataEnd == 0)
+        {
+          sasMetaStream = unique_ptr<stream_type>(
+            new stream_type(sessionFileName,
+                            ios_base::in | ios_base::out | ios_base::binary,
+                            enumStreamType::STREAMTYPE_ADJUST,
+                            sasDataStart));
+
+          sasMetaStream->callbackClose = bind(
+              &Session_Base<T>::eventSasStreamClosing, ref(*this));
+        }
+        else if(pdbDataEnd == 0)
+        {
+          pdbMetaStream = unique_ptr<stream_type>(
+            new stream_type(sessionFileName,
+                            ios_base::in | ios_base::out | ios_base::binary,
+                            enumStreamType::STREAMTYPE_ADJUST,
+                            pdbDataStart));
+
+          pdbMetaStream->callbackClose = bind(
+              &Session_Base<T>::eventPdbStreamClosing, ref(*this));
+        }
         break;
     }
   }
@@ -478,7 +546,7 @@ namespace PstpFinder
   void
   Session_Base<T>::eventSasStreamClosing()
   {
-    if(not sasMetaStream->is_open())
+    if(not sasMetaStream or not sasMetaStream->is_open())
       return;
 
     sasMetaStream->seekp(0, ios_base::end);
@@ -506,7 +574,7 @@ namespace PstpFinder
   void
   Session_Base<T>::eventPdbStreamClosing()
   {
-    if(not pdbMetaStream->is_open())
+    if(not pdbMetaStream or not pdbMetaStream->is_open())
       return;
 
     pdbMetaStream->seekp(0, ios_base::end);
@@ -526,7 +594,8 @@ namespace PstpFinder
       pittpiMetaStream = unique_ptr<stream_type>(
           new stream_type(sessionFileName,
                           ios_base::in | ios_base::out | ios_base::binary,
-                          enumStreamType::STREAMTYPE_ADJUST, pittpiDataStart));
+                          enumStreamType::STREAMTYPE_ADJUST,
+                          pittpiDataStart));
 
       pittpiMetaStream->callbackClose = bind(
             &Session_Base<T>::eventPittpiStreamClosing, ref(*this));

@@ -915,7 +915,8 @@ namespace PstpFinder
   Gromacs::abort()
   {
     abortFlag = true;
-    operationThread.join();
+    if(operationThread.joinable())
+      operationThread.join();
     wakeCondition.notify_all();
   }
 
