@@ -172,7 +172,7 @@ namespace PstpFinder
   {
     assertRegularType();
 
-    if(is_base_of<base_stream(basic_ifstream, T), T>::value)
+    if(is_base_of<base_stream(basic_istream, T), T>::value)
       sessionFile = unique_ptr<T>(new T(fileName,
                                         ios_base::in bitor ios_base::out bitor
                                         ios_base::binary));
@@ -193,7 +193,7 @@ namespace PstpFinder
   {
     assertRegularType();
 
-    if(is_base_of<base_stream(basic_ifstream, T), T>::value)
+    if(is_base_of<base_stream(basic_istream, T), T>::value)
       sessionFile = unique_ptr<T>(new T(fileName,
                                         ios_base::in bitor ios_base::out bitor
                                         ios_base::binary));
@@ -368,6 +368,8 @@ namespace PstpFinder
     *serializer >> endTime;
     *serializer >> radius;
     *serializer >> pocketThreshold;
+
+    parameterSet.set();
 
     *serializer >> dataUInt;
     sasDataStart = sessionFile->tellg();

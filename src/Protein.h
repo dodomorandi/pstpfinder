@@ -159,7 +159,7 @@ namespace PstpFinder
                typename Type = typename remove_cv<
                  typename remove_reference<Stream>::type>::type,
                typename = typename enable_if<is_base_of<
-                 base_stream(basic_ifstream, Type),Type>::value>::type>
+                 base_stream(basic_istream, Type),Type>::value>::type>
       Protein(Stream&& stream)
       {
         readFromStream(forward<Stream>(stream));
@@ -213,9 +213,9 @@ namespace PstpFinder
       }
 
       template<typename Stream>
-      typename enable_if<is_base_of<base_stream(basic_ifstream, Stream),
+      typename enable_if<is_base_of<base_stream(basic_istream, Stream),
                                     Stream>::value
-                         or is_base_of<base_stream(basic_ofstream, Stream),
+                         or is_base_of<base_stream(basic_ostream, Stream),
                                     Stream>::value>::type
       dumpPdb(Stream& stream) const
       {
@@ -341,7 +341,7 @@ namespace PstpFinder
       template<typename Stream,
                typename Type = typename remove_cv<
                  typename remove_reference<Stream>::type>::type>
-      typename enable_if<is_base_of<base_stream(basic_ifstream, Type),
+      typename enable_if<is_base_of<base_stream(basic_istream, Type),
                                     Type>::value>::type
       readFromStream(Stream&& stream)
       {
