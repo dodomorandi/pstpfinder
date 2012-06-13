@@ -27,6 +27,7 @@
 #include <iostream>
 #include <iomanip>
 #include <locale>
+#include <algorithm>
 
 using namespace std;
 
@@ -66,8 +67,8 @@ namespace PstpFinder
       "PRO", "TYR", "TRP", "PHE", "HIS", "ARG", "LYS", "GLU", "ASP", "GLN",
       "ASN" };
   const string aminoacidUncommonTranslator[] =
-    { "CYP", "CYS", "CYD", "CYS", "HID", "HIS", "HIE", "HIS", "LYP", "LYS",
-      "LYD", "LYS" };
+    { "CYP", "CYS", "CYD", "CYS", "HID", "HIS", "HIE", "HIS", "HIP", "HIS",
+      "LYP", "LYS", "LYD", "LYS", "LYN", "LYS", "ASH", "ASP", "GLH", "GLU" };
   const unsigned int aminoacidUncommonTranslatorSize =
       sizeof(aminoacidUncommonTranslator)
           / sizeof(*aminoacidUncommonTranslator);
@@ -118,6 +119,9 @@ namespace PstpFinder
       static Aminoacids
       getTypeByName(string residueName)
       {
+        transform(residueName.begin(), residueName.end(),
+                  residueName.begin(), ::toupper);
+
         for(unsigned int i = 0; i < 21; i++)
         {
           for(unsigned int j = 0; j < 12; j += 2)
