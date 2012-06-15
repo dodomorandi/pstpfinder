@@ -103,11 +103,15 @@ namespace PstpFinder
       double getPocketThreshold() const;
       stream_type& getSasStream();
       unsigned long getSasSize() const;
+      bool sasComplete() const;
       stream_type& getPdbStream();
       unsigned long getPdbSize() const;
+      bool pdbComplete() const;
       const bool isPittpiAvailable() const;
       unsigned long getPittpiSize() const;
       stream_type& getPittpiStream();
+      bool pittpiComplete() const;
+      void abort();
 
       void eventSasStreamClosing();
       void eventPdbStreamClosing();
@@ -143,6 +147,8 @@ namespace PstpFinder
         streampos start;
         streampos end;
         bool complete;
+
+        MetaData() : info(-1), start(-1), end(-1), complete(false) {};
       };
 
       const bool ready;
@@ -301,6 +307,14 @@ namespace PstpFinder
   }
 
   template<typename T>
+  bool
+  Session_Base<T>::sasComplete() const
+  {
+    assert(ready);
+    return metaSas.stream and metaSas.complete;
+  }
+
+  template<typename T>
   typename Session_Base<T>::stream_type&
   Session_Base<T>::getPdbStream()
   {
@@ -318,6 +332,14 @@ namespace PstpFinder
       return metaPdb.end - metaPdb.start;
     else
       return 0;
+  }
+
+  template<typename T>
+  bool
+  Session_Base<T>::pdbComplete() const
+  {
+    assert(ready);
+    return metaPdb.stream and metaPdb.complete;
   }
 
   template<typename T>
@@ -350,6 +372,14 @@ namespace PstpFinder
   }
 
   template<typename T>
+  bool
+  Session_Base<T>::pittpiComplete() const
+  {
+    assert(ready);
+    return metaPittpi.stream and metaPittpi.complete;
+  }
+
+  template<typename T>
   void
   Session_Base<T>::readSession()
   {
@@ -369,11 +399,13 @@ namespace PstpFinder
 
     parameterSet.set();
 
+    metaSas.info = sessionFile->tellg();
     *serializer >> dataUInt;
     metaSas.start = sessionFile->tellg();
 
     if(dataUInt > 0)
     {
+      metaSas.complete = true;
       sessionFile->seekg(dataUInt, ios_base::cur);
       metaSas.end = sessionFile->tellg();
       metaSas.stream = unique_ptr<stream_type>(
@@ -393,10 +425,20 @@ namespace PstpFinder
       return;
     }
 
+    if(sessionFile->eof())
+      return;
+
+    metaPdb.info = sessionFile->tellg();
+
+    sessionFile->peek();
+    if(sessionFile->eof())
+      return;
+
     *serializer >> dataUInt;
     metaPdb.start = sessionFile->tellg();
     if(dataUInt > 0)
     {
+      metaPdb.complete = true;
       sessionFile->seekg(dataUInt, ios_base::cur);
       metaPdb.end = sessionFile->tellg();
       metaPdb.stream = unique_ptr<stream_type>(
@@ -418,6 +460,11 @@ namespace PstpFinder
 
     if(version > 1)
     {
+      if(sessionFile->eof())
+        return;
+
+      metaPittpi.info = sessionFile->tellg();
+
       sessionFile->peek();
       if(sessionFile->eof())
         return;
@@ -426,6 +473,7 @@ namespace PstpFinder
       metaPittpi.start = sessionFile->tellg();
       if(dataUInt > 0)
       {
+        metaPittpi.complete = true;
         sessionFile->seekg(dataUInt, ios_base::cur);
         metaPittpi.end = sessionFile->tellg();
         metaPittpi.stream = unique_ptr<stream_type>(
@@ -473,6 +521,7 @@ namespace PstpFinder
         dataUInt = 0;
         *serializer << dataUInt;
         metaSas.start = sessionFile->tellp();
+        metaSas.complete = false;
         metaSas.stream = unique_ptr<stream_type>(
           new stream_type(sessionFileName,
                           ios_base::in | ios_base::out | ios_base::binary,
@@ -484,6 +533,7 @@ namespace PstpFinder
       case 1:  // SAS + PDB
         if(metaSas.end == 0)
         {
+          metaSas.complete = false;
           metaSas.stream = unique_ptr<stream_type>(
             new stream_type(sessionFileName,
                             ios_base::in | ios_base::out | ios_base::binary,
@@ -495,6 +545,8 @@ namespace PstpFinder
         }
         else if(metaPdb.end == 0)
         {
+          metaSas.complete = true;
+          metaPdb.complete = false;
           metaPdb.stream = unique_ptr<stream_type>(
             new stream_type(sessionFileName,
                             ios_base::in | ios_base::out | ios_base::binary,
@@ -506,6 +558,20 @@ namespace PstpFinder
         }
         break;
     }
+
+    sessionFile->flush();
+  }
+
+  template<typename T>
+  void
+  Session_Base<T>::abort()
+  {
+    if(metaSas.stream and metaSas.stream->callbackClose)
+      metaSas.stream->callbackClose = function<void()>();
+    if(metaPdb.stream and metaPdb.stream->callbackClose)
+      metaPdb.stream->callbackClose = function<void()>();
+    if(metaPittpi.stream and metaPittpi.stream->callbackClose)
+      metaPittpi.stream->callbackClose = function<void()>();
   }
 
   template<typename T>
@@ -552,6 +618,7 @@ namespace PstpFinder
     metaSas.stream->seekp(0, ios_base::end);
     streampos endOfSas(metaSas.stream->tellp());
     metaSas.end = metaSas.start + endOfSas;
+    metaSas.complete = true;
     sessionFile->seekp(metaSas.info);
     unsigned int dataUInt(endOfSas);
     *serializer << dataUInt;
@@ -560,6 +627,7 @@ namespace PstpFinder
     metaPdb.info = sessionFile->tellp();
     dataUInt = 0;
     *serializer << dataUInt;
+    metaPdb.complete = false;
     metaPdb.start = sessionFile->tellp();
     metaPdb.stream = unique_ptr<stream_type>(
         new stream_type(sessionFileName,
@@ -580,6 +648,7 @@ namespace PstpFinder
     metaPdb.stream->seekp(0, ios_base::end);
     streampos endOfPdb(metaPdb.stream->tellp());
     metaPdb.end = metaPdb.start + endOfPdb;
+    metaPdb.complete = true;
     sessionFile->seekp(metaPdb.info);
     unsigned int dataUInt(endOfPdb);
     *serializer << dataUInt;
@@ -590,6 +659,7 @@ namespace PstpFinder
       metaPittpi.info = sessionFile->tellp();
       dataUInt = 0;
       *serializer << dataUInt;
+      metaPittpi.complete = false;
       metaPittpi.start = sessionFile->tellp();
       metaPittpi.stream = unique_ptr<stream_type>(
           new stream_type(sessionFileName,
@@ -677,6 +747,7 @@ namespace PstpFinder
         Base::prepareForWrite();
       }
       Session& operator =(const Session&) = delete;
+
     private:
       typedef Session_Base<T> Base;
   };

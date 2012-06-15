@@ -65,6 +65,17 @@ namespace PstpFinder
   template<typename Stream>
   class SerializerHelper
   {
+    public:
+      template<typename Serializable>
+      static size_t getSerializedSize(Serializable serializable)
+      {
+        stringstream buffer;
+        Serializer<stringstream> serializer(buffer);
+        serializer << serializable;
+
+        return static_cast<const size_t>(buffer.tellp());
+      }
+
     protected:
       typedef typename Stream::char_type char_type;
       Stream& stream;
@@ -151,7 +162,7 @@ namespace PstpFinder
       typename enable_if<
           is_base_of<base_stream(basic_istream, Stream), Stream>::value and
           not is_base_of<base_stream(basic_ostream, Stream), Stream>::value>
-        ::type> : SerializerHelper<Stream>
+        ::type> : public SerializerHelper<Stream>
   {
     public:
       typedef typename Stream::char_type char_type;
@@ -201,7 +212,7 @@ namespace PstpFinder
       typename enable_if<
           not is_base_of<base_stream(basic_istream, Stream), Stream>::value and
           is_base_of<base_stream(basic_ostream, Stream), Stream>::value>
-        ::type> : SerializerHelper<Stream>
+        ::type> : public SerializerHelper<Stream>
   {
     public:
       typedef typename Stream::char_type char_type;
@@ -251,7 +262,7 @@ namespace PstpFinder
       typename enable_if<
           is_base_of<base_stream(basic_istream, Stream), Stream>::value and
           is_base_of<base_stream(basic_ostream, Stream), Stream>::value>
-        ::type> : SerializerHelper<Stream>
+        ::type> : public SerializerHelper<Stream>
   {
     public:
       typedef typename Stream::char_type char_type;

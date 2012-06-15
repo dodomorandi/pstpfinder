@@ -291,9 +291,6 @@ namespace PstpFinder
         return;
     }
 
-    std::locale oldLocale;
-    std::locale::global(std::locale("C"));
-
     if(analysisStatus == enumAnalysisStatus::ANALYSIS_FINISHED)
       delete gromacs;
     analysisStatus = enumAnalysisStatus::ANALYSIS_ONGOING;
@@ -306,82 +303,16 @@ namespace PstpFinder
     buttonShowResults.set_sensitive(false);
     buttonRun.set_sensitive(false);
 
-    statusBar.push("Calculating SAS using Gromacs", statusBarContext);
-    progress.set_fraction(0);
-    while(Main::events_pending())
-      Main::iteration();
-
     Session<ofstream> session(sessionFileName, *gromacs, spinRadius.get_value(),
                               spinPocketThreshold.get_value());
 
-    unsigned int currentFrame;
-    unsigned int count = gromacs->getFramesCount();
-    while(Main::events_pending())
-      Main::iteration();
-
-    if(abortFlag)
-      return;
-    gromacs->calculateSas(session);
-
-    while((currentFrame = gromacs->getCurrentFrame()) < count)
-    {
-      if(abortFlag)
-      {
-        gromacs->abort();
-        break;
-      }
-      progress.set_fraction(static_cast<float>(currentFrame) / count);
-      while(Main::events_pending())
-        Main::iteration();
-      gromacs->waitNextFrame();
-    }
+    calculateSas(session);
     if(abortFlag)
       return;
 
-    gromacs->waitOperation();
-    while(Main::events_pending())
-      Main::iteration();
-
-    progress.set_fraction(1);
-    while(Main::events_pending())
-      Main::iteration();
-
-    statusBar.push("Calculating average structure", statusBarContext);
-    progress.set_fraction(0);
-    while(Main::events_pending())
-      Main::iteration();
-    gromacs->calculateAverageStructure();
-
-    while((currentFrame = gromacs->getCurrentFrame()) < count)
-    {
-      if(abortFlag)
-      {
-        gromacs->abort();
-        break;
-      }
-      progress.set_fraction(static_cast<float>(currentFrame) / count);
-      while(Main::events_pending())
-        Main::iteration();
-      gromacs->waitNextFrame();
-    }
+    calculateAverageStructure(session);
     if(abortFlag)
       return;
-
-    gromacs->waitOperation();
-    while(Main::events_pending())
-      Main::iteration();
-
-    if(abortFlag)
-      return;
-
-    gromacs->getAverageStructure().dumpPdb(session.getPdbStream());
-
-    if(abortFlag)
-      return;
-
-    progress.set_fraction(1);
-    while(Main::events_pending())
-      Main::iteration();
 
     runPittpi(sessionFileName, spinRadius.get_value(),
               spinPocketThreshold.get_value());
@@ -390,7 +321,6 @@ namespace PstpFinder
 
     mainFrame.set_sensitive();
     buttonRun.set_sensitive();
-    std::locale::global(oldLocale);
 
     buttonShowResults.set_sensitive();
     resultsWindows.push_back(new Results(*this, pittpiPtr, *gromacs));
@@ -500,15 +430,15 @@ namespace PstpFinder
     while(Main::events_pending())
       Main::iteration();
 
-    Session<ifstream> sessionFile(sessionFileName);
+    Session<fstream> session(sessionFileName);
 
-    trjChooser.set_filename(sessionFile.getTrajectoryFileName());
-    tprChooser.set_filename(sessionFile.getTopologyFileName());
+    trjChooser.set_filename(session.getTrajectoryFileName());
+    tprChooser.set_filename(session.getTopologyFileName());
 
-    beginTime = sessionFile.getBeginTime();
-    endTime = sessionFile.getEndTime();
-    spinRadius.set_value(sessionFile.getRadius());
-    spinPocketThreshold.set_value(sessionFile.getPocketThreshold());
+    beginTime = session.getBeginTime();
+    endTime = session.getEndTime();
+    spinRadius.set_value(session.getRadius());
+    spinPocketThreshold.set_value(session.getPocketThreshold());
     entrySessionFile.set_text(sessionFileName);
 
     mainFrame.set_sensitive(false);
@@ -520,20 +450,35 @@ namespace PstpFinder
 
     analysisStatus = enumAnalysisStatus::ANALYSIS_ONGOING;
 
-    gromacs = new Gromacs(sessionFile.getTrajectoryFileName(),
-                          sessionFile.getTopologyFileName());
+    gromacs = new Gromacs(session.getTrajectoryFileName(),
+                          session.getTopologyFileName());
     __timeStep = gromacs->getTimeStep();
     __frames = gromacs->getFramesCount();
     gromacs->setBegin(beginTime);
     gromacs->setEnd(endTime);
 
-    while(Main::events_pending())
-      Main::iteration();
-    gromacs->setAverageStructure(Protein(sessionFile.getPdbStream()));
+    if(not session.sasComplete())
+    {
+      stop_spin();
 
-    stop_spin();
-    while(Main::events_pending())
-      Main::iteration();
+      calculateSas(session);
+      if(abortFlag)
+        return;
+
+      calculateAverageStructure(session);
+      if(abortFlag)
+        return;
+    }
+    else
+    {
+      while(Main::events_pending())
+        Main::iteration();
+      gromacs->setAverageStructure(Protein(session.getPdbStream()));
+
+      stop_spin();
+      while(Main::events_pending())
+        Main::iteration();
+    }
 
     progress.set_fraction(0);
     while(Main::events_pending())
@@ -609,5 +554,92 @@ namespace PstpFinder
         resultsWindows.erase(i);
         break;
       }
+  }
+
+  template<typename Session>
+  void
+  NewAnalysis::calculateSas(Session& session)
+  {
+    statusBar.push("Calculating SAS using Gromacs", statusBarContext);
+    progress.set_fraction(0);
+    while(Main::events_pending())
+      Main::iteration();
+
+    unsigned int currentFrame;
+    unsigned int count = gromacs->getFramesCount();
+    while(Main::events_pending())
+      Main::iteration();
+
+    if(abortFlag)
+      return;
+    gromacs->calculateSas(session);
+
+    while((currentFrame = gromacs->getCurrentFrame()) < count)
+    {
+      if(abortFlag)
+      {
+        gromacs->abort();
+        break;
+      }
+      progress.set_fraction(static_cast<float>(currentFrame) / count);
+      while(Main::events_pending())
+        Main::iteration();
+      gromacs->waitNextFrame();
+    }
+    if(abortFlag)
+      return;
+
+    gromacs->waitOperation();
+    while(Main::events_pending())
+      Main::iteration();
+
+    progress.set_fraction(1);
+    while(Main::events_pending())
+      Main::iteration();
+  }
+
+  template<typename Session>
+  void
+  NewAnalysis::calculateAverageStructure(Session& session)
+  {
+    statusBar.push("Calculating average structure", statusBarContext);
+    progress.set_fraction(0);
+    while(Main::events_pending())
+      Main::iteration();
+
+    unsigned int currentFrame;
+    unsigned int count(gromacs->getFramesCount());
+    gromacs->calculateAverageStructure();
+
+    while((currentFrame = gromacs->getCurrentFrame()) < count)
+    {
+      if(abortFlag)
+      {
+        gromacs->abort();
+        break;
+      }
+      progress.set_fraction(static_cast<float>(currentFrame) / count);
+      while(Main::events_pending())
+        Main::iteration();
+      gromacs->waitNextFrame();
+    }
+    if(abortFlag)
+      return;
+
+    gromacs->waitOperation();
+    while(Main::events_pending())
+      Main::iteration();
+
+    if(abortFlag)
+      return;
+
+    gromacs->getAverageStructure().dumpPdb(session.getPdbStream());
+
+    if(abortFlag)
+      return;
+
+    progress.set_fraction(1);
+    while(Main::events_pending())
+      Main::iteration();
   }
 }

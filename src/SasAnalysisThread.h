@@ -22,6 +22,10 @@
 
 #include "SasAnalysis.h"
 
+#include <thread>
+
+using namespace std;
+
 namespace PstpFinder
 {
   template<typename T, typename SasClass>
@@ -200,7 +204,6 @@ namespace PstpFinder
 
   template<typename T>
   class SasAnalysisThread<T, typename enable_if<
-    not is_base_of<base_stream(basic_istream, T), T>::value and
     is_base_of<base_stream(basic_ostream, T), T>::value>::type>
     : public SasAnalysisThread_Base<T, SasAnalysis_Write<T>>
   {

@@ -121,17 +121,20 @@ namespace PstpFinder
       typedef SasAnalysisThread<T> SasAnalysisThreadType;
       SasAnalysis_Write(unsigned int nAtoms, const Gromacs& gromacs,
                         Session<T>& sessionFile) :
-          Base(nAtoms, gromacs, sessionFile) { updateChunks(); }
+          Base(nAtoms, gromacs, sessionFile), readFrames(0) { updateChunks(); }
       SasAnalysis_Write(const Gromacs& gromacs, const string& sessionFileName) :
-          Base(gromacs, sessionFileName) { updateChunks(); }
+          Base(gromacs, sessionFileName), readFrames(0) { updateChunks(); }
       SasAnalysis_Write(const Gromacs& gromacs, Session<T>& sessionFile) :
-          Base(gromacs, sessionFile) { updateChunks(); }
+          Base(gromacs, sessionFile), readFrames(0) { updateChunks(); }
       virtual ~SasAnalysis_Write();
       virtual const SasAnalysis_Write& operator <<(SasAtom* sasAtoms);
+      unsigned int getReadFrames() const;
+
+    protected:
+      unsigned int readFrames;
 
     private:
       typedef SasAnalysis_Base<T> Base;
-      Serializer<MetaStream<T>>* serializer;
       template<typename, typename> friend class SasAnalysisThread_Base;
       template<typename, typename> friend class SasAnalysisThread;
 
@@ -144,8 +147,10 @@ namespace PstpFinder
 
   template<typename T>
   class SasAnalysis<T,
-      typename enable_if<is_base_of<base_stream(basic_istream, T),
-                                    T>::value>::type> :
+      typename enable_if<is_base_of<base_stream(basic_istream, T), T>::value
+                          and not is_base_of<base_stream(basic_ostream, T),
+                                              T>::value>
+                ::type> :
       public SasAnalysis_Read<T>
   {
     public:
@@ -160,8 +165,9 @@ namespace PstpFinder
 
   template<typename T>
   class SasAnalysis<T,
-      typename enable_if<is_base_of<base_stream(basic_ostream, T),
-                                    T>::value>::type> :
+      typename enable_if<
+        not is_base_of<base_stream(basic_istream, T), T>::value and
+        is_base_of<base_stream(basic_ostream, T), T>::value>::type> :
       public SasAnalysis_Write<T>
   {
     public:
@@ -172,6 +178,70 @@ namespace PstpFinder
           SasAnalysis_Write<T>(gromacs, sessionFile) {}
       SasAnalysis(const Gromacs& gromacs, const string& sessionFileName) :
           SasAnalysis_Write<T>(gromacs, sessionFileName) {}
+  };
+
+  template<typename T>
+  class SasAnalysis<T,
+      typename enable_if<
+        is_base_of<base_stream(basic_istream, T), T>::value and
+        is_base_of<base_stream(basic_ostream, T), T>::value>::type> :
+      public SasAnalysis_Write<T>
+  {
+    public:
+      SasAnalysis(unsigned int nAtoms, const Gromacs& gromacs,
+                  Session<T>& sessionFile) :
+          SasAnalysis_Write<T>(nAtoms, gromacs, sessionFile) { init(); }
+      SasAnalysis(const Gromacs& gromacs, Session<T>& sessionFile) :
+          SasAnalysis_Write<T>(gromacs, sessionFile) { init(); }
+      SasAnalysis(const Gromacs& gromacs, const string& sessionFileName) :
+          SasAnalysis_Write<T>(gromacs, sessionFileName) { init(); }
+
+    private:
+      typedef SasAnalysis_Write<T> Base;
+
+      void
+      init()
+      {
+          size_t sasAtomSize(Base::serializer->getSerializedSize(SasAtom()));
+          Base::sasMetaStream.seekg(0);
+          Base::changeable = false;
+          Base::serializer = new Serializer<MetaStream<T>>(Base::sasMetaStream);
+
+          unsigned int validatedChunks(0);
+          unsigned int chunkSize;
+          unsigned long totalFrames(0);
+          streampos backupPosition;
+
+          *Base::serializer >> chunkSize;
+          backupPosition = Base::sasMetaStream.tellg();
+
+          while(not Base::sasMetaStream.eof())
+          {
+            Base::sasMetaStream.seekg(chunkSize * sasAtomSize * Base::nAtoms,
+                                      ios_base::cur);
+
+            if(Base::sasMetaStream.eof())
+            {
+              Base::sasMetaStream.seekg(backupPosition);
+              break;
+            }
+
+            totalFrames += chunkSize;
+            validatedChunks++;
+            backupPosition = Base::sasMetaStream.tellg();
+            *Base::serializer >> chunkSize;
+          }
+
+          Base::sasMetaStream.clear();
+          if(totalFrames == 0)
+            Base::sasMetaStream.seekg(0);
+          else
+            Base::sasMetaStream.seekg(0, ios_base::end);
+
+          Base::readFrames = totalFrames;
+          Base::sasMetaStream.seekp(Base::sasMetaStream.tellg());
+          Base::analysisThread = new SasAnalysisThread<T>(*this);
+      }
   };
 
   template<typename T>
@@ -529,6 +599,11 @@ namespace PstpFinder
                               + sizeof(vector<SasAtom*> );
 
     bufferMax = maxBytes / vectorSize;
+    if(bufferMax == 0)
+    {
+      cerr << "Can't allocate memory... Strange. Is your RAM full?" << endl;
+      throw bad_alloc();
+    }
 
     chunks = boost::circular_buffer<std::vector<SasAtom*> >(bufferMax);
   }
@@ -547,6 +622,13 @@ namespace PstpFinder
   {
     Base::updateChunks();
     Base::bufferCount = Base::bufferMax - 1;
+  }
+
+  template<typename T>
+  unsigned int
+  SasAnalysis_Write<T>::getReadFrames() const
+  {
+    return readFrames;
   }
 }
 #endif

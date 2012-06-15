@@ -97,6 +97,11 @@ namespace PstpFinder
       bool close_window(GdkEventAny* event) throw();
       void runPittpi(const string& SessionFileName,
                                     float radius, float threshold);
+      template<typename Session>
+      void calculateSas(Session& session);
+
+      template<typename Session>
+      void calculateAverageStructure(Session& session);
   };
 }
 

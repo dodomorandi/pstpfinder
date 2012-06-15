@@ -211,11 +211,12 @@ namespace PstpFinder
     gmx_atomprop_destroy(aps);
   }
 
+  template<typename Stream>
   void
-  Gromacs::calculateSas(Session<ofstream>& session)
+  Gromacs::calculateSas(Session<Stream>& session)
   {
     operationThread = thread(
-        bind(&Gromacs::__calculateSas, ref(*this), ref(session)));
+        bind(&Gromacs::__calculateSas<Stream>, ref(*this), ref(session)));
   }
 
   void
@@ -232,8 +233,9 @@ namespace PstpFinder
       operationThread.join();
   }
 
+  template<typename Stream>
   void
-  Gromacs::__calculateSas(Session<ofstream>& session)
+  Gromacs::__calculateSas(Session<Stream>& session)
   {
     bool bTop, bDGsol;
     real totarea, totvolume;
@@ -246,7 +248,10 @@ namespace PstpFinder
     if(not gotTopology and not (bTop = getTopology()))
       gmx_fatal(FARGS, "Could not read topology file.\n");
 
+    /* Just a precaution -- we could change this trough SasAnalysis */
+    operationMutex.lock();
     currentFrame = 0;
+    operationMutex.unlock();
 
     /* bDGsol = (strcmp(*(top.atoms.atomtype[0]),"?") != 0); */
     /* TODO: warnings about bDGsol */
@@ -287,12 +292,29 @@ namespace PstpFinder
     }
 
     gpbc = gmx_rmpbc_init(&top.idef, ePBC, natoms, box);
-    SasAnalysis<ofstream> sasAnalysis(nx, *this, session);
+
+    SasAnalysis<Stream> sasAnalysis(nx, *this, session);
+    {
+      unsigned int readFrames(sasAnalysis.getReadFrames());
+      while(readFrames > currentFrame)
+      {
+        //gmx_rmpbc(gpbc, natoms, box, x);
+        operationMutex.lock();
+        currentFrame++;
+        wakeCondition.notify_all();
+        operationMutex.unlock();
+        if(not readNextX())
+          break;
+      }
+    }
 
     do
     {
       if(abortFlag)
+      {
+        session.abort();
         break;
+      }
       gmx_rmpbc(gpbc, natoms, box, x);
       if(nsc_dclm_pbc(x, radius, nx, 24, FLAG_ATOM_AREA, &totarea, &area,
                       &totvolume, &surfacedots, &nsurfacedots, index.data(),
@@ -313,7 +335,10 @@ namespace PstpFinder
           dgsolv += area[i] * dgs_factor[i];
       }
       if(abortFlag)
+      {
+        session.abort();
         break;
+      }
 
       operationMutex.lock();
       sasAnalysis << atoms;
@@ -906,4 +931,10 @@ namespace PstpFinder
   {
     return abortFlag;
   }
+
+  template void Gromacs::__calculateSas(Session<fstream>&);
+  template void Gromacs::__calculateSas(Session<ofstream>&);
+
+  template void Gromacs::calculateSas(Session<fstream>&);
+  template void Gromacs::calculateSas(Session<ofstream>&);
 }

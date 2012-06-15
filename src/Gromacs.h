@@ -67,7 +67,6 @@ struct gmx_residuetype
     int      n;
     char **  resname;
     char **  restype;
-
 };
 
 using namespace std;
@@ -84,7 +83,8 @@ namespace PstpFinder
       ~Gromacs();
       // FIXME: It will have to return an object Molecular Dynamics with SAS
       // FIXME: additional informations
-      void calculateSas(Session<ofstream>& session);
+      template<typename Stream>
+      void calculateSas(Session<Stream>& session);
     
       string getTrajectoryFile() const;
       string getTopologyFile() const;
@@ -113,7 +113,8 @@ namespace PstpFinder
        */
       void waitNextFrame(unsigned int refFrame) const;
 
-      void __calculateSas(Session<ofstream>& session);
+      template<typename Stream>
+      void __calculateSas(Session<Stream>& session);
       const Protein& __calculateAverageStructure();
       void calculateAverageStructure();
       const Protein& getAverageStructure() const;
@@ -159,7 +160,5 @@ namespace PstpFinder
       bool readNextX();
   };
 }
-;
-
 #endif
 
