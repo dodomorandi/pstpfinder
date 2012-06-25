@@ -21,6 +21,7 @@
 #include "SasAtom.h"
 #include "SasAnalysis.h"
 #include <utility>
+#include <cassert>
 
 #include <boost/python.hpp>
 #include <boost/python/stl_iterator.hpp>
@@ -158,7 +159,7 @@ namespace PstpFinder
   }
 
   Pittpi::Pittpi(Gromacs& gromacs, const std::string& sessionFileName,
-                 float radius, unsigned long threshold) :
+                 float radius, unsigned long threshold, bool runPittpi) :
       gromacs(gromacs),
       abortFlag(false)
   {
@@ -167,8 +168,10 @@ namespace PstpFinder
     this->threshold = threshold;
     sync = true;
     __status = 0;
+    averageStructure = gromacs.getAverageStructure();
 
-    pittpiThread = thread(&Pittpi::pittpiRun, ref(*this));
+    if(runPittpi)
+      pittpiThread = thread(&Pittpi::pittpiRun, ref(*this));
   }
 
   Pittpi::~Pittpi()
@@ -288,7 +291,6 @@ namespace PstpFinder
   void
   Pittpi::pittpiRun()
   {
-    averageStructure = gromacs.getAverageStructure();
     makeGroups(radius);
     if(abortFlag) return;
 
@@ -953,12 +955,11 @@ namespace PstpFinder
   {
     for(auto& pocket : pockets)
     {
-      if(pocket.group < groups.data()
-         or pocket.group >= groups.data() + groups.size())
-        throw;
+      assert(pocket.group >= groups.data() and
+             pocket.group < groups.data() + groups.size());
 
       SerializablePocket serializablePocket(pocket);
-      serializablePocket.groupIndex = groups.data() - pocket.group;
+      serializablePocket.groupIndex = pocket.group - groups.data();
       this->pockets.push_back(move(serializablePocket));
     }
   }
@@ -966,8 +967,8 @@ namespace PstpFinder
   Pittpi::SerializableGroups::SerializableGroups(const vector<Group>& groups,
                                                  const Protein& protein)
   {
-    const vector<const PdbAtom*> atoms(protein.atoms());
-    const vector<Residue> residues(protein.residues());
+    const vector<const PdbAtom*>& atoms(protein.atoms());
+    const vector<Residue>& residues(protein.residues());
 
     for(auto& group : groups)
     {
@@ -984,15 +985,13 @@ namespace PstpFinder
             break;
           }
         }
-        if(not atomFound)
-          throw;
+        assert(atomFound);
       }
 
-      if(serializableGroup.referenceRes != nullptr
-         and (serializableGroup.referenceRes < residues.data()
-              or serializableGroup.referenceRes
-                 >= residues.data() + residues.size()))
-        throw;
+      assert(serializableGroup.referenceRes == nullptr or
+             (serializableGroup.referenceRes >= residues.data() and
+              serializableGroup.referenceRes <
+              residues.data() + residues.size()));
 
       serializableGroup.referenceAtomIndex = serializableGroup.referenceAtom
           ->index;
@@ -1001,9 +1000,8 @@ namespace PstpFinder
 
       for(auto& residue : serializableGroup.residues)
       {
-        if(residue < residues.data()
-           or residue >= residues.data() + residues.size())
-          throw;
+        assert(residue >= residues.data()
+               and residue < residues.data() + residues.size());
 
         serializableGroup.residuesIndex.push_back(residue->index);
       }
@@ -1011,79 +1009,40 @@ namespace PstpFinder
       this->groups.push_back(move(serializableGroup));
     }
   }
-}
 
-namespace boost
-{
-  namespace serialization
+  void
+  Pittpi::SerializableGroups::updateGroups(vector<Group>& groupsToUpdate,
+                                           const Protein& protein) const
   {
-    template<class Archive>
-    void
-    serialize(
-        Archive& ar,
-        PstpFinder::Pittpi::SerializablePockets::SerializablePocket pocket,
-        const unsigned int version)
+    groupsToUpdate.clear();
+    groupsToUpdate.reserve(groups.size());
+
+    for(auto& serializableGroup : groups)
     {
-      ar & pocket.groupIndex;
-      ar & pocket.startFrame;
-      ar & pocket.startPs;
-      ar & pocket.endFrame;
-      ar & pocket.endPs;
-      ar & pocket.width;
-      ar & pocket.openingFraction;
-      ar & pocket.averageNearFrame;
-      ar & pocket.maxAreaFrame;
-      ar & pocket.maxAreaPs;
+      Group group(protein.getResidueByIndex(serializableGroup.referenceResIndex));
+      group.sas = move(serializableGroup.sas);
+      group.zeros = serializableGroup.zeros;
+
+      for(auto& residueIndex : serializableGroup.residuesIndex)
+        group << protein.getResidueByIndex(residueIndex);
+
+      groupsToUpdate.push_back(move(group));
     }
+  }
 
-    template<class Archive>
-    void
-    serialize(
-        Archive& ar,
-        PstpFinder::Pittpi::SerializableGroups::SerializableGroup group,
-        const unsigned int version)
+  void
+  Pittpi::SerializablePockets::updatePockets(
+      vector<Pocket>& pocketsToUpdate, const vector<Group>& groups) const
+  {
+    pocketsToUpdate.clear();
+    pocketsToUpdate.reserve(pockets.size());
+
+    for(auto& serializablePocket : pockets)
     {
-        ar & group.sas;
-        ar & group.zeros;
-        ar & group.referenceAtomIndex;
-        ar & group.referenceResIndex;
-        ar & group.residuesIndex;
-    }
+      Pocket pocket(groups[serializablePocket.groupIndex]);
+      pocket << serializablePocket;
 
-    template<class Archive>
-    void
-    save(Archive& ar, PstpFinder::Pittpi& pittpi,
-              const unsigned int version)
-    {
-        PstpFinder::Pittpi::SerializablePockets serializablePockets(
-            pittpi.pockets, pittpi.groups);
-        PstpFinder::Pittpi::SerializableGroups serializableGroups(pittpi.groups);
-
-        ar & pittpi.sessionFileName;
-        ar & pittpi.radius;
-        ar & pittpi.threshold;
-        ar & pittpi.averageStructure;
-        ar & serializablePockets;
-        ar & serializableGroups;
-    }
-
-    template<class Archive>
-    void
-    load(Archive& ar, PstpFinder::Pittpi& pittpi,
-              const unsigned int version)
-    {
-        PstpFinder::Pittpi::SerializablePockets serializablePockets;
-        PstpFinder::Pittpi::SerializableGroups serializableGroups;
-
-        ar & pittpi.sessionFileName;
-        ar & pittpi.radius;
-        ar & pittpi.threshold;
-        ar & pittpi.averageStructure;
-        ar & serializablePockets;
-        ar & serializableGroups;
-
-        serializablePockets.updatePockets(pittpi.pockets);
-        serializableGroups.updateGroups(pittpi.groups);
+      pocketsToUpdate.push_back(move(pocket));
     }
   }
 }

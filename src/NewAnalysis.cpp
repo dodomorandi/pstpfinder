@@ -319,6 +319,8 @@ namespace PstpFinder
     if(abortFlag)
       return;
 
+    pittpiPtr->save(session.getPittpiStream());
+
     mainFrame.set_sensitive();
     buttonRun.set_sensitive();
 
@@ -456,6 +458,8 @@ namespace PstpFinder
     __frames = gromacs->getFramesCount();
     gromacs->setBegin(beginTime);
     gromacs->setEnd(endTime);
+    spinBegin.set_value(beginTime);
+    spinEnd.set_value(endTime);
 
     if(not session.sasComplete())
     {
@@ -480,20 +484,32 @@ namespace PstpFinder
         Main::iteration();
     }
 
-    progress.set_fraction(0);
-    while(Main::events_pending())
-      Main::iteration();
+    if(not session.pittpiComplete())
+    {
+      progress.set_fraction(0);
+      while(Main::events_pending())
+        Main::iteration();
 
-    runPittpi(sessionFileName, spinRadius.get_value(),
-              spinPocketThreshold.get_value());
-    if(abortFlag)
-      return;
+      runPittpi(sessionFileName, spinRadius.get_value(),
+                spinPocketThreshold.get_value());
+      if(abortFlag)
+        return;
+    }
+    else
+    {
+      progress.set_fraction(0);
+      while(Main::events_pending())
+        Main::iteration();
+
+      pittpiPtr = shared_ptr<Pittpi>(
+          new Pittpi(*gromacs, sessionFileName, session.getRadius(),
+                     session.getPocketThreshold(), false));
+      pittpiPtr->load(session.getPittpiStream());
+    }
 
     mainFrame.set_sensitive();
     buttonRun.set_sensitive();
     update_limits();
-    spinBegin.set_value(beginTime);
-    spinEnd.set_value(endTime);
     buttonRun.set_sensitive();
 
     progress.set_fraction(0);

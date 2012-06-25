@@ -123,7 +123,7 @@ namespace PstpFinder
   {
     public:
       Pittpi(Gromacs& gromacs, const std::string& sessionFileName,
-             float radius, unsigned long threshold);
+             float radius, unsigned long threshold, bool runPittpi = true);
       Pittpi(const Pittpi& pittpi);
       Pittpi(const Pittpi& pittpi, const Gromacs& gromacs);
       ~Pittpi();
@@ -137,6 +137,9 @@ namespace PstpFinder
       bool isFinished();
       void abort();
       const vector<Pocket>& getPockets() const;
+
+      template<typename Stream> void save(Stream& stream) const;
+      template<typename Stream> void load(Stream& stream);
     private:
       class SerializablePockets
       {
@@ -148,12 +151,19 @@ namespace PstpFinder
 
             SerializablePocket() = default;
             SerializablePocket(const Pocket& pocket) : Pocket(pocket) {}
+
+            template<typename Serializer>
+            void serialize(Serializer serializer);
           };
 
           SerializablePockets() = default;
           SerializablePockets(const vector<Pocket>& pockets,
                               const vector<Group>& groups);
-          void updatePockets(vector<Pocket>& pocketsToUpdate) const;
+
+          template<typename Serializer>
+          void serialize(Serializer serializer);
+          void updatePockets(vector<Pocket>& pocketsToUpdate,
+              const vector<Group>& groups) const;
 
         private:
           vector<SerializablePocket> pockets;
@@ -172,12 +182,19 @@ namespace PstpFinder
 
               SerializableGroup() = default;
               SerializableGroup(const Group& group) : Group(group) {}
+
+              template<typename Serializer>
+              void serialize(Serializer serializer);
           };
 
           SerializableGroups() = default;
           SerializableGroups(const vector<Group>& groups,
                              const Protein& protein);
-          void updateGroups(vector<Group>& groupsToUpdate) const;
+
+          template<typename Serializer>
+          void serialize(Serializer serializer);
+          void updateGroups(vector<Group>& groupsToUpdate,
+              const Protein& protein) const;
 
         private:
           vector<SerializableGroup> groups;
@@ -215,6 +232,84 @@ namespace PstpFinder
       vector<Pocket> pockets;
       vector<Group> groups;
   };
+
+  template<typename Stream>
+  void
+  Pittpi::save(Stream& stream) const
+  {
+    Serializer<Stream> serializer(stream);
+    serializer << radius;
+    serializer << threshold;
+    SerializableGroups serializableGroups(groups, averageStructure);
+    serializer << serializableGroups;
+    SerializablePockets serializablePockets(pockets, groups);
+    serializer << serializablePockets;
+
+    stream.close();
+  }
+
+  template<typename Stream>
+  void
+  Pittpi::load(Stream& stream)
+  {
+    assert(averageStructure.atoms().size() > 0);
+    Serializer<Stream> serializer(stream);
+    SerializableGroups serializableGroups;
+    SerializablePockets serializablePockets;
+    serializer >> radius;
+    serializer >> threshold;
+    serializer >> serializableGroups;
+    serializer >> serializablePockets;
+
+    serializableGroups.updateGroups(groups, averageStructure);
+    serializablePockets.updatePockets(pockets, groups);
+
+    sync = false;
+  }
+
+  template<class Serializer>
+  void
+  Pittpi::SerializablePockets::SerializablePocket::serialize(
+      Serializer serializer)
+  {
+    serializer & groupIndex;
+    serializer & startFrame;
+    serializer & startPs;
+    serializer & endFrame;
+    serializer & endPs;
+    serializer & width;
+    serializer & openingFraction;
+    serializer & averageNearFrame;
+    serializer & averageNearPs;
+    serializer & maxAreaFrame;
+    serializer & maxAreaPs;
+  }
+
+  template<class Serializer>
+  void
+  Pittpi::SerializableGroups::SerializableGroup::serialize(
+      Serializer serializer)
+  {
+    serializer & sas;
+    serializer & zeros;
+    serializer & referenceAtomIndex;
+    serializer & referenceResIndex;
+    serializer & residuesIndex;
+  }
+
+  template<typename Serializer>
+  void
+  Pittpi::SerializablePockets::serialize(Serializer serializer)
+  {
+    serializer & pockets;
+  }
+
+  template<typename Serializer>
+  void
+  Pittpi::SerializableGroups::serialize(Serializer serializer)
+  {
+    serializer & groups;
+  }
 }
 
 #endif

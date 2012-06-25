@@ -20,7 +20,7 @@
 #ifndef SESSION_H_
 #define SESSION_H_
 
-#define SESSION_VERSION 1
+#define SESSION_VERSION 2
 namespace PstpFinder
 {
   // Session forward declarations for Gromacs.h (and maybe others)
@@ -469,7 +469,7 @@ namespace PstpFinder
       if(sessionFile->eof())
         return;
 
-      *serializer >> dataUInt;;
+      *serializer >> dataUInt;
       metaPittpi.start = sessionFile->tellg();
       if(dataUInt > 0)
       {
@@ -678,7 +678,19 @@ namespace PstpFinder
   void
   Session_Base<T>::eventPittpiStreamClosing()
   {
-    // TODO: closing a Pittpi Stream
+    assert(version > 1);
+    if(not metaPittpi.stream or not metaPittpi.stream->is_open())
+      return;
+
+    metaPittpi.stream->seekp(0, ios_base::end);
+    streampos endOfPittpi(metaPittpi.stream->tellp());
+    metaPittpi.end = metaPittpi.start + endOfPittpi;
+    metaPittpi.complete = true;
+    sessionFile->seekp(metaPittpi.info);
+    unsigned int dataUInt(endOfPittpi);
+    *serializer << dataUInt;
+
+    sessionFile->close();
   }
 
   template<typename T>
