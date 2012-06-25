@@ -38,19 +38,14 @@ namespace PstpFinder
       template<typename, typename>
       friend class Serializer;
 
-      template<typename Stream>
+      template<typename Serializer>
       void
-      serialize(Serializer<Stream>& serializer)
+      serialize(Serializer serializer)
       {
         serializer & x;
         serializer & y;
         serializer & z;
         serializer & sas;
-      }
-
-      void foo()
-      {
-        ;
       }
   };
 }

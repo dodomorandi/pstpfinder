@@ -25,6 +25,7 @@
 #endif
 
 #include "utils.h"
+#include "container_traits.h"
 
 #include <iostream>
 #include <cassert>
@@ -32,6 +33,7 @@
 #include <type_traits>
 #include <functional>
 #include <algorithm>
+#include <vector>
 
 using namespace std;
 
@@ -85,8 +87,8 @@ namespace PstpFinder
 
       template<typename Serializable>
       typename enable_if<is_arithmetic<Serializable>::value,
-        SerializerHelper&>::type
-      serializeData(Serializable& serializable)
+        const SerializerHelper&>::type
+      serializeData(Serializable serializable) const
       {
         array<char_type, sizeof(Serializable)> buffer;
         char_type* pointer((char_type*)&serializable);
@@ -103,25 +105,39 @@ namespace PstpFinder
       }
 
       template<typename Serializable>
-      typename enable_if<is_class<Serializable>::value,
-        SerializerHelper&>::type
-      serializeData(Serializable& serializable)
+      typename enable_if<is_same<Serializable, string>::value,
+        const SerializerHelper&>::type
+      serializeData(const Serializable& serializable) const
       {
-        stringstream sstream;
-        sstream << serializable;
+        serializeData(serializable.size());
+        stream << serializable;
 
-        string buffer(sstream.str());
-        size_t sz(buffer.size());
-        serializeData(sz);
-        stream << buffer;
+        return *this;
+      }
+
+      template<typename Serializable>
+      typename enable_if<has_serialize_member_function<Serializable>::value,
+        const SerializerHelper&>::type
+      serializeData(Serializable& serializable) const
+      {
+        serializable.serialize(*static_cast<const Serializer<Stream>*>(this));
+        return *this;
+      }
+
+      template<typename Serializable>
+      typename enable_if<is_std_container<Serializable>::value,
+        const SerializerHelper&>::type
+      serializeData(Serializable& serializableVector) const
+      {
+        serializeContainer(serializableVector);
 
         return *this;
       }
 
       template<typename Serializable>
       typename enable_if<is_arithmetic<Serializable>::value,
-        SerializerHelper&>::type
-      deserializeData(Serializable& serializable)
+        const SerializerHelper&>::type
+      deserializeData(Serializable& serializable) const
       {
         array<char_type, sizeof(Serializable)> buffer;
         stream.read(buffer.data(), sizeof(Serializable));
@@ -138,9 +154,9 @@ namespace PstpFinder
       }
 
       template<typename Serializable>
-      typename enable_if<is_class<Serializable>::value,
-        SerializerHelper&>::type
-      deserializeData(Serializable& serializable)
+      typename enable_if<is_same<Serializable, string>::value,
+        const SerializerHelper&>::type
+      deserializeData(Serializable& serializable) const
       {
         size_t sz;
         deserializeData(sz);
@@ -153,6 +169,53 @@ namespace PstpFinder
         delete[] buffer;
 
         return *this;
+      }
+
+      template<typename Serializable>
+      typename enable_if<has_serialize_member_function<Serializable>::value,
+        const SerializerHelper&>::type
+      deserializeData(Serializable& serializable) const
+      {
+        serializable.serialize(*static_cast<const Serializer<Stream>*>(this));
+
+        return *this;
+      }
+
+      template<typename Serializable>
+      typename enable_if<is_std_container<Serializable>::value,
+        const SerializerHelper&>::type
+      deserializeData(Serializable& serializableVector) const
+      {
+        deserializeContainer(serializableVector);
+
+        return *this;
+      }
+
+    private:
+      template<typename Container>
+      inline void
+      serializeContainer(Container& container) const
+      {
+        serializeData(container.size());
+        for(auto& serializable : container)
+          serializeData(serializable);
+      }
+
+      template<typename Container>
+      inline void
+      deserializeContainer(Container& container) const
+      {
+        typedef typename Container::value_type containerType;
+        size_t containerSize;
+        deserializeData(containerSize);
+
+        container.reserve(containerSize);
+        for(size_t i(0); i < containerSize; i++)
+        {
+          containerType serializable;
+          deserializeData(serializable);
+          container.push_back(move(serializable));
+        }
       }
   };
 
@@ -170,16 +233,16 @@ namespace PstpFinder
         SerializerHelper<Stream>(stream) {}
 
       template<typename Serializable>
-      typename enable_if<is_arithmetic<Serializable>::value, Serializer&>::type
-      operator &(Serializable& serializable)
+      typename enable_if<is_arithmetic<Serializable>::value, const Serializer&>::type
+      operator &(Serializable& serializable) const
       {
         SerializerHelper<Stream>::deserializeData(serializable);
         return *this;
       }
 
       template<typename Serializable>
-      typename enable_if<is_class<Serializable>::value, Serializer&>::type
-      operator &(Serializable& serializable)
+      typename enable_if<is_class<Serializable>::value, const Serializer&>::type
+      operator &(Serializable& serializable) const
       {
         SerializerHelper<Stream>::deserializeData(serializable);
         return *this;
@@ -188,8 +251,8 @@ namespace PstpFinder
       template<typename Output>
       typename enable_if<
             has_serialize_member_function<Output>::value,
-            Serializer&>::type
-      operator >>(Output& output)
+            const Serializer&>::type
+      operator >>(Output& output) const
       {
         output.serialize(*this);
         return *this;
@@ -198,8 +261,8 @@ namespace PstpFinder
       template<typename Output>
       typename enable_if<
             not has_serialize_member_function<Output>::value,
-            Serializer&>::type
-      operator >>(Output& output)
+            const Serializer&>::type
+      operator >>(Output& output) const
       {
         *this & output;
         return *this;
@@ -220,16 +283,18 @@ namespace PstpFinder
         SerializerHelper<Stream>(stream) {}
 
       template<typename Serializable>
-      typename enable_if<is_arithmetic<Serializable>::value, Serializer&>::type
-      operator &(Serializable& serializable)
+      typename enable_if<is_arithmetic<Serializable>::value,
+        const Serializer&>::type
+      operator &(Serializable serializable) const
       {
         SerializerHelper<Stream>::serializeData(serializable);
         return *this;
       }
 
       template<typename Serializable>
-      typename enable_if<is_class<Serializable>::value, Serializer&>::type
-      operator &(Serializable& serializable)
+      typename enable_if<is_class<Serializable>::value,
+        const Serializer&>::type
+      operator &(Serializable serializable) const
       {
         SerializerHelper<Stream>::serializeData(serializable);
         return *this;
@@ -238,8 +303,8 @@ namespace PstpFinder
       template<typename Input>
       typename enable_if<
           has_serialize_member_function<Input>::value,
-          Serializer&>::type
-      operator <<(Input& input)
+          const Serializer&>::type
+      operator <<(Input input) const
       {
         input.serialize(*this);
         return *this;
@@ -248,8 +313,8 @@ namespace PstpFinder
       template<typename Input>
       typename enable_if<
           not has_serialize_member_function<Input>::value,
-          Serializer&>::type
-      operator <<(Input& input)
+          const Serializer&>::type
+      operator <<(Input input) const
       {
         *this & input;
         return *this;
@@ -270,8 +335,8 @@ namespace PstpFinder
         SerializerHelper<Stream>(stream) {}
 
       template<typename Serializable>
-      typename enable_if<is_arithmetic<Serializable>::value, Serializer&>::type
-      operator &(Serializable& serializable)
+      typename enable_if<is_arithmetic<Serializable>::value, const Serializer&>::type
+      operator &(Serializable& serializable) const
       {
         if(mode == Mode::INPUT)
           SerializerHelper<Stream>::deserializeData(serializable);
@@ -281,8 +346,8 @@ namespace PstpFinder
       }
 
       template<typename Serializable>
-      typename enable_if<is_class<Serializable>::value, Serializer&>::type
-      operator &(Serializable& serializable)
+      typename enable_if<is_class<Serializable>::value, const Serializer&>::type
+      operator &(Serializable& serializable) const
       {
         if(mode == Mode::INPUT)
           SerializerHelper<Stream>::deserializeData(serializable);
@@ -294,8 +359,8 @@ namespace PstpFinder
       template<typename Input>
       typename enable_if<
           has_serialize_member_function<Input>::value,
-          Serializer&>::type
-      operator <<(Input& input)
+          const Serializer&>::type
+      operator <<(Input input) const
       {
         mode = Mode::OUTPUT;
         input.serialize(*this);
@@ -305,8 +370,8 @@ namespace PstpFinder
       template<typename Input>
       typename enable_if<
           not has_serialize_member_function<Input>::value,
-          Serializer&>::type
-      operator <<(Input& input)
+          const Serializer&>::type
+      operator <<(Input input) const
       {
         mode = Mode::OUTPUT;
         *this & input;
@@ -316,8 +381,8 @@ namespace PstpFinder
       template<typename Output>
       typename enable_if<
             has_serialize_member_function<Output>::value,
-            Serializer&>::type
-      operator >>(Output& output)
+            const Serializer&>::type
+      operator >>(Output& output) const
       {
         mode = Mode::INPUT;
         output.serialize(*this);
@@ -327,8 +392,8 @@ namespace PstpFinder
       template<typename Output>
       typename enable_if<
             not has_serialize_member_function<Output>::value,
-            Serializer&>::type
-      operator >>(Output& output)
+            const Serializer&>::type
+      operator >>(Output& output) const
       {
         mode = Mode::INPUT;
         *this & output;
@@ -342,7 +407,7 @@ namespace PstpFinder
           OUTPUT
       };
 
-      Mode mode;
+      mutable Mode mode;
   };
 } /* namespace PstpFinder */
 #endif /* SERIALIZER_H_ */
