@@ -64,7 +64,7 @@ Results::init() throw()
   signal_delete_event()
       .connect(sigc::mem_fun(*this, &Results::removeFromParent));
 
-  drawResultsGraph.set_size_request(600, 200);
+  drawResultsGraph.set_size_request(500, 200);
 #if GTKMM_MAJOR == 3
   drawResultsGraph.signal_draw().
       connect(sigc::mem_fun(*this, &Results::drawResultsGraphDrawEvent));
@@ -121,9 +121,10 @@ Results::init() throw()
   vboxPocketInformation.pack_start(hboxPocketWidth, false, false, 0);
   vboxPocketInformation.pack_start(labelPocketResidues, false, false, 0);
   vboxPocketInformation.pack_start(textPocketResidues, false, false, 0);
+  vboxPocketInformation.set_border_width(5);
 
-  panedMain.add1(drawResultsGraph);
-  panedMain.add2(vboxPocketInformation);
+  panedMain.pack1(drawResultsGraph, true, false);
+  panedMain.pack2(vboxPocketInformation, true, true);
   drawResultsStatusBar.push(statusBarMessages[0]);
   drawResultsVBox.pack_start(panedMain);
   drawResultsVBox.pack_start(drawResultsStatusBar, false, true);
@@ -252,6 +253,7 @@ Results::init() throw()
   notebook.append_page(scrollDetails, "Details");
 
   add(notebook);
+  set_default_size(760, 250);
 
   show_all();
 }
