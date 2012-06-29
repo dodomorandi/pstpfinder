@@ -129,4 +129,28 @@ elif test $HAVE_PYTHON -eq 1 -a "x$BOOST_PYTHON_LIBS" != "x"; then
 else
    echo "no"
 fi
+
+echo "Debug information: $ax_cv_enable_debug"
+echo -n "Optimization level: "
+if test $ax_cv_enable_debug = yes; then
+  if test $ax_cv_enable_optimization = yes; then
+    if test $ax_cv_optimization_level = default; then
+       echo "3"
+    else
+       echo "$ax_cv_optimization_level"
+    fi
+  else
+    echo "0"
+  fi
+else
+  if test $ax_cv_enable_optimization \!= no; then
+    if test $ax_cv_optimization_level = default; then
+       echo "3"
+    else
+       echo "$ax_cv_optimization_level"
+    fi
+  else
+    echo "0"
+  fi
+fi
 echo
