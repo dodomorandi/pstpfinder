@@ -46,6 +46,21 @@ namespace PstpFinder
   MainWindow::init()
   {
     set_title("PSTP-finder");
+    try
+    {
+      Glib::RefPtr<IconTheme> defaultIconTheme(IconTheme::get_default());
+      auto searchPath(defaultIconTheme->get_search_path());
+      searchPath.push_back("./");
+      searchPath.push_back("../");
+      defaultIconTheme->set_search_path(searchPath);
+      Glib::RefPtr<Gdk::Pixbuf> icon(
+          defaultIconTheme->load_icon("pstpfinder", 64));
+      set_default_icon(icon);
+    }
+    catch(IconThemeError& error)
+    {
+      cerr << "Warning: can't set PSTP-finder icon." << endl;
+    }
     buttonNew.set_label("New analysis");
     buttonNew.signal_clicked().connect(
         sigc::mem_fun(*this, &MainWindow::createNewAnalysis));
