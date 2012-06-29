@@ -161,13 +161,10 @@ namespace PstpFinder
         size_t sz;
         deserializeData(sz);
 
+        serializable.resize(sz);
         char_type* buffer = new char_type[sz];
         stream.read(buffer, sz);
-        stringstream sstream;
-        sstream.write(buffer, sz);
-        sstream >> serializable;
-        delete[] buffer;
-
+        serializable.assign(buffer, sz);
         return *this;
       }
 
