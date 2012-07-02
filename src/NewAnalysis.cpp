@@ -510,7 +510,6 @@ namespace PstpFinder
     mainFrame.set_sensitive();
     buttonRun.set_sensitive();
     update_limits();
-    buttonRun.set_sensitive();
 
     progress.set_fraction(0);
     progress.show();

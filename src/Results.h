@@ -75,10 +75,9 @@ namespace PstpFinder
       DrawingArea drawResultsGraph;
       TextView textViewData, textViewDetails;
       ScrolledWindow scrollData, scrollDetails;
-      VBox drawResultsVBox;
+      VBox drawResultsVBox, vboxPocketInformation, vboxMain;
       HPaned panedMain;
       Statusbar drawResultsStatusBar;
-      VBox vboxPocketInformation;
       HBox hboxPocketCenter, hboxPocketStart,
            hboxPocketEnd, hboxPocketWidth;
       Label labelPocketCenter, labelPocketStart,
@@ -87,13 +86,15 @@ namespace PstpFinder
             entryPocketEnd, entryPocketWidth;
       Label labelPocketResidues;
       TextView textPocketResidues;
+      Glib::RefPtr<UIManager> uiManager;
+      Glib::RefPtr<ActionGroup> actionGroup;
 
       Gromacs gromacs;
       shared_ptr<Pittpi> pittpi;
       NewAnalysis& parent;
       vector<PocketResidue> residues;
       float maxPocketLength;
-      vector<Gdk::Color> colors;
+      vector<Gdk::RGBA> colors;
       const Pocket* selectedPocket;
       const Pocket* hoveringOnPocket;
       bool fixedSelection;
@@ -120,8 +121,10 @@ namespace PstpFinder
       bool drawResultsGraphButtonPressEvent(GdkEventButton* event) throw();
 
       void fillResidues();
-      static inline Gdk::Color rainbow(double value);
+      static inline Gdk::RGBA rainbow(double value);
       void updateInformation();
+      void buildMenu();
+      void runColorsChooserDialog();
   };
 };
 

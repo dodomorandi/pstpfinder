@@ -18,6 +18,7 @@
  */
 
 #include "Results.h"
+#include "ColorsChooser.h"
 #include <cstdlib>
 #include <cmath>
 #include <vector>
@@ -114,6 +115,7 @@ Results::init() throw()
   textPocketResidues.set_wrap_mode(WrapMode::WRAP_WORD);
   textPocketResidues.set_editable(false);
   textPocketResidues.set_border_width(1);
+  textPocketResidues.set_hexpand(false);
 
   vboxPocketInformation.pack_start(hboxPocketCenter, false, false, 0);
   vboxPocketInformation.pack_start(hboxPocketStart, false, false, 0);
@@ -252,7 +254,11 @@ Results::init() throw()
   scrollDetails.add(textViewDetails);
   notebook.append_page(scrollDetails, "Details");
 
-  add(notebook);
+  buildMenu();
+
+  vboxMain.pack_start(*uiManager->get_widget("/menuBar"), false, false);
+  vboxMain.pack_start(notebook);
+  add(vboxMain);
   set_default_size(760, 250);
 
   show_all();
@@ -380,6 +386,10 @@ Results::drawResultsGraphExposeEvent(GdkEventExpose* event) throw()
   float columnModuleY = (float)(height - graphOffsetStart * 2
                                 - graphHeaderHeight - graphFooterHeight)
                         / maxPocketLength;
+
+  bool foundSelection(false);
+  array<float, 4> selectionCoordinates;
+
   for(auto i = residues.cbegin(); i < residues.cend(); i++)
   {
     int columnOffsetX = graphOffsetStart + graphLeftBorder + columnModuleX *
@@ -390,26 +400,23 @@ Results::drawResultsGraphExposeEvent(GdkEventExpose* event) throw()
     for(auto j = i->pockets.cbegin(); j < i->pockets.cend(); j++)
     {
       int columnHeight = (float)columnModuleY * (*j)->width;
-      const Gdk::Color& color = colors[distance(i->pockets.cbegin(), j)];
+      const Gdk::RGBA& color = colors[distance(i->pockets.cbegin(), j)];
 
-      context->set_source_rgb(color.get_red_p(),
-                              color.get_green_p(),
-                              color.get_blue_p());
-      context->rectangle(columnOffsetX, columnOffsetY - columnHeight,
-                         columnModuleX * 2, columnHeight);
-      context->fill();
       if((not fixedSelection and *j == hoveringOnPocket)
          or (fixedSelection and *j == selectedPocket))
       {
-        context->save();
-        context->set_line_width(2);
-        context->set_line_cap(Cairo::LineCap::LINE_CAP_ROUND);
-        context->rectangle(columnOffsetX, columnOffsetY - columnHeight,
-                           columnModuleX * 2, columnHeight);
-        context->set_source_rgb(0, 0, 0);
-        context->stroke();
-        context->restore();
+        selectionCoordinates = array<float, 4>
+          {{ float(columnOffsetX), float(columnOffsetY - columnHeight),
+             columnModuleX * 2, float(columnHeight) }};
+        foundSelection = true;
       }
+
+      context->set_source_rgb(color.get_red(),
+                              color.get_green(),
+                              color.get_blue());
+      context->rectangle(columnOffsetX, columnOffsetY - columnHeight,
+                         columnModuleX * 2, columnHeight);
+      context->fill();
 
       columnOffsetY -= columnHeight;
     }
@@ -436,6 +443,14 @@ Results::drawResultsGraphExposeEvent(GdkEventExpose* event) throw()
     context->move_to(columnOffsetX + columnModuleX - extents.width / 2,
                      height - graphOffsetStart);
     context->show_text(strIndex);
+  }
+
+  if(foundSelection)
+  {
+    context->rectangle(selectionCoordinates[0], selectionCoordinates[1],
+                       selectionCoordinates[2], selectionCoordinates[3]);
+    context->set_source_rgb(0, 0, 0);
+    context->stroke();
   }
 
   // Y Axis text
@@ -683,7 +698,7 @@ Results::fillResidues()
   }
 
 
-  vector<Gdk::Color> unscrambledColors;
+  vector<Gdk::RGBA> unscrambledColors;
   for(unsigned int i = 0; i < maxPocketsPerResidue; i++)
     unscrambledColors.push_back(rainbow(1.0 / (maxPocketsPerResidue - 1) * i));
 
@@ -719,10 +734,10 @@ Results::fillResidues()
   sort(residues.begin(), residues.end(), PocketResidue::sortByResidueIndex);
 }
 
-Gdk::Color
+Gdk::RGBA
 Results::rainbow(double value)
 {
-  Gdk::Color color;
+  Gdk::RGBA color;
   double red, green, blue;
 
   if(value <= 0.25)
@@ -750,7 +765,7 @@ Results::rainbow(double value)
     blue = 1.0;
   }
 
-  color.set_rgb_p(red, green, blue);
+  color.set_rgba(red, green, blue);
   return color;
 }
 
@@ -818,4 +833,40 @@ Results::updateInformation()
         drawResultsStatusBar.push(statusBarMessages[0]);
       break;
   }
+}
+
+void
+Results::buildMenu()
+{
+  static const Glib::ustring menuString =
+      "<ui>"
+      "  <menubar name='menuBar'>"
+      "    <menu action='graphMenu'>"
+      "      <menuitem action='changeColors'/>"
+      "    </menu>"
+      "  </menubar>"
+      "</ui>";
+
+  actionGroup = ActionGroup::create();
+  actionGroup->add(Action::create("graphMenu", "_Graph"));
+  actionGroup->add(
+      Action::create("changeColors", "_Change colors",
+                     "Change default colors for every bar"),
+      sigc::mem_fun(*this, &Results::runColorsChooserDialog));
+
+  uiManager = UIManager::create();
+  uiManager->insert_action_group(actionGroup);
+  uiManager->add_ui_from_string(menuString);
+}
+
+void
+Results::runColorsChooserDialog()
+{
+  ColorsChooser colorsChooser;
+  colorsChooser.set_colors(colors);
+  if(colorsChooser.run() != ResponseType::RESPONSE_OK)
+    return;
+
+  colors = colorsChooser.get_colors();
+  drawResultsGraph.queue_draw();
 }
