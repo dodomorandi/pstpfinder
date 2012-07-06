@@ -531,6 +531,7 @@ namespace PstpFinder
               &Session_Base<T>::eventSasStreamClosing, ref(*this));
         break;
       case 1:  // SAS + PDB
+      case 2:  // SAS + PDB + Pittpi
         if(metaSas.end == 0)
         {
           metaSas.complete = false;
@@ -555,6 +556,19 @@ namespace PstpFinder
 
           metaPdb.stream->callbackClose = bind(
               &Session_Base<T>::eventPdbStreamClosing, ref(*this));
+        }
+        else if(version == 2 and metaPittpi.end == 0)
+        {
+          metaSas.complete = true;
+          metaPdb.complete = true;
+          metaPittpi.stream = unique_ptr<stream_type>(
+            new stream_type(sessionFileName,
+                            ios_base::in | ios_base::out | ios_base::binary,
+                            enumStreamType::STREAMTYPE_ADJUST,
+                            metaPittpi.start));
+
+          metaPittpi.stream->callbackClose = bind(
+              &Session_Base<T>::eventPittpiStreamClosing, ref(*this));
         }
         break;
     }
@@ -622,6 +636,7 @@ namespace PstpFinder
     sessionFile->seekp(metaSas.info);
     unsigned int dataUInt(endOfSas);
     *serializer << dataUInt;
+    metaSas.stream->flush();
 
     sessionFile->seekp(metaSas.end);
     metaPdb.info = sessionFile->tellp();
@@ -652,6 +667,7 @@ namespace PstpFinder
     sessionFile->seekp(metaPdb.info);
     unsigned int dataUInt(endOfPdb);
     *serializer << dataUInt;
+    metaPdb.stream->flush();
 
     if(version > 1)
     {
@@ -689,6 +705,7 @@ namespace PstpFinder
     sessionFile->seekp(metaPittpi.info);
     unsigned int dataUInt(endOfPittpi);
     *serializer << dataUInt;
+    metaPittpi.stream->flush();
 
     sessionFile->close();
   }

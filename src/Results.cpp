@@ -654,7 +654,7 @@ void
 Results::fillResidues()
 {
   const vector<Pocket>& pockets = pittpi->getPockets();
-  maxPocketLength = 0;
+  maxPocketLength = 1;
   unsigned int maxPocketsPerResidue = 0;
 
   for(auto& pocket : pockets)

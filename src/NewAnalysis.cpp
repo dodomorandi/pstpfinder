@@ -494,6 +494,8 @@ namespace PstpFinder
                 spinPocketThreshold.get_value());
       if(abortFlag)
         return;
+
+      pittpiPtr->save(session.getPittpiStream());
     }
     else
     {
