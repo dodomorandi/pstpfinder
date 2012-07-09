@@ -115,7 +115,9 @@ Results::init() throw()
   textPocketResidues.set_wrap_mode(WrapMode::WRAP_WORD);
   textPocketResidues.set_editable(false);
   textPocketResidues.set_border_width(1);
+#if GTKMM_MAJOR == 3
   textPocketResidues.set_hexpand(false);
+#endif
 
   vboxPocketInformation.pack_start(hboxPocketCenter, false, false, 0);
   vboxPocketInformation.pack_start(hboxPocketStart, false, false, 0);
@@ -400,7 +402,7 @@ Results::drawResultsGraphExposeEvent(GdkEventExpose* event) throw()
     for(auto j = i->pockets.cbegin(); j < i->pockets.cend(); j++)
     {
       int columnHeight = (float)columnModuleY * (*j)->width;
-      const Gdk::RGBA& color = colors[distance(i->pockets.cbegin(), j)];
+      const Color& color = colors[distance(i->pockets.cbegin(), j)];
 
       if((not fixedSelection and *j == hoveringOnPocket)
          or (fixedSelection and *j == selectedPocket))
@@ -698,7 +700,7 @@ Results::fillResidues()
   }
 
 
-  vector<Gdk::RGBA> unscrambledColors;
+  vector<Color> unscrambledColors;
   for(unsigned int i = 0; i < maxPocketsPerResidue; i++)
     unscrambledColors.push_back(rainbow(1.0 / (maxPocketsPerResidue - 1) * i));
 
@@ -734,10 +736,10 @@ Results::fillResidues()
   sort(residues.begin(), residues.end(), PocketResidue::sortByResidueIndex);
 }
 
-Gdk::RGBA
+Results::Color
 Results::rainbow(double value)
 {
-  Gdk::RGBA color;
+  Color color;
   double red, green, blue;
 
   if(value <= 0.25)
@@ -765,7 +767,11 @@ Results::rainbow(double value)
     blue = 1.0;
   }
 
+#if GTKMM_MAJOR == 2
+  color.set_rgb_p(red, green, blue);
+#else
   color.set_rgba(red, green, blue);
+#endif
   return color;
 }
 

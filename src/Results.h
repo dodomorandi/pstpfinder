@@ -54,6 +54,12 @@ namespace PstpFinder
   class Results: public Window
   {
     public:
+#if GTKMM_MAJOR == 2
+      typedef Gdk::Color Color;
+#else
+      typedef Gdk::RGBA Color;
+#endif
+
       Results(NewAnalysis& parent, const shared_ptr<Pittpi>& pittpi,
               const Gromacs& gromacs);
       void init() throw();
@@ -94,7 +100,7 @@ namespace PstpFinder
       NewAnalysis& parent;
       vector<PocketResidue> residues;
       float maxPocketLength;
-      vector<Gdk::RGBA> colors;
+      vector<Color> colors;
       const Pocket* selectedPocket;
       const Pocket* hoveringOnPocket;
       bool fixedSelection;
@@ -121,7 +127,7 @@ namespace PstpFinder
       bool drawResultsGraphButtonPressEvent(GdkEventButton* event) throw();
 
       void fillResidues();
-      static inline Gdk::RGBA rainbow(double value);
+      static inline Color rainbow(double value);
       void updateInformation();
       void buildMenu();
       void runColorsChooserDialog();

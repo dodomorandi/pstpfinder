@@ -50,8 +50,10 @@ namespace PstpFinder
     {
       Glib::RefPtr<IconTheme> defaultIconTheme(IconTheme::get_default());
       auto searchPath(defaultIconTheme->get_search_path());
+#if GTKMM_MAJOR == 3
       searchPath.push_back("./");
       searchPath.push_back("../");
+#endif
       defaultIconTheme->set_search_path(searchPath);
       Glib::RefPtr<Gdk::Pixbuf> icon(
           defaultIconTheme->load_icon("pstpfinder", 64));
