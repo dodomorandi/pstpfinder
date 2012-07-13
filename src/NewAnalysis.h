@@ -66,7 +66,7 @@ namespace PstpFinder
       HBox hboxTrajectory, hboxTopology, hboxBegin, hboxEnd, hboxFrame, hboxRadius,
            hboxPocketThreshold, hboxSession;
       Entry entrySessionFile;
-      HButtonBox buttonBoxRun;
+      HButtonBox buttonBoxRun, buttonBoxBrowse;
       Button buttonRun, buttonBrowseFile, buttonShowResults;
       ProgressBar progress;
       Alignment progressAligner;

@@ -66,7 +66,7 @@ namespace PstpFinder
     buttonNew.set_label("New analysis");
     buttonNew.signal_clicked().connect(
         sigc::mem_fun(*this, &MainWindow::createNewAnalysis));
-    buttonOpen.set_label("Open analysis...");
+    buttonOpen.set_label("Open/resume analysis...");
     buttonOpen.signal_clicked().connect(
         sigc::mem_fun(*this, &MainWindow::buttonOpenClicked));
 

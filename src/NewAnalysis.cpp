@@ -155,11 +155,12 @@ namespace PstpFinder
     buttonBrowseFile.set_label("Browse...");
     buttonBrowseFile.signal_clicked().connect(
         sigc::mem_fun(*this, &NewAnalysis::buttonBrowseFileClicked));
+    buttonBoxBrowse.pack_start(buttonBrowseFile, PACK_SHRINK);
     hboxSession.set_spacing(10);
     hboxSession.set_homogeneous(false);
     hboxSession.pack_start(labelSessionFile, PACK_SHRINK);
     hboxSession.pack_start(entrySessionFile);
-    hboxSession.pack_start(buttonBrowseFile);
+    hboxSession.pack_start(buttonBoxBrowse, PACK_SHRINK);
 
     vboxFrame2.set_spacing(10);
     vboxFrame2.pack_start(hboxRadius);
@@ -188,7 +189,7 @@ namespace PstpFinder
     buttonBoxRun.set_border_width(10);
     buttonBoxRun.set_spacing(10);
     buttonBoxRun.pack_end(buttonShowResults);
-    buttonBoxRun.pack_end(buttonRun);
+    buttonBoxRun.pack_end(buttonRun, PACK_SHRINK);
 
     progressAligner.add(progress);
     progressAligner.set_border_width(10);
@@ -200,7 +201,7 @@ namespace PstpFinder
     vboxMain.set_homogeneous(false);
     vboxMain.pack_start(mainFrame);
     vboxMain.pack_start(buttonBoxRun, PACK_SHRINK);
-    vboxMain.pack_start(progressAligner, PACK_EXPAND_WIDGET);
+    vboxMain.pack_start(progressAligner, PACK_SHRINK);
     vboxMain.pack_start(statusBar, PACK_SHRINK);
 
     add(vboxMain);
@@ -530,8 +531,8 @@ namespace PstpFinder
     if(not mainFrame.is_sensitive())
     {
       MessageDialog messageAbort(
-          "An analysis is running. If you quit you will lose all your work."
-          " Abort and quit?",
+          "An analysis is running. If you quit you can resume it from "
+          "'Open/resume analysis' button. Abort and quit?",
           false, MESSAGE_QUESTION, BUTTONS_YES_NO, true);
 
       int response = messageAbort.run();
