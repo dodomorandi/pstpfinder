@@ -49,8 +49,8 @@ Results::Results(NewAnalysis& parent, const shared_ptr<Pittpi>& pittpi,
     graphBorder(10),
     graphOffsetStart(graphBorder + graphLineWidth)
 {
-  labelYMultiplier = 1.;
-  labelXMultiplier = 0.1;
+  labelYMultiplier = 0.5;
+  labelXMultiplier = 0.5;
   graphModifier = enumModifier::NOTHING;
   graphLeftBorder = 0;
   fixedSelection = false;
@@ -261,7 +261,8 @@ Results::init() throw()
   vboxMain.pack_start(*uiManager->get_widget("/menuBar"), false, false);
   vboxMain.pack_start(notebook);
   add(vboxMain);
-  set_default_size(760, 250);
+  set_default_size(800, 320);
+  set_title("PSTP-finder results");
 
   show_all();
 }
@@ -299,85 +300,92 @@ Results::drawResultsGraphExposeEvent(GdkEventExpose* event) throw()
   context->set_source_rgb(1.0, 1.0, 1.0);
   context->paint();
 
-  // Draw graph
-  graphFooterHeight = height * labelXMultiplier;
-  if(height - graphFooterHeight / 0.8 - graphBorder
-     - graphOffsetStart
-     < 0)
-  {
-    graphFooterHeight = (height - graphOffsetStart
-                         - graphBorder) * 0.8;
-    labelXMultiplier = static_cast<float>(graphFooterHeight)
-                       / height;
-  }
-  else if(graphFooterHeight < 8)
-  {
-    graphFooterHeight = 8;
-    labelXMultiplier = static_cast<float>(graphFooterHeight)
-                       / height;
-  }
+  context->select_font_face("Sans", Cairo::FONT_SLANT_NORMAL,
+                            Cairo::FONT_WEIGHT_NORMAL);
 
-  float graphLabelYSize;
+  float graphLabelXSize, graphLabelYSize;
   context->set_identity_matrix();
   context->save();
   {
     Cairo::TextExtents extents;
-    context->rotate(-3.1415 / 2);
-    // We use an approximate value to evaluate graphHeaderHeight
-    context->get_text_extents("pocket opening time(ps)", extents);
-    graphLabelYSize = 10. / extents.width
-                      * (height - graphFooterHeight
-                         - graphBorder
-                         - graphOffsetStart);
+    context->get_text_extents("Residue number", extents);
+    float labelXProportion = extents.width / extents.height;
+    graphLabelXSize = width / 3. / labelXProportion;
 
-    context->set_font_size(graphLabelYSize * labelYMultiplier);
-    context->get_text_extents("000", extents);
-    if(graphLeftBorder != 0
-       and (extents.height > graphLeftBorder * 0.4 or extents.height < 5))
+    if(labelXMultiplier != 0)
     {
-      float fontSize;
-      if(extents.height < 5.)
-        fontSize = 5.;
-      else
-        fontSize = graphLeftBorder * 0.4 * graphLabelYSize
-                       * labelYMultiplier
-                       / extents.height;
-      labelYMultiplier = fontSize / graphLabelYSize;
-      context->set_font_size(fontSize);
+      context->set_font_size(graphLabelXSize * labelXMultiplier);
       context->get_text_extents("000", extents);
+      graphLabelXSize = extents.height / labelXMultiplier * 2;
+    }
+    else
+    {
+      context->set_font_size(graphLabelXSize);
+      context->get_text_extents("Residue number", extents);
+      graphLabelXSize = extents.height * 2;
     }
 
-    float numberWidth = extents.width;
-    context->get_text_extents("00", extents);
-    numberWidth -= extents.width;
-    graphHeaderHeight = numberWidth * (ceil(log10(maxPocketLength + 1)) / 2);
+    context->set_font_size(graphLabelXSize * labelXMultiplier);
+    context->get_text_extents("000", extents);
+    graphBottomBorder = extents.height + 3;
 
-    // Now we can calculate the true values
-    context->set_font_size(graphLabelYSize);
-    context->get_text_extents("pocket opening time(ps)", extents);
-    graphLabelYSize = graphLabelYSize / extents.width
-                      * (height - graphFooterHeight
-                         - graphBorder
-                         - graphOffsetStart
-                         - graphHeaderHeight) * 0.9;
-    graphLeftBorder = extents.height * 2.5;
-    context->set_font_size(graphLabelYSize * labelYMultiplier);
-    context->get_text_extents("0", extents);
-    graphHeaderHeight = extents.width * (ceil(log10(maxPocketLength)) / 2 + 1);
+    context->set_font_size(graphLabelXSize * (1. - labelXMultiplier));
+    context->get_text_extents("Residue number", extents);
+    graphBottomBorder += extents.height + 5;
   }
   context->restore();
 
-  context->select_font_face("Sans", Cairo::FONT_SLANT_NORMAL,
-                            Cairo::FONT_WEIGHT_NORMAL);
+  context->save();
+  {
+    Cairo::TextExtents extents;
+    context->rotate(-3.1415 / 2);
+    context->get_text_extents("pocket opening time(ps)", extents);
+    float labelYProportion = extents.width / extents.height;
+    const float graphHeight = height - graphBorder - graphOffsetStart
+                              - graphBottomBorder;
+    graphLabelYSize = graphHeight / labelYProportion;
+
+    if(labelYMultiplier != 0)
+    {
+      context->set_font_size(graphLabelYSize * labelYMultiplier);
+      context->get_text_extents("0", extents);
+      graphHeaderHeight = extents.width * (ceil(log10(maxPocketLength)) / 2 + 1);
+
+      graphLabelYSize = extents.height / labelYMultiplier * 2;
+    }
+    else
+    {
+      context->set_font_size(graphLabelYSize);
+      context->get_text_extents("pocket opening time(ps)", extents);
+      graphHeaderHeight = 0;
+      graphLabelYSize = extents.height * 2;
+    }
+
+    context->set_font_size(graphLabelYSize * (1. - labelYMultiplier));
+    context->get_text_extents("pocket opening time(ps)", extents);
+    if(extents.width > graphHeight - graphHeaderHeight)
+      graphLabelYSize = (graphHeight - graphHeaderHeight)
+          / (1. - labelYMultiplier) / labelYProportion;
+
+    context->set_font_size(graphLabelYSize * labelYMultiplier);
+    context->get_text_extents("000", extents);
+    graphLeftBorder = extents.height + 3;
+
+    context->set_font_size(graphLabelYSize * (1. - labelYMultiplier));
+    context->get_text_extents("pocket opening time(ps)", extents);
+    graphLeftBorder += extents.height + 5;
+  }
+  context->restore();
+
   // Axis
   context->set_source_rgb(0.0, 0.0, 0.0);
   context->set_line_width(graphLineWidth);
   context->move_to(graphBorder + graphLeftBorder,
-                   height - graphBorder - graphFooterHeight);
+                   height - graphBorder - graphBottomBorder);
   context->line_to(width - graphBorder,
-                   height - graphBorder - graphFooterHeight);
+                   height - graphBorder - graphBottomBorder);
   context->move_to(graphBorder + graphLeftBorder ,
-                   height - graphBorder - graphFooterHeight);
+                   height - graphBorder - graphBottomBorder);
   context->line_to(graphBorder + graphLeftBorder,
                    graphBorder + graphHeaderHeight);
   context->stroke();
@@ -386,18 +394,26 @@ Results::drawResultsGraphExposeEvent(GdkEventExpose* event) throw()
   float columnModuleX = (float)(width - graphOffsetStart * 2 -
                         graphLeftBorder) / (residues.size() * 3 + 1);
   float columnModuleY = (float)(height - graphOffsetStart * 2
-                                - graphHeaderHeight - graphFooterHeight)
+                                - graphHeaderHeight - graphBottomBorder)
                         / maxPocketLength;
 
   bool foundSelection(false);
   array<float, 4> selectionCoordinates;
+
+  float numbersHeight;
+  {
+    Cairo::TextExtents extents;
+    context->set_font_size(graphLabelXSize * labelXMultiplier);
+    context->get_text_extents("0123456789", extents);
+    numbersHeight = extents.height;
+  }
 
   for(auto i = residues.cbegin(); i < residues.cend(); i++)
   {
     int columnOffsetX = graphOffsetStart + graphLeftBorder + columnModuleX *
         (3 * distance(residues.cbegin(), i) + 1);
     int columnOffsetY = height - graphOffsetStart
-                        - graphFooterHeight;
+                        - graphBottomBorder;
 
     for(auto j = i->pockets.cbegin(); j < i->pockets.cend(); j++)
     {
@@ -432,7 +448,7 @@ Results::drawResultsGraphExposeEvent(GdkEventExpose* event) throw()
       context->set_source_rgb(1, 0, 0);
     else
       context->set_source_rgb(0, 0, 0);
-    context->set_font_size(graphFooterHeight);
+    context->set_font_size(graphLabelXSize * labelXMultiplier);
     context->get_text_extents(strIndex, extents);
     if(extents.width > columnModuleX * 2)
     {
@@ -443,7 +459,8 @@ Results::drawResultsGraphExposeEvent(GdkEventExpose* event) throw()
       extents.width = columnModuleX * 2;
     }
     context->move_to(columnOffsetX + columnModuleX - extents.width / 2,
-                     height - graphOffsetStart);
+                     height - graphBorder - graphBottomBorder +
+                     numbersHeight + 3);
     context->show_text(strIndex);
   }
 
@@ -455,26 +472,43 @@ Results::drawResultsGraphExposeEvent(GdkEventExpose* event) throw()
     context->stroke();
   }
 
+  // X Axis label text
+  context->save();
+  {
+    Cairo::TextExtents extents;
+    context->set_font_size(graphLabelXSize * (1. - labelXMultiplier));
+    if(graphModifier == enumModifier::LABEL_Y)
+      context->set_source_rgb(1, 0, 0);
+    else
+      context->set_source_rgb(0, 0, 0);
+
+    context->get_text_extents("Residue number", extents);
+
+    int spaceBeforeLabelX = (width - graphBorder - graphOffsetStart
+                             - extents.width)
+                            / 2;
+    context->move_to(graphOffsetStart + spaceBeforeLabelX,
+                     height - graphBorder);
+    context->show_text("Residue number");
+  }
+  context->restore();
+
   // Y Axis text
   context->save();
   {
     Cairo::TextExtents extents;
     context->set_identity_matrix();
     context->rotate(-3.1415 / 2);
-    context->set_font_size(graphLabelYSize);
+    context->set_font_size(graphLabelYSize * (1. - labelYMultiplier));
     if(graphModifier == enumModifier::LABEL_Y)
       context->set_source_rgb(1, 0, 0);
     else
       context->set_source_rgb(0, 0, 0);
     context->get_text_extents("pocket opening time(ps)", extents);
 
-    unsigned int spaceBeforeLabelY = (height
-                                      - graphHeaderHeight
-                                      - graphFooterHeight
-                                      - graphOffsetStart
-                                      - graphBorder
-                                      - extents.width)
-                                     / 2;
+    int spaceBeforeLabelY = (height - graphHeaderHeight - graphBottomBorder
+                             - graphOffsetStart - graphBorder - extents.width)
+                            / 2;
 
     context->move_to(
         -graphHeaderHeight - graphBorder - extents.width - spaceBeforeLabelY,
@@ -487,14 +521,14 @@ Results::drawResultsGraphExposeEvent(GdkEventExpose* event) throw()
     context->get_text_extents("00", extents);
     numberWidth -= extents.width;
     context->move_to(
-        -height + graphOffsetStart + graphFooterHeight
+        -height + graphOffsetStart + graphBottomBorder
         - numberWidth / 2,
-        graphBorder + graphLeftBorder * 0.8);
+        graphBorder + graphLeftBorder - 3);
     context->show_text("0");
 
 
     unsigned int graphMaxVerticalStep = (float)(height
-      - graphOffsetStart * 2 - graphHeaderHeight - graphFooterHeight)
+      - graphOffsetStart * 2 - graphHeaderHeight - graphBottomBorder)
       / (numberWidth * (log10(maxPocketLength + 1) + 2));
     for(unsigned int i = 1; i <= graphMaxVerticalStep; i++)
     {
@@ -505,11 +539,11 @@ Results::drawResultsGraphExposeEvent(GdkEventExpose* event) throw()
 
       context->get_text_extents(pocketSize, extents);
       context->move_to(- (height - graphOffsetStart
-                          - graphFooterHeight)
+                          - graphBottomBorder)
                        + (float)(height - graphOffsetStart * 2
-                                 - graphHeaderHeight - graphFooterHeight)
+                                 - graphHeaderHeight - graphBottomBorder)
                        / graphMaxVerticalStep * i - extents.width / 2,
-                       graphBorder + graphLeftBorder * 0.8);
+                       graphBorder + graphLeftBorder - 3);
       context->show_text(pocketSize);
     }
 
@@ -532,10 +566,19 @@ Results::drawResultsGraphScrollEvent(GdkEventScroll* event) throw ()
     return true;
 
   if(event->direction == GdkScrollDirection::GDK_SCROLL_UP)
-    *multiplier *= 1.2;
+  {
+    if(*multiplier == 0)
+      *multiplier = 0.085;
+    else
+      *multiplier *= 1.2;
+  }
   else if(event->direction == GdkScrollDirection::GDK_SCROLL_DOWN)
     *multiplier /= 1.2;
 
+  if(*multiplier > 1.)
+    *multiplier = 1.;
+  else if(*multiplier < 0.08)
+    *multiplier = 0;
   drawResultsGraph.queue_draw();
   return true;
 }
@@ -555,10 +598,10 @@ Results::drawResultsGraphMotionEvent(GdkEventMotion* event) throw()
   if(event->x >= graphBorder and event->x < graphBorder + graphLeftBorder
      and event->y >= graphHeaderHeight + graphBorder
      and event->y
-         < height - graphOffsetStart - graphFooterHeight)
+         < height - graphOffsetStart - graphBottomBorder)
     graphModifier = enumModifier::LABEL_Y;
   else if(event->y
-          >= height - graphBorder - graphFooterHeight
+          >= height - graphBorder - graphBottomBorder
           and event->y < height - graphBorder
           and event->x >= graphBorder + graphLeftBorder
           and event->x < width - graphBorder)
@@ -570,7 +613,7 @@ Results::drawResultsGraphMotionEvent(GdkEventMotion* event) throw()
                           / (residues.size() * 3 + 1);
     float columnModuleY = (float) (height - graphOffsetStart * 2
                                    - graphHeaderHeight
-                                   - graphFooterHeight)
+                                   - graphBottomBorder)
                           / maxPocketLength;
     for(auto i = residues.cbegin(); i < residues.cend(); i++)
     {
@@ -579,7 +622,7 @@ Results::drawResultsGraphMotionEvent(GdkEventMotion* event) throw()
                           + columnModuleX
                             * (3 * distance(residues.cbegin(), i) + 1);
       int columnOffsetY = height - graphOffsetStart
-                          - graphFooterHeight;
+                          - graphBottomBorder;
       for(auto j = i->pockets.cbegin(); j < i->pockets.cend(); j++)
       {
         int columnHeight = (float)columnModuleY * (*j)->width;
