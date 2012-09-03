@@ -1,3 +1,553 @@
+commit 3782fc218319439d4fb590f42467ea32e273a65f
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Mon Sep 3 11:46:58 2012 +0200
+
+    Missing ColorsChooser in GIT repos
+
+commit 10448221f8b9d5c2c7fba21e769fb3ab16da05f8
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Mon Sep 3 11:43:41 2012 +0200
+
+    Fixed color in results window
+
+commit bc3951c2698e222c87e851a65155a848b0840a31
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Mon Sep 3 11:39:29 2012 +0200
+
+    Fixed some debug warnings
+
+commit c6cb3c46933170177fe10bac4146e644acf75219
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue Aug 14 12:52:44 2012 +0200
+
+    Changed Results window behaviour
+
+commit 97b797c56a4e7e045c6fcb7254ca7c5f9a229b07
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri Jul 13 13:07:35 2012 +0200
+
+    Little graphical changes
+
+commit d5290b67c2f278e9d698109702ee158fdabbba0d
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Mon Jul 9 15:31:17 2012 +0200
+
+    Fixed things to work with gtkmm-2.4
+
+commit 8b9dc619dbbceaaa5d41fbea049cf8a7f598cf2c
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri Jul 6 12:52:32 2012 +0200
+
+    Some fixes
+    
+    - Missing condition for Session version 2
+    - It's better to flush streams after serialization
+    - Avoid infinite loop with 0 pockets found
+
+commit 7574d090a77197ede6bcc85c395a57c2382a4f14
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Mon Jul 2 15:28:28 2012 +0200
+
+    Changed Results window
+    
+    Added a color chooser for pockets
+
+commit 3749d4f8d8bfad3f592d55a6a6ba596600615891
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri Jun 29 17:30:15 2012 +0200
+
+    Fixed string deserialization
+
+commit 05cbd89051886c6d26aae986c772e3e48f31b238
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri Jun 29 11:35:25 2012 +0200
+
+    Additional information from configure script
+
+commit c3af3be5cb3a77d5c7a31cb1dfe8586283c46f1a
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri Jun 29 11:31:48 2012 +0200
+
+    Added icon
+
+commit f25a193864a4a5d881731d7270b66f4fd70c873a
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Mon Jun 25 12:02:36 2012 +0200
+
+    Changed a bit Results window behaviour
+
+commit 8613f29a3e4e669580ddc7239676b903dec69309
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Mon Jun 25 11:23:05 2012 +0200
+
+    Pittpi is integrated in session handling
+
+commit d66b6512501cc80069cec4e9dec7d954d0a91e3b
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Mon Jun 25 10:56:25 2012 +0200
+
+    Serializer is quite better now
+    
+    Also added a new traits, useful to check if a template class is a standard container.
+
+commit cecb25e60759daced43901634d0b0106b7862a51
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri Jun 15 15:39:28 2012 +0200
+
+    Added initial session restoring feature
+
+commit fa1b10302200a24295e24d49b2230f1ebeae03db
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Jun 13 13:10:10 2012 +0200
+
+    Fixed a bug due to uncommon residue names
+    
+    I hate myself: why don't I use already written methods??? KISS!
+
+commit 6f078e20a589534480852f12ad4422176c8ef3a6
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Mon Jun 4 17:27:34 2012 +0200
+
+    Better meta-parameters handling
+    
+    Also added the "complete" parameter. I'll need it soon to let the "user" (Gromacs, SasAnalysis and others) to check if a MetaStream have been completely written of a piece is missing and must be resumed.
+
+commit 3afa219411f2e957a383c509275b08ac3d90d5a3
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Mon Jun 4 17:01:37 2012 +0200
+
+    Fixed a couple of things
+    
+    I forgot that fstream doesn't come from ifstream and ofstream, but from basic_iostream.
+
+commit e9656bf5133d9b30db40293178c6e4d7d6bbc3bb
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Mon Jun 4 16:53:06 2012 +0200
+
+    Rewritten Serializer to work also with fstream
+
+commit c07b3212c0d283acb6617a4d9a5d4950faa51141
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Mon Jun 4 13:46:38 2012 +0200
+
+    Fixed some issue when aborting session
+
+commit ece670cd928414f263b123eaa43b3594ee5a6342
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri Jun 1 12:54:19 2012 +0200
+
+    Changed how Session_Base handles files
+    
+    * SessionFile is now a unique_ptr
+    * Session doesn't have to pass a ios_base::openmode parameter to Session_Base. Note that now a Session<ofstream> opens a file in 'w' mode, Session<ifstream> in 'r' mode and Session<fstream> in 'r+' mode.
+    * Session<fstream> also calls prepareForWrite
+    * Other minor changes
+
+commit e87ec7ef92d9ae4ac8724f51509fa54a4aec173f
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Thu May 31 17:34:55 2012 +0200
+
+    Fixed initialization in MetaStream
+
+commit d4bab92aca5c11b3963711e51b9dc37c54d1a110
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue May 29 17:56:50 2012 +0200
+
+    Some code cleaning
+    
+    * Trying to not use cstring anymore. operator==(const string&, const char*) is quite better...
+    * A couple of function (including constructors) added to PdbAtom and Residue. Now it'd be better handling unknown Atoms and Residues.
+
+commit 82f86f7831cda08926be746a6729ac3f2c298227
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue May 29 17:11:54 2012 +0200
+
+    Fixed Protein template and using new features
+    
+    I have to remember that compiler is actually unable to derive the parameter type if it depends on a type traits function/struct.
+
+commit 49ea6f2a40cdffbf582cb6cba9bcf7925a9578ef
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri May 25 11:43:32 2012 +0200
+
+    Protein now handles only streams instead of FILE
+
+commit f83e59e5ece3314f0dc348ffb117fa6c3481b5a0
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Thu May 24 13:19:44 2012 +0200
+
+    User is warned if a session is overwritten
+
+commit 8ed2e9242eca9a9a9461de2c186d5f2ec03fc227
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Thu May 24 13:14:35 2012 +0200
+
+    Removed useless class
+    
+    I wrote this class some time ago trying to catch GROMACS exceptions... But it's been revealed completely useless.
+
+commit b28a7f9c23813956c7b8987da05582dd85aac81f
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Thu May 24 13:08:02 2012 +0200
+
+    FIX: Message Dialog not run
+
+commit c88b51e6c3127da78708cebce4a269b37ca9eb7e
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue May 22 17:44:12 2012 +0200
+
+    Removed boost::filesystem dependencies
+    
+    Now the code inside utils.cpp is used. Still not portable, but it's not the only thing. :)
+
+commit 456779bf64152aafb73430d5d5a081d900e4d2e8
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue May 22 17:15:51 2012 +0200
+
+    Lots of changes related to session handling
+    
+    * Session class have been completely rewritten. Now it can handle input and output streams. A version number have been implemented. It uses the new Serializer class instead of directly dumping/reading data to/from streams. However the compatibility have been completely broken and old session files can't be used anymore.
+    * SasAtom now uses Serializer class instead of the boost::archive
+    * Protein now can dump PDB to file and to stream. It now uses C++ streams to dump (but still loads using C FILEs)
+    * SasAnalysis have been modified to use Serializer instead of boost::archive
+    * NewAnalysis.cpp have been modified so it can handle easily session files
+    * Now a valid session file must be specified ("temporary" session file is not written anymore)
+    * Gromacs now has getTrajectoryFile and getTopologyFile
+    * BOOST_SERIALIZATION and BOOST_IOSTREAMS are not needed anymore in configure.ac
+    * Code cleaning (just a bit)
+
+commit 38e3133d02bdf72c34238c652df6dca5d9f1d842
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue May 22 16:58:09 2012 +0200
+
+    Added Serializer class
+    
+    This class must be used instead of boost::serialization. This kind of change is needed due to MetaStream compatibility with boost libraries.
+    Also some endianess check have been done. Maybe some day I could make the session file completely portable...
+
+commit 5c949f4de1105e62571533c0510621e03616ab95
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue May 22 15:10:50 2012 +0200
+
+    Lots of changes in MetaStream
+    
+    * Removed useless includes
+    * Added two callbacks and changed from event* to callback*
+    * Destructor try to call MetaStream_Base::close before calling callbackDestroy
+    * Now MetaStream_Base can handle standard manipulators
+    * Changed how is calculated the number of added bytes in operator<<
+    * Don't call T::operator<< but cast from MetaStream_Base to T and use the "<<" operator (allows easier handling of "std::operator<<")
+    * Added MetaStream_Base::close
+    * Removed useless debugging features in MetaStream (I though they could help me... but I was wrong!)
+    * Changed from stream_utils.h to utils.h (It will handle other utils)
+    * FIX: streamType initialization bug
+    * FIX: missing return value in operator>>
+    * FIX: possible writtenBytes < 0
+    * FIX: streamEnd didn't change in MetaStream::write
+    
+    Note: "New Analysis" still doesn't work. Wait for a couple of commits.
+
+commit 92ee5059e371b7e78f8c51cf5f09d858cc183957
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed May 9 12:34:11 2012 +0200
+
+    Why should I need AC_LANG_CONFTEST?
+
+commit e3f08edee810bd7e61c1041587f1fd5546177065
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue May 8 17:31:11 2012 +0200
+
+    Couple of fixes in MetaStream
+
+commit 8a72782706a76cc8a7e4f603f2b45723bbf5d549
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Mon May 7 23:39:23 2012 +0200
+
+    SasAnalysis now is a template class
+    
+    Now SasAnalysis should be able to handle different kind of streams (not only fstreams)
+
+commit a7f7595d659fabb196af6d55a9063dd23b2fa8fe
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri Apr 6 16:37:44 2012 +0200
+
+    Missing operator >> and << inside NDEBUG scope
+    
+    Also missing virtual type modifier
+
+commit 202dabe031a03480958bf0269b0bc6b488f07a55
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Thu Apr 5 17:07:04 2012 +0200
+
+    Left dummy flag in gromacs.m4
+
+commit ac2989bda21d75f87432f9c4a500fdfd2299fc55
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Thu Apr 5 16:36:10 2012 +0200
+
+    Deleted Session copy assignment
+
+commit 53476e0ed173df6afe07e0afac87fb0dea4c073c
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Thu Apr 5 16:23:18 2012 +0200
+
+    Changed OperationThread in SasAnalysisThread
+    
+    Now this class is not a SasAnalysis subclass anymore, so it needs a better name.
+
+commit a020a2207e1770b932f9cb461df384507e5168aa
+Merge: b726f2c c1179a4
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Thu Apr 5 16:15:50 2012 +0200
+
+    Merge branch 'saving_pittpi'
+    
+    Conflicts:
+    	src/Session.cpp
+    	src/Session.h
+
+commit b726f2c7e17de9765e217fb41778095fa114e7d4
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue Apr 3 18:51:49 2012 +0200
+
+    Let's play with the MetaStream-s!
+
+commit 5ec43a2c758fb8fd2856cf05fd01cd379bc47ee8
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue Apr 3 18:46:00 2012 +0200
+
+    Session is now a template class
+    
+    This modification allow to handle MetaStream and sessions in a more dynamic way. Now if we need a read-only session, we can use a Session<ifstream>, when a read-write session is needed a Session<fstream> can be declared. Notice that this "little" change brings to a different handling of other classes like Gromacs and SasAnalysis. In fact SasAnalysis is now a template class too, and Gromacs handles ofstreams (with Session<ofstream>) when calculateSas is called. Everything could be done thanks to MetaStream.
+
+commit 27dc528b637874ffc41dd3256921a27dc49c43e8
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Mon Mar 26 14:52:45 2012 +0200
+
+    Metastream has been rewritten
+    
+    It work in a completely different way. Now a template class MetaStream_Base can handle every kind of stream derived from basic_istream and basic_ostream, but the user have to use MetaStream class as before. This because the class have to contruct itself using different kind of methods for different kind of class inheritance (if a MetaStream<ifstream> is declared, the class will have to use tellg() and seekg(), if MetaStream<ofstream> is used then it will need tellp() and seekp()). This brings to different method specializations, and simply because I can't specialize a method in an unspecialized template class, MetaStream<T> needs to inherit MetaStream_Base<T>. Notice that MetaStream_Base<T> derives from T, but basic_istream and basic_ostream methods can't be explictly overridden inside MetaStream_Base (they won't necessarly exist). That's why, for debugging purposes, some virtual methods are declared directly in MetaStream, and in this way they should be able to being debugged. I put them in a #ifdef NDEBUG scope because they add a little overhead (I think).
+
+commit 893db5fa867b1c7157a8fde8ecd733fcca1a505c
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Mon Mar 19 16:22:55 2012 +0100
+
+    Changed how Gromacs include path is handled
+    
+    Now we need to use "#include <gromacs/something.h" instead of "#include <something.h>". This because there are some files (like assert.h) that also exists in Gromacs include path. I also needed to define _assert_h to allow normal assert.h inclusion. What can I say? Keep It Simple, Stupid! Call it gromacs_assert.h!! Damn...
+
+commit c1179a42bdc999485696af32be5a6aa79c2b46a7
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri Mar 16 12:37:28 2012 +0100
+
+    Initial Pittpi serialization
+
+commit e32e05f137899cc6bdbc99cc4efcac61dac06d99
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri Mar 16 12:23:23 2012 +0100
+
+    Changed session file format
+    
+    Not using a newline after SasAnalysis and Pdb data anymore. Naturally this and future revisions can read old format.
+
+commit 3c160acf37f2760330ea8363577719c73ba87b5e
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri Mar 16 12:19:50 2012 +0100
+
+    Changed a couple of things in Pittpi
+
+commit 2e292655095f7b4be22852e5c143f783ce78b07b
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri Mar 16 11:48:31 2012 +0100
+
+    Changed MetaStream behaviour
+    
+    Now MetaStream is a template class. A complete implementation is needed to let it work with basic_iostream, but it will be done soon. Oh, naturally everything inside MetaStream.cpp have been removed and put inside the header file, because of the problem related to template classes and file splitting. For now I simply changed implementations from MetaStream to MetaStream<ifstream>, but I want to change Session behaviour, so it can be used also to write session files.
+
+commit 23dfe4fa5ecac731c600467a1a7c7d5a74073c94
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Thu Mar 8 18:03:49 2012 +0100
+
+    Results window more user-friendly
+    
+    Added click-and-select events on graph bars and related messages
+    on statusbar.
+
+commit c89d42143c10ce018fc77b014bba807968c91e8c
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Thu Mar 8 16:30:50 2012 +0100
+
+    Added list of involved residues
+
+commit 50d56689d5626b8df8fdbd98ede8c41f4d398a13
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Thu Mar 8 14:47:06 2012 +0100
+
+    Added "Show results" button
+
+commit 3db045e050f773b3304dd36fabecd83a6f13dff0
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Mar 7 18:42:26 2012 +0100
+
+    Better configure scripts
+    
+    Also fixed a couple of bugs.
+
+commit 8c1f81b93b037cb9863d87ae1aa2a0936d2dc6d7
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Mar 7 14:27:53 2012 +0100
+
+    Results window improvements
+    
+    I worked quite a lot with this, without success. My idea was to
+    overlay a "property toolbox" over the graph when the cursor was on
+    a bar. I tried to make a new Container in which a cairo context
+    could be used to draw something, but I was unable to put child
+    widgets on top. I also tried to use GooCanvas library, but when
+    everything worked well with a simple button, I noticed that it wont
+    be the same for something more complicated (in fact I've been warned
+    about limitation of Goocanvas::Widget, but I didn't understand
+    if it could fit my needs). I've spent too much time in this problem,
+    now I simply added a HPaned and put some Pocket information in the
+    second child. I don't like that, but for now I think it's the best
+    solution. When Ubuntu and derived distributions will be using
+    Gtk >= 3.2 I could -- maybe -- implement Overlay to obtain what I
+    wanted.
+
+commit ea1b5768c93c9aede4bee1fe6a259124ff2bc417
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Mon Feb 6 14:52:33 2012 +0100
+
+    Moved include files inside src directory
+    
+    This include files are not supposed to be used by other programs, so they should be placed inside src.
+
+commit e1f5a080e2ac5cc165b031088e22ebe4c2cd5e68
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Mon Feb 6 11:47:16 2012 +0100
+
+    Better statusBar handling on graph window
+
+commit 0f4031b09f1a19130cd5a241297d4dc3c7b9d39a
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Mon Feb 6 11:46:56 2012 +0100
+
+    Changed graph behaviour
+
+commit f0ecd0518b1b0a3a147c3f009be1534591cf6c17
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri Feb 3 16:59:34 2012 +0100
+
+    Fixed bug and better pointer handling
+
+commit 8abdbea4ab459ef5dbe3abbe08831c8868014fcb
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Feb 1 16:27:06 2012 +0100
+
+    Changed graphs drawing behaviour
+
+commit 3ea9cddd2de390aef41f9f7bf1fcca943039d376
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Feb 1 16:17:50 2012 +0100
+
+    Changed constness in PocketResidue
+
+commit 8ef4daf5b08bd57699e266328c2ea2e242d61e6b
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Feb 1 16:17:13 2012 +0100
+
+    Fixed a couple of bugs
+
+commit 4cc952011736adc7399db61dca42ed13897fc7d7
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri Jan 27 18:02:27 2012 +0100
+
+    Fixed possible stack overflow
+
+commit 9441531ba45109f5a60d3b2d99b7f81c1eab0c00
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri Jan 27 17:59:48 2012 +0100
+
+    Added configure option
+    
+    Useful to specify optimization level during compilation
+
+commit 742116a0947f1f5fd2e94ac4558022b0cffff668
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri Jan 27 12:47:19 2012 +0100
+
+    Label font resizing limits
+
+commit 9b064b59081ec1b1669b39ee53b80b7f0487d5d5
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri Jan 27 12:46:33 2012 +0100
+
+    Added label X font resize
+
+commit 46122dd08a715c7de582a2537d845af55f137c84
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri Jan 27 10:52:43 2012 +0100
+
+    Resize Y Label font using mouse scrolling
+
+commit 167e904f5ba767bc19c76ff8838dee69d45701eb
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Thu Jan 26 16:53:43 2012 +0100
+
+    Changed Y axis legend style
+    
+    Now high numbers should be far each others.
+
+commit ebbdcd4761b0b6ef113562a9edf67b3cf5d3288c
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Thu Jan 26 16:16:06 2012 +0100
+
+    Added Y label to results graph
+
+commit eda428627dc0868a4204a516ce65a4ff9d6b8668
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Thu Jan 26 16:15:49 2012 +0100
+
+    Added statusbar to results window
+
+commit 3f27b59a30c6eca4fa7b52b9a5017a65e5d995b3
+Merge: f0a27db 0964b8b
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Mon Jan 23 18:16:17 2012 +0100
+
+    Merge branch '0.3-branch'
+    
+    Conflicts:
+    	configure.ac
+    	include/Gromacs.h
+    	include/NewAnalysis.h
+    	include/Pittpi.h
+    	include/Protein.h
+    	include/SasAnalysis.h
+    	src/Gromacs.cpp
+    	src/Makefile.am
+    	src/NewAnalysis.cpp
+    	src/Pittpi.cpp
+    	src/SasAnalysis.cpp
+
+commit f0a27db42144ba90cfb9f97169b95332d9cba8b2
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri Nov 11 22:37:33 2011 +0100
+
+    Switching code to C++11
+
+commit 487d9be574b4263608eba014fb0451f38c200dfc
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue Nov 8 16:51:16 2011 +0100
+
+    Added required support for C++11
+
+commit 0964b8bcc2997979861e637c4e28b439b65788da
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Thu Oct 27 17:56:16 2011 +0200
+
+    Changed version and updated changelog
+
 commit fc3a2ea18137515921d2d97476eae42896e29983
 Author: Edoardo Morandi <morandidodo@gmail.com>
 Date:   Thu Oct 27 17:32:29 2011 +0200
@@ -819,6 +1369,276 @@ Date:   Wed Jun 8 15:28:28 2011 +0200
     Race condition brings to a possibly uninitialized currentFrame.
 
 commit af785e808cc4c81cf966687662b7aee1bc7779d2
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Jun 8 15:06:58 2011 +0200
+
+    Fixed interface problem
+    
+    Now NewAnalysis window moves up when adding progressbar if it was adjacent to the screen borders.
+
+commit 32fb8885d2238f83a2445e25c7d5af815ac1180e
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Jun 29 12:21:25 2011 +0200
+
+    Results data output changed
+    
+    Pockets data and details are no more written in a file, but everything is handled by Results class, which writes itself this information in two sheets inside its notebook.
+
+commit 30ad32a3411201a75dc31ae7fcf1a5aef899b533
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue Jun 28 18:20:38 2011 +0200
+
+    Fixed graph header calculation
+
+commit 98023c728c3c7a2372826cae37a250c28d604ea2
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue Jun 28 18:03:27 2011 +0200
+
+    Fixed race condition?
+
+commit 30f94669e82413043b5648d00656997c5c5d6030
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue Jun 28 17:51:17 2011 +0200
+
+    Changed graph vertical steps calculation
+
+commit 7af8b8b1647db71fa1d2ca0f4be94601aac16590
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue Jun 28 16:42:44 2011 +0200
+
+    Added vertical Y axis text in graph
+
+commit 9526c59849c22f4e26131290afd28a7870fce1c9
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue Jun 28 16:42:29 2011 +0200
+
+    Using float instead of double
+
+commit c17fd7bf78f45bee999917b328e61511c1dcb464
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue Jun 28 14:55:16 2011 +0200
+
+    Graph max pocket length fixed
+
+commit d337892471f9bc2ee15dd56e3627019c201f8398
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue Jun 28 13:22:48 2011 +0200
+
+    Graph results now has scrambled rainbow colors
+
+commit efff725ab65a7ba846f35f1f7b9d7afcc37b9755
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue Jun 28 13:22:29 2011 +0200
+
+    Added rainbow color function
+
+commit 0271c39161d7c06b3160fabd3c1b0cd65e0df410
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Mon Jun 20 18:15:20 2011 +0200
+
+    Changed constness
+
+commit 49a4553274b9e4d7e8a0b8789428c9b9525bf21d
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Mon Jun 20 11:02:28 2011 +0200
+
+    Fixed Pittpi constructor
+
+commit 9e862fe68f7c457af94e378b4aae8177f0cd1005
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Mon Jun 20 11:02:08 2011 +0200
+
+    Added Pittpi::switchReference
+
+commit 19d7d95177bae5c22f312bee87981e16048691bd
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Mon Jun 20 10:59:49 2011 +0200
+
+    Fixed Result constructor
+
+commit 8df5e795664f392e3623409677620db46dc0678f
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Mon Jun 20 10:54:04 2011 +0200
+
+    Added Protein::getResidueByIndex
+
+commit ad0d45b60ead72d125699882ff05fe2402805cef
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri Jun 17 19:27:13 2011 +0200
+
+    Sort pockets by residue index
+
+commit 1aedc803885ed9741e0c39c75d9bdebe04522c92
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri Jun 17 19:10:31 2011 +0200
+
+    Added residue indexes in graph
+
+commit d3d98f13dec71e991cb99afaf031bb9275d5d8eb
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri Jun 17 18:31:18 2011 +0200
+
+    Better Results graph parametrization
+
+commit 0c455187cbe73b42f951f3fab23c5cdc42c6b5be
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri Jun 17 18:03:40 2011 +0200
+
+    Colors for graphs are maximum (0.8,0.8,0.8)
+
+commit bdb3791c83b241cc01c41eccc9c288f7597c39f2
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri Jun 17 17:59:23 2011 +0200
+
+    Fixed Gromacs copy constructor
+
+commit f9a7e14e117acf341c549f641f3fb8fb671dd8e4
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri Jun 17 17:58:44 2011 +0200
+
+    Changed graphic appeareance for graphs
+
+commit 5421ab856e78bfacb15cd9fe07883778cd97f15f
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri Jun 17 17:58:10 2011 +0200
+
+    Run button sensitive after opening
+
+commit 71e59d99e87371b1d4f56367ef0d413c5288db0c
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri Jun 17 16:58:28 2011 +0200
+
+    columnModules are now floats
+
+commit cfd15727cb17faee2caa036f3c5c2a234060442c
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri Jun 17 16:47:20 2011 +0200
+
+    New graph color handling system
+
+commit d2ccdc3d560b914f28924150f14dfc5babd0a96b
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri Jun 17 16:45:07 2011 +0200
+
+    Results now need Gromacs within constructor
+    
+    Also added cmath dependency
+
+commit 8143e16eb14d1f551b94c274c9b924d925534d6c
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri Jun 17 16:37:21 2011 +0200
+
+    NewAnalysis can now handle Gromacs& as const
+
+commit 834aba825148cdc88875d347a6e035766de174f4
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri Jun 17 16:32:47 2011 +0200
+
+    Changed behaviour for Pittpi
+    
+    Now it handles a copy of a Gromacs object.
+    For this purpose a new constructor have been added.
+
+commit 6ef3a4cac0fe8ae6797813fb0bea3cc7208bfc13
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri Jun 17 16:23:09 2011 +0200
+
+    Just a flow control
+
+commit 1df21e95ac4dbd866ad679636b139d2261948c33
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri Jun 17 16:21:53 2011 +0200
+
+    Added Gromacs copy constructor
+    
+    And erased a useless old constructor
+
+commit 8918638e4333803b442fd7e247a60ea1995d8680
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Thu Jun 16 17:47:10 2011 +0200
+
+    Base working graph for results
+
+commit d2c4685961d78cc6a7dfd82e4feaceeed3e53405
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Thu Jun 16 15:27:36 2011 +0200
+
+    Added Results::fillResidues and copy method
+
+commit 73fa3d535f55a1afa48ef332a9a56daa7ef431c7
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Thu Jun 16 15:27:01 2011 +0200
+
+    Useless reference to std namespace
+
+commit 856be630713480f4a5a44df3ea4df3938e3fd64c
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Thu Jun 16 14:21:31 2011 +0200
+
+    Added PocketResidue class
+
+commit 1ef2190de01b1ddded7df87296167e004455d834
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue Jun 14 18:57:13 2011 +0200
+
+    Fixed bug about group references
+    
+    groups and meanGroups where local inside runPittpi. However pockets now is a class member; refering to groups from outside would have brought to a pointer problem. It should be now fixed.
+
+commit db524601e00c488e95e71cd97a1fb911c01a1113
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue Jun 14 18:49:31 2011 +0200
+
+    Added Pittpi::getPockets
+
+commit 804574b6ae40a34dbaa35a12d204f824d1f45d0b
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue Jun 14 18:40:07 2011 +0200
+
+    Axis + fix
+
+commit cc2dd685df7c33fbe2f0e4c78b044ab610e6ffe9
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue Jun 14 18:13:08 2011 +0200
+
+    Initial implementation for graph in Results
+
+commit a76dda45147f9417e7d661a76b77af83cbea34c6
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue Jun 14 16:02:36 2011 +0200
+
+    Changed properties in Results
+
+commit 69eeb990582960ad4621fa85aaa303e716c82d04
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Mon Jun 13 17:32:10 2011 +0200
+
+    Implemented initial Results class
+
+commit 0468f806644f1071ff5121d012446b13ae0bc347
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Mon Jun 13 17:29:58 2011 +0200
+
+    Taking Pittpi object from runPittpi
+
+commit c307fd5f85f4b71c8c20f9f0925faedc0d686265
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Mon Jun 13 17:21:18 2011 +0200
+
+    Couple of changes in Pittpi
+    
+    * Added copy constructor
+    * pockets is now a private property
+
+commit 775ea7fadd793af5211fbb53d9ba13f0dc3e38e1
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Jun 8 15:28:28 2011 +0200
+
+    Uninitialized variable
+    
+    Race condition brings to a possibly uninitialized currentFrame.
+
+commit c9a21252728d00a172e2c3fc71dfb89d22195a63
 Author: Edoardo Morandi <morandidodo@gmail.com>
 Date:   Wed Jun 8 15:06:58 2011 +0200
 
