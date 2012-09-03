@@ -967,13 +967,16 @@ namespace PstpFinder
   Pittpi::SerializableGroups::SerializableGroups(const vector<Group>& groups,
                                                  const Protein& protein)
   {
+#ifndef NDEBUG
     const vector<const PdbAtom*>& atoms(protein.atoms());
     const vector<Residue>& residues(protein.residues());
+#endif
 
     for(auto& group : groups)
     {
       SerializableGroup serializableGroup(group);
 
+#ifndef NDEBUG
       if(serializableGroup.referenceAtom != nullptr)
       {
         bool atomFound(false);
@@ -987,6 +990,7 @@ namespace PstpFinder
         }
         assert(atomFound);
       }
+#endif
 
       assert(serializableGroup.referenceRes == nullptr or
              (serializableGroup.referenceRes >= residues.data() and
