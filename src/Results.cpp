@@ -477,7 +477,7 @@ Results::drawResultsGraphExposeEvent(GdkEventExpose* event) throw()
   {
     Cairo::TextExtents extents;
     context->set_font_size(graphLabelXSize * (1. - labelXMultiplier));
-    if(graphModifier == enumModifier::LABEL_Y)
+    if(graphModifier == enumModifier::LABEL_X)
       context->set_source_rgb(1, 0, 0);
     else
       context->set_source_rgb(0, 0, 0);
