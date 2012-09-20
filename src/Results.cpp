@@ -22,7 +22,7 @@
 #include <cstdlib>
 #include <cmath>
 #include <vector>
-#include <algorithm>
+#include <utility>
 #include <string>
 #include <sstream>
 #include <iomanip>
@@ -144,7 +144,7 @@ Results::init() throw()
 
   selectedPocket = nullptr;
   hoveringOnPocket = nullptr;
-  for(auto i = residues.cbegin(); i < residues.cend(); i++)
+  for(auto i = begin(residues); i != end(residues); i++)
   {
     vector<const Pocket*>::const_iterator bestPocket = i->pockets.end();
     bool writtenHeader = false;
@@ -339,7 +339,7 @@ Results::drawResultsGraphExposeEvent(GdkEventExpose* event) throw()
   {
     Cairo::TextExtents extents;
     context->rotate(-3.1415 / 2);
-    context->get_text_extents("pocket opening time(ps)", extents);
+    context->get_text_extents("pocket disclosure time(ps)", extents);
     float labelYProportion = extents.width / extents.height;
     const float graphHeight = height - graphBorder - graphOffsetStart
                               - graphBottomBorder;
@@ -356,13 +356,13 @@ Results::drawResultsGraphExposeEvent(GdkEventExpose* event) throw()
     else
     {
       context->set_font_size(graphLabelYSize);
-      context->get_text_extents("pocket opening time(ps)", extents);
+      context->get_text_extents("pocket disclosure time(ps)", extents);
       graphHeaderHeight = 0;
       graphLabelYSize = extents.height * 2;
     }
 
     context->set_font_size(graphLabelYSize * (1. - labelYMultiplier));
-    context->get_text_extents("pocket opening time(ps)", extents);
+    context->get_text_extents("pocket disclosure time(ps)", extents);
     if(extents.width > graphHeight - graphHeaderHeight)
       graphLabelYSize = (graphHeight - graphHeaderHeight)
           / (1. - labelYMultiplier) / labelYProportion;
@@ -372,7 +372,7 @@ Results::drawResultsGraphExposeEvent(GdkEventExpose* event) throw()
     graphLeftBorder = extents.height + 3;
 
     context->set_font_size(graphLabelYSize * (1. - labelYMultiplier));
-    context->get_text_extents("pocket opening time(ps)", extents);
+    context->get_text_extents("pocket disclosure time(ps)", extents);
     graphLeftBorder += extents.height + 5;
   }
   context->restore();
@@ -408,17 +408,17 @@ Results::drawResultsGraphExposeEvent(GdkEventExpose* event) throw()
     numbersHeight = extents.height;
   }
 
-  for(auto i = residues.cbegin(); i < residues.cend(); i++)
+  for(auto i = begin(residues); i != end(residues); i++)
   {
     int columnOffsetX = graphOffsetStart + graphLeftBorder + columnModuleX *
-        (3 * distance(residues.cbegin(), i) + 1);
+        (3 * distance(begin(residues), i) + 1);
     int columnOffsetY = height - graphOffsetStart
                         - graphBottomBorder;
 
-    for(auto j = i->pockets.cbegin(); j < i->pockets.cend(); j++)
+    for(auto j = begin(i->pockets); j != end(i->pockets); j++)
     {
       int columnHeight = (float)columnModuleY * (*j)->width;
-      const Color& color = colors[distance(i->pockets.cbegin(), j)];
+      const Color& color = colors[distance(begin(i->pockets), j)];
 
       if((not fixedSelection and *j == hoveringOnPocket)
          or (fixedSelection and *j == selectedPocket))
@@ -504,7 +504,7 @@ Results::drawResultsGraphExposeEvent(GdkEventExpose* event) throw()
       context->set_source_rgb(1, 0, 0);
     else
       context->set_source_rgb(0, 0, 0);
-    context->get_text_extents("pocket opening time(ps)", extents);
+    context->get_text_extents("pocket disclosure time(ps)", extents);
 
     int spaceBeforeLabelY = (height - graphHeaderHeight - graphBottomBorder
                              - graphOffsetStart - graphBorder - extents.width)
@@ -513,7 +513,7 @@ Results::drawResultsGraphExposeEvent(GdkEventExpose* event) throw()
     context->move_to(
         -graphHeaderHeight - graphBorder - extents.width - spaceBeforeLabelY,
         graphBorder + extents.height);
-    context->show_text("pocket opening time(ps)");
+    context->show_text("pocket disclosure time(ps)");
 
     context->set_font_size(graphLabelYSize * labelYMultiplier);
     context->get_text_extents("000", extents);
@@ -615,15 +615,15 @@ Results::drawResultsGraphMotionEvent(GdkEventMotion* event) throw()
                                    - graphHeaderHeight
                                    - graphBottomBorder)
                           / maxPocketLength;
-    for(auto i = residues.cbegin(); i < residues.cend(); i++)
+    for(auto i = begin(residues); i != end(residues); i++)
     {
       if(gotcha) break;
       int columnOffsetX = graphOffsetStart + graphLeftBorder
                           + columnModuleX
-                            * (3 * distance(residues.cbegin(), i) + 1);
+                            * (3 * distance(begin(residues), i) + 1);
       int columnOffsetY = height - graphOffsetStart
                           - graphBottomBorder;
-      for(auto j = i->pockets.cbegin(); j < i->pockets.cend(); j++)
+      for(auto j = begin(i->pockets); j != end(i->pockets); j++)
       {
         int columnHeight = (float)columnModuleY * (*j)->width;
         if(not gotcha and cursorX >= columnOffsetX
@@ -776,7 +776,7 @@ Results::fillResidues()
     colors.push_back(unscrambledColors[index]);
   }
 
-  sort(residues.begin(), residues.end(), PocketResidue::sortByResidueIndex);
+  residues.sort(PocketResidue::sortByResidueIndex);
 }
 
 Results::Color

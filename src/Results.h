@@ -98,7 +98,7 @@ namespace PstpFinder
       Gromacs gromacs;
       shared_ptr<Pittpi> pittpi;
       NewAnalysis& parent;
-      vector<PocketResidue> residues;
+      list<PocketResidue> residues;
       float maxPocketLength;
       vector<Color> colors;
       const Pocket* selectedPocket;
