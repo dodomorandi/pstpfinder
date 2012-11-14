@@ -147,7 +147,7 @@ namespace PstpFinder
       gmx_mtop_t mtop;
     
       thread operationThread;
-      mutable mutex operationMutex, wakeMutex;
+      mutable mutex operationMutex;
       mutable condition_variable wakeCondition;
       mutable unsigned int cachedNFrames;
       unsigned int currentFrame; // index-0 based -- like always

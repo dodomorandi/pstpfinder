@@ -143,9 +143,9 @@ namespace PstpFinder
       struct MetaData
       {
         unique_ptr<stream_type> stream;
-        streampos info;
-        streampos start;
-        streampos end;
+        streamoff info;
+        streamoff start;
+        streamoff end;
         bool complete;
 
         MetaData() : info(-1), start(-1), end(-1), complete(false) {};
@@ -383,7 +383,7 @@ namespace PstpFinder
   void
   Session_Base<T>::readSession()
   {
-    unsigned int dataUInt;
+    streamoff offset;
     sessionFile->seekg(0);
     sessionFile->peek();
     if(sessionFile->eof())
@@ -400,13 +400,13 @@ namespace PstpFinder
     parameterSet.set();
 
     metaSas.info = sessionFile->tellg();
-    *serializer >> dataUInt;
+    *serializer >> offset;
     metaSas.start = sessionFile->tellg();
 
-    if(dataUInt > 0)
+    if(offset > 0)
     {
       metaSas.complete = true;
-      sessionFile->seekg(dataUInt, ios_base::cur);
+      sessionFile->seekg(offset, ios_base::cur);
       metaSas.end = sessionFile->tellg();
       metaSas.stream = unique_ptr<stream_type>(
         new stream_type(sessionFileName,
@@ -434,12 +434,12 @@ namespace PstpFinder
     if(sessionFile->eof())
       return;
 
-    *serializer >> dataUInt;
+    *serializer >> offset;
     metaPdb.start = sessionFile->tellg();
-    if(dataUInt > 0)
+    if(offset > 0)
     {
       metaPdb.complete = true;
-      sessionFile->seekg(dataUInt, ios_base::cur);
+      sessionFile->seekg(offset, ios_base::cur);
       metaPdb.end = sessionFile->tellg();
       metaPdb.stream = unique_ptr<stream_type>(
         new stream_type(sessionFileName,
@@ -469,12 +469,12 @@ namespace PstpFinder
       if(sessionFile->eof())
         return;
 
-      *serializer >> dataUInt;
+      *serializer >> offset;
       metaPittpi.start = sessionFile->tellg();
-      if(dataUInt > 0)
+      if(offset > 0)
       {
         metaPittpi.complete = true;
-        sessionFile->seekg(dataUInt, ios_base::cur);
+        sessionFile->seekg(offset, ios_base::cur);
         metaPittpi.end = sessionFile->tellg();
         metaPittpi.stream = unique_ptr<stream_type>(
           new stream_type(sessionFileName,
@@ -502,7 +502,7 @@ namespace PstpFinder
   {
     assert(parameterSet.all()); // Has radius and pocketThreshold set
 
-    unsigned int dataUInt;
+    streamoff offset;
     switch(version)
     {
       case 0:   // Session have not been read or session is empty
@@ -518,8 +518,8 @@ namespace PstpFinder
         metaSas.info = sessionFile->tellp();
         metaPdb.info = -1;
         metaPittpi.info = -1;
-        dataUInt = 0;
-        *serializer << dataUInt;
+        offset = 0;
+        *serializer << offset;
         metaSas.start = sessionFile->tellp();
         metaSas.complete = false;
         metaSas.stream = unique_ptr<stream_type>(
@@ -630,18 +630,18 @@ namespace PstpFinder
       return;
 
     metaSas.stream->seekp(0, ios_base::end);
-    streampos endOfSas(metaSas.stream->tellp());
+    streamoff endOfSas(metaSas.stream->tellp());
     metaSas.end = metaSas.start + endOfSas;
     metaSas.complete = true;
     sessionFile->seekp(metaSas.info);
-    unsigned int dataUInt(endOfSas);
-    *serializer << dataUInt;
+    streamoff offset = endOfSas;
+    *serializer << offset;
     metaSas.stream->flush();
 
     sessionFile->seekp(metaSas.end);
     metaPdb.info = sessionFile->tellp();
-    dataUInt = 0;
-    *serializer << dataUInt;
+    offset = 0;
+    *serializer << offset;
     metaPdb.complete = false;
     metaPdb.start = sessionFile->tellp();
     metaPdb.stream = unique_ptr<stream_type>(
@@ -661,20 +661,20 @@ namespace PstpFinder
       return;
 
     metaPdb.stream->seekp(0, ios_base::end);
-    streampos endOfPdb(metaPdb.stream->tellp());
+    streamoff endOfPdb(metaPdb.stream->tellp());
     metaPdb.end = metaPdb.start + endOfPdb;
     metaPdb.complete = true;
     sessionFile->seekp(metaPdb.info);
-    unsigned int dataUInt(endOfPdb);
-    *serializer << dataUInt;
+    streamoff offset = endOfPdb;
+    *serializer << offset;
     metaPdb.stream->flush();
 
     if(version > 1)
     {
       sessionFile->seekp(metaPdb.end);
       metaPittpi.info = sessionFile->tellp();
-      dataUInt = 0;
-      *serializer << dataUInt;
+      offset = 0;
+      *serializer << offset;
       metaPittpi.complete = false;
       metaPittpi.start = sessionFile->tellp();
       metaPittpi.stream = unique_ptr<stream_type>(
@@ -699,12 +699,11 @@ namespace PstpFinder
       return;
 
     metaPittpi.stream->seekp(0, ios_base::end);
-    streampos endOfPittpi(metaPittpi.stream->tellp());
+    streamoff endOfPittpi = metaPittpi.stream->tellp();
     metaPittpi.end = metaPittpi.start + endOfPittpi;
     metaPittpi.complete = true;
     sessionFile->seekp(metaPittpi.info);
-    unsigned int dataUInt(endOfPittpi);
-    *serializer << dataUInt;
+    *serializer << endOfPittpi;
     metaPittpi.stream->flush();
 
     sessionFile->close();

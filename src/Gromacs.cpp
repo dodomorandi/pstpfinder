@@ -796,33 +796,33 @@ namespace PstpFinder
   unsigned int
   Gromacs::getCurrentFrame() const
   {
-    unsigned int nFrame;
-
-    operationMutex.lock();
-    nFrame = currentFrame + 1;
-    operationMutex.unlock();
-
-    return nFrame;
+    return currentFrame + 1;
   }
 
   void
   Gromacs::waitNextFrame() const
   {
-    if(not abortFlag and getCurrentFrame() < getFramesCount())
+    operationMutex.lock();
+    if(not abortFlag and operationThread.joinable()
+       and getCurrentFrame() < getFramesCount())
     {
-      unique_lock<mutex> slock(wakeMutex);
+      unique_lock<mutex> slock(operationMutex, defer_lock);
       wakeCondition.wait(slock);
     }
+    operationMutex.unlock();
   }
 
   void
   Gromacs::waitNextFrame(unsigned int refFrame) const
   {
-    while(not abortFlag and getCurrentFrame() < refFrame + 1)
+    operationMutex.lock();
+    while(not abortFlag and operationThread.joinable()
+          and getCurrentFrame() < refFrame + 1)
     {
-      unique_lock<mutex> slock(wakeMutex);
+      unique_lock<mutex> slock(operationMutex, defer_lock);
       wakeCondition.wait(slock);
     }
+    operationMutex.unlock();
   }
 
   float
