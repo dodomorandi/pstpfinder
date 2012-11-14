@@ -1,3 +1,24 @@
+commit 89e7dff42f04ffa2e3b66eb6a1069b328d765dab
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Nov 14 16:25:18 2012 +0100
+
+    Fixed a couple of major bugs
+    
+    * Fixed session offset serialization. Note that this fix breaks completely old sessions compatibility.
+    * Fixed threads synchronization when asking for "next frame".
+
+commit a286624530e3e518edac61e7964c8214a8720027
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Thu Sep 20 15:59:12 2012 +0200
+
+    Fixed things for GCC 4.7
+
+commit 3cac1df440f36dce72a1eb3dd9370fbdf23c5f9e
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Mon Sep 3 11:49:52 2012 +0200
+
+    Written changelog for version 0.4
+
 commit 3782fc218319439d4fb590f42467ea32e273a65f
 Author: Edoardo Morandi <morandidodo@gmail.com>
 Date:   Mon Sep 3 11:46:58 2012 +0200
