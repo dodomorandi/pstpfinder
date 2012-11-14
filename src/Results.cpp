@@ -270,6 +270,7 @@ Results::init() throw()
 bool
 Results::removeFromParent(GdkEventAny* event)
 {
+  (void) event;
   parent.deleteResultsWindow(*this);
   return true;
 }

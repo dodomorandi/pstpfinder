@@ -587,6 +587,9 @@ namespace PstpFinder
       typedef MetaStream_Base<T> Base;
       void init(off_type begin, off_type end, enumStreamType streamType)
       {
+        // TODO: Handling of different kind of streamType
+        (void) streamType;
+
         if(begin == -1)
         {
           off_type tellg { T::tellg() };

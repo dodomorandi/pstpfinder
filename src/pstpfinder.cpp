@@ -43,6 +43,7 @@ main(int argc, char* argv[])
 bool
 PstpFinder::closeApplication(GdkEventAny* event)
 {
+  (void) event;
   quitting = true;
   kit->quit();
   return false;

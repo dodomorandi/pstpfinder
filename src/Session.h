@@ -107,7 +107,7 @@ namespace PstpFinder
       stream_type& getPdbStream();
       unsigned long getPdbSize() const;
       bool pdbComplete() const;
-      const bool isPittpiAvailable() const;
+      bool isPittpiAvailable() const;
       unsigned long getPittpiSize() const;
       stream_type& getPittpiStream();
       bool pittpiComplete() const;
@@ -343,7 +343,7 @@ namespace PstpFinder
   }
 
   template<typename T>
-  const bool
+  bool
   Session_Base<T>::isPittpiAvailable() const
   {
     return version > 1;
