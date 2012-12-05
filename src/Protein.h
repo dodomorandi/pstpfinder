@@ -126,14 +126,18 @@ namespace PstpFinder
         {
           for(unsigned int j = 0; j < 12; j += 2)
           {
-            if(residueName == aminoacidUncommonTranslator[j])
+            if(residueName == aminoacidUncommonTranslator[j] or
+                residueName == "N" + aminoacidUncommonTranslator[j] or
+                residueName == "C" + aminoacidUncommonTranslator[j])
             {
               residueName = aminoacidUncommonTranslator[j + 1];
               break;
             }
           }
 
-          if(residueName == aminoacidTriplet[i])
+          if(residueName == aminoacidTriplet[i] or
+              residueName == "N" + aminoacidTriplet[i] or
+              residueName == "C" + aminoacidTriplet[i])
             return static_cast<Aminoacids> (i);;
         }
 
