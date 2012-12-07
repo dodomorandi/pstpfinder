@@ -21,6 +21,7 @@
 #define UTILS_H_
 
 #include <string>
+#include <type_traits>
 
 using namespace std;
 
@@ -28,6 +29,29 @@ namespace PstpFinder
 {
   #define base_stream(stream, T) stream<typename T::char_type, \
                                       typename T::traits_type>
+
+  template<typename T>
+  using remove_all = typename remove_cv<
+      typename remove_reference<typename remove_pointer<
+        typename remove_all_extents<T>::type>::type>::type>::type;
+
+  template<template<typename, typename> class Stream, typename T,
+            bool = is_base_of<ios_base, remove_all<T>>::value>
+    struct is_stream_base_of_helper : public false_type {};
+
+  template<template<typename, typename> class Stream,
+            typename T>
+  struct is_stream_base_of_helper<Stream, T, true>
+  {
+      typedef remove_all<T> __T;
+      typedef typename is_base_of<Stream<typename __T::char_type,
+                                           typename __T::traits_type>,
+                                    __T>::type type;
+      static constexpr bool value = type::value;
+  };
+
+  template<template<typename, typename> class Stream, typename T>
+  struct is_stream_base_of : public is_stream_base_of_helper<Stream, T> {};
 
   bool exists(const string& filename);
   string file_extension(const string& filename);

@@ -33,17 +33,9 @@ namespace PstpFinder
   {
       real x, y, z;
 
-      Atom()
-      {
-        ;
-      }
-
-      Atom(float value)
-      {
-        x = value;
-        y = value;
-        z = value;
-      }
+      Atom() = default;
+      constexpr Atom(float value) :
+          x(value), y(value), z(value) {}
 
       Atom
       operator +(const Atom& value) const
