@@ -162,14 +162,9 @@ Results::init() throw()
                         << aminoacidTriplet[i->residue->type]
                         << i->residue->index << ":";
 
-        const vector<const Residue*>& residuesRef = (*j)->group->getResidues();
-        for
-        (
-          vector<const Residue*>::const_iterator k = residuesRef.begin();
-          k < residuesRef.end();
-          k++
-        )
-          streamDetails << " " << (*k)->index;
+        auto& residuesRef = (*j)->group->getResidues();
+        for(auto& residueRef : residuesRef)
+          streamDetails << " " << residueRef->index;
         streamDetails << endl << endl;
 
         streamDetails << setfill(' ') << setw(11) << left << "start";
@@ -201,7 +196,8 @@ Results::init() throw()
 
     if(bestPocket != i->pockets.end())
     {
-      const Residue& centralRes = (*bestPocket)->group->getCentralRes();
+      const Residue<SasPdbAtom>& centralRes = (*bestPocket)->group
+          ->getCentralRes();
       stringstream aaRef;
       aaRef << aminoacidTriplet[centralRes.type] << centralRes.index;
 
@@ -215,15 +211,8 @@ Results::init() throw()
       streamData << setfill('0') << setw(7) << right << (int)(*bestPocket)->width
                 << "   ";
 
-      const vector<const Residue*>& pocketResidues =
-        (*bestPocket)->group->getResidues();
-      for
-      (
-        vector<const Residue*>::const_iterator k = pocketResidues.begin();
-        k < pocketResidues.end();
-        k++
-      )
-        streamData << " " << (*k)->index;
+      for(auto& pocketResidue : (*bestPocket)->group->getResidues())
+        streamData << " " << pocketResidue->index;
 
       streamData << endl;
     }
@@ -706,7 +695,7 @@ Results::fillResidues()
   for(auto& pocket : pockets)
   {
     bool exists = false;
-    const Residue& currentRes = pocket.group->getCentralRes();
+    const Residue<SasPdbAtom>& currentRes = pocket.group->getCentralRes();
 
     for(auto& residue : residues)
     {
@@ -831,7 +820,7 @@ Results::updateInformation()
   if(pocket)
   {
     stringstream ss;
-    const Residue centralRes(pocket->group->getCentralRes());
+    const Residue<SasPdbAtom> centralRes(pocket->group->getCentralRes());
     ss << centralRes.index << aminoacidTriplet[centralRes.type];
     entryPocketCenter.set_text(ss.str());
     ss.str("");

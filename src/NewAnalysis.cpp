@@ -25,6 +25,7 @@
 #include "Session.h"
 #include "GtkmmWrapper.h"
 #include "utils.h"
+#include "Pdb.h"
 
 #include <gtkmm.h>
 #include <glibmm.h>
@@ -478,7 +479,7 @@ namespace PstpFinder
     {
       while(Main::events_pending())
         Main::iteration();
-      gromacs->setAverageStructure(Protein(session.getPdbStream()));
+      gromacs->setAverageStructure(Pdb<>(session.getPdbStream()).proteins[0]);
 
       stop_spin();
       while(Main::events_pending())
@@ -651,7 +652,9 @@ namespace PstpFinder
     if(abortFlag)
       return;
 
-    gromacs->getAverageStructure().dumpPdb(session.getPdbStream());
+    Pdb<> averagePdb ;
+    averagePdb.proteins.push_back(gromacs->getAverageStructure());
+    averagePdb.write(session.getPdbStream());
 
     if(abortFlag)
       return;

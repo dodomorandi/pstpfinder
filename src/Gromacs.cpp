@@ -419,7 +419,7 @@ namespace PstpFinder
     delete[] radius;
   }
 
-  const Protein&
+  const Protein<>&
   Gromacs::__calculateAverageStructure()
   {
     vector<atom_id> index;
@@ -432,7 +432,7 @@ namespace PstpFinder
     double** U;
     gmx_rmpbc_t gpbc = nullptr;
     int statusCount = 0;
-    averageStructure = Protein();
+    averageStructure = Protein<>();
 
     if(not getTopology())
       gmx_fatal(FARGS, "Could not read topology file.\n");
@@ -523,12 +523,12 @@ namespace PstpFinder
     for(int i = 0; i < isize; i++)
       top.atoms.pdbinfo[index[i]].bfac = 800 * M_PI * M_PI / 3.0 * rmsf[i];
 
-    Residue res;
+    Residue<> res;
     for(int i = 0; i < isize; i++)
     {
       if(abortFlag)
         return averageStructure;
-      PdbAtom atom;
+      ProteinAtom atom;
       atom.index = i + 1;
       strncpy(atom.type, *top.atoms.atomname[index[i]], 5);
 
@@ -536,6 +536,7 @@ namespace PstpFinder
       atom.y = xcm[1] + xav[i * DIM + 1];
       atom.z = xcm[2] + xav[i * DIM + 2];
 
+      /*
       if(top.atoms.pdbinfo)
       {
         atom.bFactor = top.atoms.pdbinfo[index[i]].bfac;
@@ -546,6 +547,7 @@ namespace PstpFinder
         atom.bFactor = 0.0;
         atom.occupancy = 1.0;
       }
+      */
 
       int resind = top.atoms.atom[index[i]].resind;
 
@@ -554,11 +556,12 @@ namespace PstpFinder
         if(res.atoms.size() != 0)
         {
           averageStructure.appendResidue(res);
-          res = Residue();
+          res = Residue<>();
         }
 
         res.index = top.atoms.resinfo[resind].nr;
-        res.type = Residue::getTypeByName(*top.atoms.resinfo[resind].name);
+        res.type = Residue<>::getTypeByName(
+            *top.atoms.resinfo[resind].name);
       }
       res.atoms.push_back(atom);
 
@@ -576,14 +579,14 @@ namespace PstpFinder
     return averageStructure;
   }
 
-  const Protein&
+  const Protein<>&
   Gromacs::getAverageStructure() const
   {
     return averageStructure;
   }
 
   void
-  Gromacs::setAverageStructure(Protein structure)
+  Gromacs::setAverageStructure(Protein<> structure)
   {
     averageStructure = structure;
   }

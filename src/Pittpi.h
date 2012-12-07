@@ -23,6 +23,7 @@
 #include "config.h"
 #include "Gromacs.h"
 #include "Protein.h"
+#include "SasAtom.h"
 
 #include <vector>
 #include <thread>
@@ -34,77 +35,86 @@ namespace PstpFinder
   class Group
   {
     public:
-      Group(const Residue& refResidue);
-      Group(const PdbAtom& refAtomH);
-      Group(const PdbAtom& refAtomH, const Protein& protein);
+      Group(const Residue<SasPdbAtom>& refResidue);
+      Group(const SasPdbAtom& refAtomH);
+      Group(const SasPdbAtom& refAtomH, const Protein<SasPdbAtom>& protein);
       Group(const Group& group);
       Group(Group&& group);
-      Group(const Group& group, const Protein& protein);
+      Group(const Group& group, const Protein<SasPdbAtom>& protein);
       Group& operator =(const Group& group);
       Group& operator =(Group&& group);
-      Group& operator <<(const Residue& value);
+      Group& operator <<(const Residue<SasPdbAtom>& value);
       Group& operator <<(const Group& group);
-      const vector<const Residue*>& getResidues() const;
-      const PdbAtom& getCentralH() const;
-      const Residue& getCentralRes() const;
+      const vector<const Residue<SasPdbAtom>*>& getResidues() const;
+      const SasPdbAtom& getCentralH() const;
+      const Residue<SasPdbAtom>& getCentralRes() const;
       static bool sortByZeros(const Group& a, const Group& b);
 
       vector<float> sas;
       unsigned int zeros;
-    protected:
-      Group() : referenceAtom(nullptr), referenceRes(nullptr) {}
+      protected:
+      Group() : referenceAtom(nullptr), referenceRes(nullptr)
+      {}
 
-      const PdbAtom* referenceAtom;
-      const Residue* referenceRes;
-      vector<const Residue*> residues;
-  };
+      const SasPdbAtom* referenceAtom;
+      const Residue<SasPdbAtom>* referenceRes;
+      vector<const Residue<SasPdbAtom>*> residues;
+    };
 
   struct Pocket
   {
-    const Group* group;
-    unsigned int startFrame;
-    float startPs;
-    unsigned int endFrame;
-    float endPs;
-    unsigned int width;
-    float openingFraction;
-    unsigned int averageNearFrame;
-    float averageNearPs;
-    unsigned int maxAreaFrame;
-    float maxAreaPs;
+      const Group* group;
+      unsigned int startFrame;
+      float startPs;
+      unsigned int endFrame;
+      float endPs;
+      unsigned int width;
+      float openingFraction;
+      unsigned int averageNearFrame;
+      float averageNearPs;
+      unsigned int maxAreaFrame;
+      float maxAreaPs;
 
-    Pocket(const Group& group) : group(&group) {}
-    Pocket(const Pocket& pocket):
-      group(pocket.group)
-    {
-      *this << pocket;
-    }
+      Pocket(const Group& group) :
+          group(&group)
+      {
+      }
+      Pocket(const Pocket& pocket) :
+          group(pocket.group)
+      {
+        *this << pocket;
+      }
 
-    Pocket& operator =(const Pocket& pocket)
-    {
-      group = pocket.group;
-      *this << pocket;
-      return *this;
-    }
+      Pocket&
+      operator =(const Pocket& pocket)
+      {
+        group = pocket.group;
+        *this << pocket;
+        return *this;
+      }
 
-    Pocket& operator <<(const Pocket& pocket)
-    {
-      startFrame = pocket.startFrame;
-      startPs = pocket.startPs;
-      endFrame = pocket.endFrame;
-      endPs = pocket.endPs;
-      width = pocket.width;
-      openingFraction = pocket.openingFraction;
-      averageNearFrame = pocket.averageNearFrame;
-      averageNearPs = pocket.averageNearPs;
-      maxAreaFrame = pocket.maxAreaFrame;
-      maxAreaPs = pocket.maxAreaPs;
+      Pocket&
+      operator <<(const Pocket& pocket)
+      {
+        startFrame = pocket.startFrame;
+        startPs = pocket.startPs;
+        endFrame = pocket.endFrame;
+        endPs = pocket.endPs;
+        width = pocket.width;
+        openingFraction = pocket.openingFraction;
+        averageNearFrame = pocket.averageNearFrame;
+        averageNearPs = pocket.averageNearPs;
+        maxAreaFrame = pocket.maxAreaFrame;
+        maxAreaPs = pocket.maxAreaPs;
 
-      return *this;
-    }
+        return *this;
+      }
 
     protected:
-      Pocket() : group(nullptr) {}
+      Pocket() :
+          group(nullptr)
+      {
+      }
   };
 
   /**
@@ -122,196 +132,213 @@ namespace PstpFinder
   class Pittpi
   {
     public:
-      Pittpi(Gromacs& gromacs, const std::string& sessionFileName,
-             float radius, unsigned long threshold, bool runPittpi = true);
+      Pittpi(Gromacs& gromacs, const std::string& sessionFileName, float radius,
+             unsigned long threshold, bool runPittpi = true);
       Pittpi(const Pittpi& pittpi);
       Pittpi(const Pittpi& pittpi, const Gromacs& gromacs);
       ~Pittpi();
 
-      void join();
-      void setStatus(float value) const;
-      void setStatusDescription(const string& description) const;
-      float getStatus() const;
-      string getStatusDescription() const;
-      void waitNextStatus();
-      bool isFinished();
-      void abort();
-      const vector<Pocket>& getPockets() const;
+      void
+      join();
+      void
+      setStatus(float value) const;
+      void
+      setStatusDescription(const string& description) const;
+      float
+      getStatus() const;
+      string
+      getStatusDescription() const;
+      void
+      waitNextStatus();
+      bool
+      isFinished();
+      void
+      abort();
+      const vector<Pocket>&
+      getPockets() const;
 
-      template<typename Stream> void save(Stream& stream) const;
-      template<typename Stream> void load(Stream& stream);
+      template<typename Stream>
+        void
+        save(Stream& stream) const;
+      template<typename Stream>
+        void
+        load(Stream& stream);
     private:
       class SerializablePockets
       {
         public:
           struct SerializablePocket : public Pocket
           {
-            template<typename, typename> friend class Serializer;
-            long groupIndex;
+              template<typename, typename >
+                friend class Serializer;
+              long groupIndex;
 
-            SerializablePocket() = default;
-            SerializablePocket(const Pocket& pocket) : Pocket(pocket) {}
+              SerializablePocket() = default;
+              SerializablePocket(const Pocket& pocket) : Pocket(pocket)
+              {}
+
+              template<typename Serializer>
+              void serialize(Serializer serializer);
+            };
+
+            SerializablePockets() = default;
+            SerializablePockets(const vector<Pocket>& pockets,
+                const vector<Group>& groups);
 
             template<typename Serializer>
             void serialize(Serializer serializer);
+            void updatePockets(vector<Pocket>& pocketsToUpdate,
+                const vector<Group>& groups) const;
+
+            private:
+            vector<SerializablePocket> pockets;
           };
 
-          SerializablePockets() = default;
-          SerializablePockets(const vector<Pocket>& pockets,
-                              const vector<Group>& groups);
-
-          template<typename Serializer>
-          void serialize(Serializer serializer);
-          void updatePockets(vector<Pocket>& pocketsToUpdate,
-              const vector<Group>& groups) const;
-
-        private:
-          vector<SerializablePocket> pockets;
-      };
-
-      class SerializableGroups
-      {
-        public:
-          class SerializableGroup : public Group
+          class SerializableGroups
           {
             public:
+            class SerializableGroup : public Group
+            {
+              public:
               template<typename, typename> friend class Serializer;
               friend class Pittpi::SerializableGroups;
               long referenceAtomIndex, referenceResIndex;
               vector<long> residuesIndex;
 
               SerializableGroup() = default;
-              SerializableGroup(const Group& group) : Group(group) {}
+              SerializableGroup(const Group& group) : Group(group)
+              {}
 
               template<typename Serializer>
               void serialize(Serializer serializer);
+            };
+
+            SerializableGroups() = default;
+            SerializableGroups(const vector<Group>& groups,
+                const Protein<SasPdbAtom>& protein);
+
+            template<typename Serializer>
+            void serialize(Serializer serializer);
+            void updateGroups(vector<Group>& groupsToUpdate,
+                const Protein<SasPdbAtom>& protein) const;
+
+            private:
+            vector<SerializableGroup> groups;
           };
 
-          SerializableGroups() = default;
-          SerializableGroups(const vector<Group>& groups,
-                             const Protein& protein);
-
-          template<typename Serializer>
-          void serialize(Serializer serializer);
-          void updateGroups(vector<Group>& groupsToUpdate,
-              const Protein& protein) const;
-
-        private:
-          vector<SerializableGroup> groups;
-      };
-      void makeGroups(float radius);
-      void fillGroups(const string& sessionFileName, unsigned int timeStep);
-      std::vector<Group> makeGroupsByDistance(const std::vector<Atom>& centers,
-                                              float radius);
-      std::vector<Group> makeGroupsByDistance(const std::vector<Atom>& centers,
-                                              float radius,
-                                              const std::vector<PdbAtom>& reference);
-      Group makeGroupByDistance(const std::vector<Atom>& centers,
-                                const PdbAtom& atom, float radius);
-      void pittpiRun();
-      void clone(const Pittpi& pittpi); // Deprecated. Waiting for delegators...
+          void makeGroups(float radius);
+          void fillGroups(const string& sessionFileName, unsigned int timeStep);
+          std::vector<Group> makeGroupsByDistance(const std::vector<Atom>& centers,
+              float radius);
+          std::vector<Group> makeGroupsByDistance(const std::vector<Atom>& centers,
+              float radius,
+              const std::vector<SasPdbAtom>& reference);
+          Group makeGroupByDistance(const std::vector<Atom>& centers,
+              const SasPdbAtom& atom, float radius);
+          void pittpiRun();
+          void clone(const Pittpi& pittpi); // Deprecated. Waiting for delegators...
 #ifdef HAVE_PYMOD_SADIC
 #if HAVE_PYMOD_SADIC == 1
-      Protein runSadic(const Protein& structure) const;
+          Protein<SasPdbAtom> runSadic(const Protein<SasPdbAtom>& structure) const;
 #endif
 #endif
 
-      template<typename, typename> friend class Serializer;
-      Gromacs gromacs;
-      std::string sessionFileName;
-      float radius;
-      unsigned long threshold;
-      Protein averageStructure;
-      thread pittpiThread;
-      mutable mutex statusMutex;
-      mutable mutex nextStatusMutex;
-      mutable condition_variable nextStatusCondition;
-      mutable float __status;
-      mutable string __statusDescription;
-      bool sync;
-      mutable mutex syncLock;
-      bool abortFlag;
-      vector<Pocket> pockets;
-      vector<Group> groups;
-  };
+          template<typename, typename> friend class Serializer;
+          Gromacs gromacs;
+          std::string sessionFileName;
+          float radius;
+          unsigned long threshold;
+          Protein<SasPdbAtom> averageStructure;
+          thread pittpiThread;
+          mutable mutex statusMutex;
+          mutable mutex nextStatusMutex;
+          mutable condition_variable nextStatusCondition;
+          mutable float __status;
+          mutable string __statusDescription;
+          bool sync;
+          mutable mutex syncLock;
+          bool abortFlag;
+          vector<Pocket> pockets;
+          vector<Group> groups;
+        };
 
   template<typename Stream>
-  void
-  Pittpi::save(Stream& stream) const
-  {
-    Serializer<Stream> serializer(stream);
-    serializer << radius;
-    serializer << threshold;
-    SerializableGroups serializableGroups(groups, averageStructure);
-    serializer << serializableGroups;
-    SerializablePockets serializablePockets(pockets, groups);
-    serializer << serializablePockets;
+    void
+    Pittpi::save(Stream& stream) const
+    {
+      Serializer<Stream> serializer(stream);
+      serializer << radius;
+      serializer << threshold;
+      SerializableGroups serializableGroups(groups, averageStructure);
+      serializer << serializableGroups;
+      SerializablePockets serializablePockets(pockets, groups);
+      serializer << serializablePockets;
 
-    stream.close();
-  }
+      stream.close();
+    }
 
   template<typename Stream>
-  void
-  Pittpi::load(Stream& stream)
-  {
-    assert(averageStructure.atoms().size() > 0);
-    Serializer<Stream> serializer(stream);
-    SerializableGroups serializableGroups;
-    SerializablePockets serializablePockets;
-    serializer >> radius;
-    serializer >> threshold;
-    serializer >> serializableGroups;
-    serializer >> serializablePockets;
+    void
+    Pittpi::load(Stream& stream)
+    {
+      assert(averageStructure.atoms().size() > 0);
+      Serializer<Stream> serializer(stream);
+      SerializableGroups serializableGroups;
+      SerializablePockets serializablePockets;
+      serializer >> radius;
+      serializer >> threshold;
+      serializer >> serializableGroups;
+      serializer >> serializablePockets;
 
-    serializableGroups.updateGroups(groups, averageStructure);
-    serializablePockets.updatePockets(pockets, groups);
+      serializableGroups.updateGroups(groups, averageStructure);
+      serializablePockets.updatePockets(pockets, groups);
 
-    sync = false;
-  }
-
-  template<class Serializer>
-  void
-  Pittpi::SerializablePockets::SerializablePocket::serialize(
-      Serializer serializer)
-  {
-    serializer & groupIndex;
-    serializer & startFrame;
-    serializer & startPs;
-    serializer & endFrame;
-    serializer & endPs;
-    serializer & width;
-    serializer & openingFraction;
-    serializer & averageNearFrame;
-    serializer & averageNearPs;
-    serializer & maxAreaFrame;
-    serializer & maxAreaPs;
-  }
+      sync = false;
+    }
 
   template<class Serializer>
-  void
-  Pittpi::SerializableGroups::SerializableGroup::serialize(
-      Serializer serializer)
-  {
-    serializer & sas;
-    serializer & zeros;
-    serializer & referenceAtomIndex;
-    serializer & referenceResIndex;
-    serializer & residuesIndex;
-  }
+    void
+    Pittpi::SerializablePockets::SerializablePocket::serialize(
+        Serializer serializer)
+    {
+      serializer & groupIndex;
+      serializer & startFrame;
+      serializer & startPs;
+      serializer & endFrame;
+      serializer & endPs;
+      serializer & width;
+      serializer & openingFraction;
+      serializer & averageNearFrame;
+      serializer & averageNearPs;
+      serializer & maxAreaFrame;
+      serializer & maxAreaPs;
+    }
+
+  template<class Serializer>
+    void
+    Pittpi::SerializableGroups::SerializableGroup::serialize(
+        Serializer serializer)
+    {
+      serializer & sas;
+      serializer & zeros;
+      serializer & referenceAtomIndex;
+      serializer & referenceResIndex;
+      serializer & residuesIndex;
+    }
 
   template<typename Serializer>
-  void
-  Pittpi::SerializablePockets::serialize(Serializer serializer)
-  {
-    serializer & pockets;
-  }
+    void
+    Pittpi::SerializablePockets::serialize(Serializer serializer)
+    {
+      serializer & pockets;
+    }
 
   template<typename Serializer>
-  void
-  Pittpi::SerializableGroups::serialize(Serializer serializer)
-  {
-    serializer & groups;
-  }
+    void
+    Pittpi::SerializableGroups::serialize(Serializer serializer)
+    {
+      serializer & groups;
+    }
 }
 
 #endif
