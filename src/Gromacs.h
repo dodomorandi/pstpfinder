@@ -27,7 +27,7 @@
 #include "config.h"
 #endif
 
-#include "Protein.h"
+#include "Pdb.h"
 
 #include <string>
 #include <thread>
@@ -117,10 +117,10 @@ namespace PstpFinder
 
       template<typename Stream>
       void __calculateSas(Session<Stream>& session);
-      const Protein& __calculateAverageStructure();
+      const Protein<>& __calculateAverageStructure();
       void calculateAverageStructure();
-      const Protein& getAverageStructure() const;
-      void setAverageStructure(Protein structure);
+      const Protein<>& getAverageStructure() const;
+      void setAverageStructure(Protein<> structure);
       void waitOperation();
       void abort();
       bool isAborting() const;
@@ -152,7 +152,7 @@ namespace PstpFinder
       mutable condition_variable wakeCondition;
       mutable unsigned int cachedNFrames;
       unsigned int currentFrame; // index-0 based -- like always
-      Protein averageStructure;
+      Protein<> averageStructure;
       float _begin, _end;
       mutable float timeStepCached;
       bool abortFlag;

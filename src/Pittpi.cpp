@@ -35,19 +35,19 @@ using namespace std;
 namespace PstpFinder
 {
 
-  Group::Group(const Residue& refResidue) :
+  Group::Group(const Residue<SasPdbAtom>& refResidue) :
       referenceAtom(&refResidue.getAtomByType("H")), referenceRes(&refResidue)
   {
     zeros = 0;
   }
 
-  Group::Group(const PdbAtom& refAtomH) :
+  Group::Group(const SasPdbAtom& refAtomH) :
       referenceAtom(&refAtomH), referenceRes()
   {
     zeros = 0;
   }
 
-  Group::Group(const PdbAtom& refAtomH, const Protein& protein) :
+  Group::Group(const SasPdbAtom& refAtomH, const Protein<SasPdbAtom>& protein) :
       referenceAtom(&refAtomH),
       referenceRes(&protein.getResidueByAtom(refAtomH))
   {
@@ -72,7 +72,7 @@ namespace PstpFinder
     zeros = move(group.zeros);
   }
 
-  Group::Group(const Group& group, const Protein& protein) :
+  Group::Group(const Group& group, const Protein<SasPdbAtom>& protein) :
       referenceAtom(&protein.getAtomByIndex(group.referenceAtom->index)),
       referenceRes(&protein.getResidueByIndex(group.referenceRes->index))
   {
@@ -113,7 +113,7 @@ namespace PstpFinder
   }
 
   Group&
-  Group::operator <<(const Residue& reference)
+  Group::operator <<(const Residue<SasPdbAtom>& reference)
   {
     residues.push_back(&reference);
 
@@ -130,26 +130,26 @@ namespace PstpFinder
     return *this;
   }
 
-  const vector<const Residue*>&
+  const vector<const Residue<SasPdbAtom>*>&
   Group::getResidues() const
   {
     return residues;
   }
 
-  const PdbAtom&
+  const SasPdbAtom&
   Group::getCentralH() const
   {
     return *referenceAtom;
   }
 
-  const Residue&
+  const Residue<SasPdbAtom>&
   Group::getCentralRes() const
   {
     if(referenceRes != 0)
       return *referenceRes;
     else
     {
-      static Residue nullRes;
+      static Residue<SasPdbAtom> nullRes;
       nullRes.type = AA_UNK;
       return nullRes;
     }
@@ -408,9 +408,9 @@ namespace PstpFinder
     for(vector<Pocket>::iterator i = pockets.begin(); i < pockets.end(); i++)
     {
       if(abortFlag) return;
-      const Residue& centralRes = i->group->getCentralRes();
-      const vector<const Residue*>& groupRes = i->group->getResidues();
-      for(vector<const Residue*>::const_iterator j = groupRes.begin();
+      const Residue<SasPdbAtom>& centralRes = i->group->getCentralRes();
+      const vector<const Residue<SasPdbAtom>*>& groupRes = i->group->getResidues();
+      for(vector<const Residue<SasPdbAtom>*>::const_iterator j = groupRes.begin();
           j < groupRes.end(); j++)
       {
         if(*j == &centralRes or centralRes.index + 1 == (*j)->index
@@ -438,19 +438,18 @@ namespace PstpFinder
   Pittpi::makeGroups(float radius)
   {
     vector<Atom> centers;
-    const vector<Residue>& residues = averageStructure.residues();
+    auto& residues = averageStructure.residues();
     radius /= 10.0;
 
     // Calculate the center for every sidechain (excluding PRO)
     setStatusDescription("Building atom groups");
     setStatus(0);
     centers.reserve(residues.size());
-    for(vector<Residue>::const_iterator i = residues.begin();
-        i < residues.end(); i++)
+    for(auto i = residues.begin(); i < residues.end(); i++)
     {
       if(abortFlag) return;
       Atom center(0);
-      const vector<PdbAtom>& atoms = i->atoms;
+      const vector<SasPdbAtom>& atoms = i->atoms;
 
       if(not i->getAtomByType("H1").isType("UNK") or i->type == AA_PRO)
       {
@@ -463,14 +462,13 @@ namespace PstpFinder
         continue;
       }
       unsigned int count = 0;
-      for(vector<PdbAtom>::const_iterator j = atoms.begin(); j < atoms.end();
-          j++)
+      for(auto& atom : atoms)
       {
-        if(not j->isType("N") != 0 and not j->isType("CA") and
-           not j->isType("H") and not j->isType("C") and
-           not j->isType("O") and not j->isType("HA"))
+        if(not atom.isType("N") != 0 and not atom.isType("CA") and
+           not atom.isType("H") and not atom.isType("C") and
+           not atom.isType("O") and not atom.isType("HA"))
         {
-          center += *j;
+          center += atom;
           count++;
         }
       }
@@ -486,16 +484,16 @@ namespace PstpFinder
 
 #ifdef HAVE_PYMOD_SADIC
 #if HAVE_PYMOD_SADIC == 1
-    Protein sadicStructure = runSadic(averageStructure);
-    vector<PdbAtom> newCenters;
+    Protein<SasPdbAtom> sadicStructure = runSadic(averageStructure);
+    vector<SasPdbAtom> newCenters;
 
     setStatusDescription("Recalibrating using depth index");
     setStatus(0);
     for(vector<Group>::iterator i = groups.begin(); i < groups.end(); i++)
     {
       if(abortFlag) return;
-      const vector<const Residue*>& groupRes = i->getResidues();
-      PdbAtom center = i->getCentralH();
+      const vector<const Residue<SasPdbAtom>*>& groupRes = i->getResidues();
+      SasPdbAtom center = i->getCentralH();
       center.x = 0;
       center.y = 0;
       center.z = 0;
@@ -507,20 +505,18 @@ namespace PstpFinder
         continue;
       }
 
-      for(vector<const Residue*>::const_iterator j = groupRes.begin();
-          j < groupRes.end(); j++)
+      for(auto& currentGroup : groupRes)
       {
         if(abortFlag) return;
-        const vector<PdbAtom>& atoms = (*j)->atoms;
+        const vector<SasPdbAtom>& atoms = currentGroup->atoms;
 
-        if((*j)->type == AA_PRO)
+        if(currentGroup->type == AA_PRO)
           continue;
 
-        for(vector<PdbAtom>::const_iterator k = atoms.begin(); k < atoms.end();
-            k++)
+        for(auto& atom : atoms)
         {
-          center += (*k) * sadicStructure.getAtomByIndex(k->index).bFactor;
-          totalDepth += sadicStructure.getAtomByIndex(k->index).bFactor;
+          center += atom * sadicStructure.getAtomByIndex(atom.index).bFactor;
+          totalDepth += sadicStructure.getAtomByIndex(atom.index).bFactor;
         }
       }
 
@@ -538,13 +534,12 @@ namespace PstpFinder
   Pittpi::makeGroupsByDistance(const vector<Atom>& centers, float radius)
   {
     vector<Group> groups;
-    const vector<Residue>& residues = averageStructure.residues();
+    auto& residues = averageStructure.residues();
 
-    for(vector<Residue>::const_iterator i = residues.begin();
-        i < residues.end(); i++)
+    for(auto i = begin(residues); i < end(residues); i++)
     {
       if(abortFlag) return vector<Group>();
-      const PdbAtom& hAtom = i->getAtomByType("H");
+      const SasPdbAtom& hAtom = i->getAtomByType("H");
 
       if(hAtom.isType("UNK"))
         continue;
@@ -560,7 +555,7 @@ namespace PstpFinder
       group << makeGroupByDistance(centers, hAtom, radius);
       groups.push_back(move(group));
       setStatus(
-          static_cast<float>(distance(residues.begin(), i) + 1)
+          static_cast<float>(distance(begin(residues), i) + 1)
           / residues.size());
     }
 
@@ -569,15 +564,14 @@ namespace PstpFinder
 
   vector<Group>
   Pittpi::makeGroupsByDistance(const vector<Atom>& centers, float radius,
-                               const vector<PdbAtom>& reference)
+                               const vector<SasPdbAtom>& reference)
   {
     vector<Group> groups;
-    const vector<Residue>& residues = averageStructure.residues();
+    auto& residues = averageStructure.residues();
 
-    vector<Residue>::const_iterator resIterator;
-    vector<PdbAtom>::const_iterator refIterator;
-    for(resIterator = residues.begin(), refIterator = reference.begin();
-        resIterator < residues.end(); resIterator++, refIterator++)
+    auto refIterator = begin(reference);
+    for(auto resIterator = begin(residues); resIterator < end(residues);
+        resIterator++, refIterator++)
     {
       if(abortFlag) return vector<Group>();
       if(resIterator->getAtomByType("H").isType("UNK"))
@@ -589,7 +583,7 @@ namespace PstpFinder
       group << makeGroupByDistance(centers, *refIterator, radius);
       groups.push_back(move(group));
       setStatus(
-          static_cast<float>(distance(residues.begin(), resIterator) + 1)
+          static_cast<float>(distance(begin(residues), resIterator) + 1)
           / residues.size());
     }
 
@@ -597,20 +591,21 @@ namespace PstpFinder
   }
 
   Group
-  Pittpi::makeGroupByDistance(const vector<Atom>& centers, const PdbAtom& atom,
-                              float radius)
+  Pittpi::makeGroupByDistance(const vector<Atom>& centers,
+                              const SasPdbAtom& atom, float radius)
   {
-    const vector<Residue>& residues = averageStructure.residues();
+    auto& residues = averageStructure.residues();
     Group group(atom);
 
     if(atom.isType("UNK"))
       return group;
 
-    for(vector<Atom>::const_iterator j = centers.begin(); j < centers.end();
+    for(vector<Atom>::const_iterator j = begin(centers); j < end(centers);
         j++)
     {
       if(abortFlag) return group;
-      const Residue& curResidue = residues[distance(centers.begin(), j)];
+      const Residue<SasPdbAtom>& curResidue = residues[distance(begin(centers),
+                                                                j)];
       if(curResidue.type == AA_PRO)
         continue;
 
@@ -671,7 +666,7 @@ namespace PstpFinder
     delete sasAnalysis;
 
     /* Let's prepare groups sas vectors */
-    for(vector<Group>::iterator i = groups.begin(); i < groups.end(); i++)
+    for(vector<Group>::iterator i = begin(groups); i < end(groups); i++)
       i->sas.reserve(frames);
 
     /* Now we have to normalize values and store results per group */
@@ -737,12 +732,11 @@ namespace PstpFinder
             continue;
           }
 
-          const vector<const Residue*>& residues = i->getResidues();
-          for(vector<const Residue*>::const_iterator j = residues.begin();
-              j < residues.end(); j++)
+          const vector<const Residue<SasPdbAtom>*>& residues = i->getResidues();
+          for(auto j = begin(residues); j < end(residues); j++)
           {
             if(abortFlag) return;
-            const PdbAtom& atomH = (*j)->getAtomByType("H");
+            const SasPdbAtom& atomH = (*j)->getAtomByType("H");
             if(atomH.isType("UNK"))
               continue;
 
@@ -783,12 +777,12 @@ namespace PstpFinder
           continue;
         }
 
-        const vector<const Residue*>& residues = i->getResidues();
-        for(vector<const Residue*>::const_iterator j = residues.begin();
+        const vector<const Residue<SasPdbAtom>*>& residues = i->getResidues();
+        for(vector<const Residue<SasPdbAtom>*>::const_iterator j = residues.begin();
             j < residues.end(); j++)
         {
           if(abortFlag) return;
-          const PdbAtom& atomH = (*j)->getAtomByType("H");
+          const SasPdbAtom& atomH = (*j)->getAtomByType("H");
           if(atomH.isType("UNK"))
             continue;
 
@@ -811,10 +805,13 @@ namespace PstpFinder
 
 #ifdef HAVE_PYMOD_SADIC
 #if HAVE_PYMOD_SADIC == 1
-  Protein
-  Pittpi::runSadic(const Protein& structure) const
+  Protein<SasPdbAtom>
+  Pittpi::runSadic(const Protein<SasPdbAtom>& structure) const
   {
-    Protein sadicProtein;
+    Protein<SasPdbAtom> sadicProtein;
+    Pdb<SasPdbAtom> pdb;
+    pdb.proteins.push_back(structure);
+
     Py_Initialize();
 
     {
@@ -829,7 +826,7 @@ namespace PstpFinder
       viewer.attr("load_plugin")();
       py::list queries;
 
-      structure.dumpPdb("/tmp/sadic_in.pdb");
+      pdb.write("/tmp/sadic_in.pdb");
 
       py::list argv;
       argv.append("/tmp/sadic_in.pdb");
@@ -911,7 +908,10 @@ namespace PstpFinder
       }
 
       if(py::len(models_viewers) == 0)
-        return Protein();
+      {
+        Py_Finalize();
+        throw bad_exception();
+      }
 
       for(py::stl_input_iterator<py::object> model_viewer(models_viewers);
           model_viewer != iterObjEnd; model_viewer++)
@@ -922,7 +922,7 @@ namespace PstpFinder
           if(abortFlag) return sadicProtein;
           string fileName = py::extract<string>(
               out.attr("mangle_file_name")(*curViewer));
-          sadicProtein = Protein(fileName);
+          sadicProtein = move(Pdb<SasPdbAtom>(fileName).proteins[0]);
           break;
         }
         break; // Just the first protein of the first file... for now!
@@ -971,11 +971,11 @@ namespace PstpFinder
   }
 
   Pittpi::SerializableGroups::SerializableGroups(const vector<Group>& groups,
-                                                 const Protein& protein)
+                                                 const Protein<SasPdbAtom>& protein)
   {
 #ifndef NDEBUG
-    const vector<const PdbAtom*>& atoms(protein.atoms());
-    const vector<Residue>& residues(protein.residues());
+    const vector<const SasPdbAtom*>& atoms(protein.atoms());
+    const vector<Residue<SasPdbAtom>>& residues(protein.residues());
 #else
     // FIXME: useless argument if not in debug mode?
     (void) protein;
@@ -1025,7 +1025,7 @@ namespace PstpFinder
 
   void
   Pittpi::SerializableGroups::updateGroups(vector<Group>& groupsToUpdate,
-                                           const Protein& protein) const
+                                           const Protein<SasPdbAtom>& protein) const
   {
     groupsToUpdate.clear();
     groupsToUpdate.reserve(groups.size());

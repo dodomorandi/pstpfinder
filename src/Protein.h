@@ -21,12 +21,9 @@
 #define _PROTEIN_H
 
 #include "Atom.h"
+#include "utils.h"
 #include <string>
 #include <vector>
-#include <fstream>
-#include <iostream>
-#include <iomanip>
-#include <locale>
 #include <algorithm>
 
 using namespace std;
@@ -73,375 +70,169 @@ namespace PstpFinder
       sizeof(aminoacidUncommonTranslator)
           / sizeof(*aminoacidUncommonTranslator);
 
-  struct PdbAtom :
+  struct ProteinAtom :
       public Atom
   {
       char type[5];
       unsigned int index;
-      float bFactor;
-      float occupancy;
-      float sas;
 
-      PdbAtom() = default;
-      explicit PdbAtom(const string& type)
+      ProteinAtom() = default;
+      explicit ProteinAtom(const string& type)
       {
         type.copy(this->type, 5);
       }
 
-      explicit PdbAtom(int index) : index(index) {}
+      explicit ProteinAtom(int index) : index(index) {}
 
       inline bool isType(const string& type) const
       {
         return type == this->type;
       }
+
+      string getTrimmedType() const
+      {
+        string trimmedType = type;
+        remove(begin(trimmedType), end(trimmedType), ' ');
+        return trimmedType;
+      }
   };
 
+  template<typename AtomType = ProteinAtom>
   struct Residue
   {
       Aminoacids type;
       int index;
-      vector<PdbAtom> atoms;
+      vector<AtomType> atoms;
 
       Residue() = default;
       explicit Residue(Aminoacids aminoacid) : type(aminoacid) {}
 
-      const PdbAtom&
-      getAtomByType(string atomType) const
-      {
-        static PdbAtom unknown("UNK");
-        for(vector<PdbAtom>::const_iterator i = atoms.begin(); i < atoms.end(); i++)
-          if(i->type == atomType)
-            return *i;
+      template<typename T,
+        typename enable_if<is_same<typename remove_reference<T>::type,
+          Residue<AtomType>>::value>::type* = nullptr>
+      Residue(const typename remove_reference<T>::type& residue) :
+        type(residue.type),
+        index(residue.index),
+        atoms(residue.atoms) {}
 
-        return unknown;
+      template<typename T,
+        typename enable_if<is_same<typename remove_reference<T>::type,
+          Residue<AtomType>>::value>::type* = nullptr>
+      Residue(typename remove_reference<T>::type&& residue) :
+        type(move(residue.type)),
+        index(move(residue.index)),
+        atoms(move(residue.atoms)) {}
+
+      // TODO: a template template splitter
+      template<template <typename> class OldResidue, typename OldAtom,
+        typename enable_if<not is_same<
+          typename remove_reference<OldResidue<OldAtom>>::type,
+          Residue<AtomType>>::value>::type* = nullptr>
+      Residue(OldResidue<OldAtom>&& residue) :
+        type(move(residue.type)), index(move(residue.index)),
+        atoms(begin(residue.atoms), end(residue.atoms))
+      {
+          static_assert(
+              is_same<typename remove_reference<OldResidue<OldAtom>>::type,
+              Residue<OldAtom>>::value, "Argument type is not Residue");
+      }
+      template<template <typename> class OldResidue, typename OldAtom,
+        typename enable_if<not is_same<
+          typename remove_reference<OldResidue<OldAtom>>::type,
+          Residue<AtomType>>::value>::type* = nullptr>
+      Residue(const OldResidue<OldAtom>& residue) :
+        type(residue.type), index(residue.index),
+        atoms(begin(residue.atoms), end(residue.atoms))
+      {
+          static_assert(
+              is_same<typename remove_reference<OldResidue<OldAtom>>::type,
+              Residue<OldAtom>>::value, "Argument type is not Residue");
       }
 
-      static Aminoacids
-      getTypeByName(string residueName)
+      template<typename T, typename enable_if<is_same<
+          typename remove_reference<T>::type,
+          Residue<AtomType>>::value>::type* = nullptr>
+      Residue& operator =(const typename remove_reference<T>::type& residue)
       {
-        transform(residueName.begin(), residueName.end(),
-                  residueName.begin(), ::toupper);
-
-        for(unsigned int i = 0; i < 21; i++)
-        {
-          for(unsigned int j = 0; j < 12; j += 2)
-          {
-            if(residueName == aminoacidUncommonTranslator[j] or
-                residueName == "N" + aminoacidUncommonTranslator[j] or
-                residueName == "C" + aminoacidUncommonTranslator[j])
-            {
-              residueName = aminoacidUncommonTranslator[j + 1];
-              break;
-            }
-          }
-
-          if(residueName == aminoacidTriplet[i] or
-              residueName == "N" + aminoacidTriplet[i] or
-              residueName == "C" + aminoacidTriplet[i])
-            return static_cast<Aminoacids> (i);;
-        }
-
-        return AA_UNK;
-      }
-  };
-
-  class Protein
-  {
-    public:
-      string name;
-
-      Protein()
-      {
-        locked = false;
-      }
-
-      Protein(const string& fileName)
-      {
-        ifstream pdbFile(fileName);
-        // FIXME: I should move pdbFile, but I can't until streams
-        //        will be moveable
-        readFromStream(pdbFile);
-      }
-
-      template<typename Stream,
-               typename Type = typename remove_cv<
-                 typename remove_reference<Stream>::type>::type,
-               typename = typename enable_if<is_base_of<
-                 base_stream(basic_istream, Type),Type>::value>::type>
-      Protein(Stream&& stream)
-      {
-        readFromStream(forward<Stream>(stream));
-      }
-
-      const vector<Residue>&
-      residues() const
-      {
-        return pResidues;
-      }
-
-      vector<Residue>&
-      residuesRW()
-      {
-        locked = false;
-        return pResidues;
-      }
-
-      vector<const PdbAtom*>&
-      atoms() const
-      {
-        if(not locked)
-        {
-          locked = true;
-          pAtoms.clear();
-          for(vector<Residue>::const_iterator i = pResidues.begin(); i
-              < pResidues.end(); i++)
-            for(vector<PdbAtom>::const_iterator j = i->atoms.begin(); j
-                < i->atoms.end(); j++)
-              pAtoms.push_back(&(*j));
-        }
-
-        return pAtoms;
-      }
-
-      bool
-      appendResidue(Residue& residue)
-      {
-        if(locked)
-          return false;
-
-        pResidues.push_back(residue);
-        return true;
-      }
-
-      void
-      dumpPdb(const string& filename) const
-      {
-        ofstream pdb(filename, ios_base::out | ios_base::trunc);
-        dumpPdb(pdb);
-      }
-
-      template<typename Stream>
-      typename enable_if<is_base_of<base_stream(basic_istream, Stream),
-                                    Stream>::value
-                         or is_base_of<base_stream(basic_ostream, Stream),
-                                    Stream>::value>::type
-      dumpPdb(Stream& stream) const
-      {
-        assert(stream.is_open());
-
-        for(auto& residue : pResidues)
-        {
-          for(auto& atom : residue.atoms)
-          {
-            string atomType(atom.type);
-            atomType.erase(atomType.begin() + 1, atomType.end());
-            stream << "ATOM  " << setw(5) << atom.index << " ";
-            stream << setiosflags(ios::left) << setw(4) << atom.type << " ";
-            stream << setw(3) << aminoacidTriplet[residue.type] << " A";
-            stream << resetiosflags(ios::left) << setw(4) << residue.index;
-            stream << "    " << setiosflags(ios::right);
-            stream << setiosflags(ios::fixed);
-            stream << setprecision(3) << setw(8) << (atom.x * 10.);
-            stream << setprecision(3) << setw(8) << (atom.y * 10.);
-            stream << setprecision(3) << setw(8) << (atom.z * 10.);
-            stream << setprecision(2) << setw(6);
-            stream << ((atom.occupancy >= 100) ? 99.99 : atom.occupancy);
-            stream << setprecision(2) << setw(6);
-            stream << ((atom.bFactor >= 100) ? 99.99 : atom.bFactor);
-            stream << resetiosflags(ios::fixed);
-            stream << "            " << setw(2) << atomType;
-            stream << resetiosflags(ios::right) << endl;
-          }
-        }
-        stream.close();
-      }
-
-      const PdbAtom&
-      getAtomByIndex(unsigned int index) const
-      {
-        static PdbAtom unknown(-1);
-        for(vector<const PdbAtom*>::const_iterator i = atoms().begin(); i
-            < atoms().end(); i++)
-        {
-          if((*i)->index == index)
-            return **i;
-        }
-
-        return unknown;
-      }
-
-      const Residue&
-      getResidueByAtom(int atomIndex) const
-      {
-        return getResidueByAtom(getAtomByIndex(atomIndex));
-      }
-
-      const Residue&
-      getResidueByAtom(const PdbAtom& atom) const
-      {
-        static Residue unknown(AA_UNK);
-
-        for(vector<Residue>::const_iterator i = pResidues.begin(); i
-            < pResidues.end(); i++)
-          if(i->atoms[0].index > atom.index)
-          {
-            i--;
-            for(vector<PdbAtom>::const_iterator j = i->atoms.begin(); j
-                < i->atoms.end(); j++)
-              if(j->index == atom.index)
-                return *i;
-
-            return unknown;
-          }
-
-        return unknown;
-      }
-
-      Protein&
-      operator =(const Protein& protein)
-      {
-        pResidues = protein.pResidues;
-        locked = false;
-        name = protein.name;
+        type = residue.type;
+        index = residue.index;
+        atoms = residue.atoms;
 
         return *this;
       }
 
-      const Residue& getResidueByIndex(int index) const
+      template<typename T, typename enable_if<is_same<
+          typename remove_reference<T>::type,
+          Residue<AtomType>>::value>::type* = nullptr>
+      Residue& operator =(typename remove_reference<T>::type&& residue)
       {
-        static Residue unknown(AA_UNK);
+        type = move(residue.type);
+        index = move(residue.index);
+        atoms = move(residue.atoms);
 
-        if(index >= 1
-           and index - 1 < static_cast<int>(pResidues.size())
-           and pResidues[index - 1].index == index)
-          return pResidues[index - 1];
-        else if(index >= 0
-                and index < static_cast<int>(pResidues.size())
-                and pResidues[index].index == index)
-          return pResidues[index];
-        else
-        {
-          for
-          (
-            vector<Residue>::const_iterator i = pResidues.begin();
-            i < pResidues.end();
-            i++
-          )
-          {
-            if(i->index == index)
-              return *i;
-          }
-
-          return unknown;
-        }
+        return *this;
       }
 
-      void forceUnlock()
-      {
-        locked = false;
-      }
+      template<template <typename> class OldResidue, typename OldAtom,
+        typename enable_if<not is_same<
+          typename remove_reference<OldResidue<OldAtom>>::type,
+          Residue<AtomType>>::value>::type* = nullptr>
+      Residue& operator =(OldResidue<OldAtom>&& residue);
+      template<template <typename> class OldResidue, typename OldAtom,
+        typename enable_if<not is_same<
+          typename remove_reference<OldResidue<OldAtom>>::type,
+          Residue<AtomType>>::value>::type* = nullptr>
+      Residue& operator =(const OldResidue<OldAtom>& residue);
 
-    private:
-      vector<Residue> pResidues;
-      mutable vector<const PdbAtom*> pAtoms;
+      const AtomType& getAtomByType(const string& atomType) const;
+      static Aminoacids getTypeByName(string residueName);
+  };
+
+  template<typename AtomType = ProteinAtom>
+  class Protein
+  {
+    public:
+      typedef AtomType atom_type;
+      string name;
+      int model;
+
+      Protein();
+      template<typename OldAtom>
+        Protein(const Protein<OldAtom>& protein);
+      template<typename OldAtom>
+        Protein& operator =(const Protein<OldAtom>& proteinr);
+
+      const vector<Residue<AtomType>>& residues() const;
+      vector<Residue<AtomType>>& residuesRW();
+      vector<const AtomType*>& atoms() const;
+      template<typename ResidueType>
+        bool appendResidue(ResidueType&& residue,typename enable_if<
+          is_same<typename remove_reference<ResidueType>::type,
+          Residue<AtomType>>::value>::type* = nullptr);
+
+      const AtomType& getAtomByIndex(unsigned int index) const;
+      const Residue<AtomType>& getResidueByAtom(int atomIndex) const;
+      const Residue<AtomType>& getResidueByAtom(const AtomType& atom) const;
+      const Residue<AtomType>& getResidueByIndex(int index) const;
+      void lock() const;
+      void forceUnlock() const;
+
+      template<typename NewAtomType>
+      typename enable_if<not is_same<AtomType, NewAtomType>::value,
+        vector<Residue<NewAtomType>>>::type
+        convertResidues() const;
+      template<typename NewAtomType>
+      typename enable_if<is_same<AtomType, NewAtomType>::value,
+        vector<Residue<NewAtomType>>>::type
+        convertResidues() const;
+
+    protected:
+      vector<Residue<AtomType>> pResidues;
+      mutable vector<const AtomType*> pAtoms;
       mutable bool locked;
-
-      template<typename Stream,
-               typename Type = typename remove_cv<
-                 typename remove_reference<Stream>::type>::type>
-      typename enable_if<is_base_of<base_stream(basic_istream, Type),
-                                    Type>::value>::type
-      readFromStream(Stream&& stream)
-      {
-        stringstream streamLine;
-        Residue residue;
-        string buffer;
-        Aminoacids residueType;
-
-        residue.index = 0;
-        streamLine.exceptions(ios_base::failbit);
-
-        while(not stream.eof())
-        {
-          getline(stream, buffer);
-          streamLine.clear();
-          streamLine.str(buffer);
-          PdbAtom atom;
-          int residueIndex;
-
-          // Mandatory atom section
-          try
-          {
-            streamLine >> setw(6) >> buffer;
-            if(buffer != "ATOM")
-              continue;
-
-            streamLine >> setw(5) >> atom.index;
-            streamLine.seekg(1, ios_base::cur); // Empty space
-            streamLine >> setw(5) >> atom.type;
-            streamLine.seekg(1, ios_base::cur); // Alternate location indicator
-            streamLine >> setw(3) >> buffer;
-            residueType = Residue::getTypeByName(buffer);
-            streamLine.seekg(2, ios_base::cur); // Empty space + Chain ID
-            streamLine >> setw(4) >> residueIndex;
-            streamLine.seekg(4, ios_base::cur); // Code for insertion
-                                                // of residues + 3 spaces
-            streamLine >> setw(8) >> atom.x;
-            streamLine >> setw(8) >> atom.y;
-            streamLine >> setw(8) >> atom.z;
-
-            atom.x /= 10.;
-            atom.y /= 10.;
-            atom.z /= 10.;
-          }
-          catch(ios_base::failure& fail)
-          {
-            continue;
-          }
-
-          // Non-mandatory atom section
-          try
-          {
-            streamLine >> setw(6) >> atom.occupancy;
-          }
-          catch(ios_base::failure& fail)
-          {
-            atom.occupancy = 0;
-          }
-
-          try
-          {
-            streamLine >> setw(6) >> atom.bFactor;
-          }
-          catch(ios_base::failure& fail)
-          {
-            atom.bFactor = 0;
-          }
-          // Then element and charge... but I don't mind of them
-
-          if(residue.index == 0)
-          {
-            residue.type = residueType;
-            residue.index = residueIndex;
-          }
-          else if(residueIndex != residue.index)
-          {
-            pResidues.push_back(move(residue));
-            residue = Residue();
-            residue.type = residueType;
-            residue.index = residueIndex;
-          }
-
-          residue.atoms.push_back(move(atom));
-        }
-
-        if(residue.atoms.size() > 0)
-          pResidues.push_back(move(residue));
-
-        locked = false;
-        stream.close();
-      }
   };
 }
+
+#include "Protein.cpp"
 
 #endif

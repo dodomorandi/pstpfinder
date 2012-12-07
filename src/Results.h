@@ -32,10 +32,10 @@ namespace PstpFinder
 
   struct PocketResidue
   {
-    const Residue* residue;
+    const Residue<SasPdbAtom>* residue;
     vector<const Pocket*> pockets;
 
-    PocketResidue(const Residue& residue) :
+    PocketResidue(const Residue<SasPdbAtom>& residue) :
       residue(&residue) { ; }
 
     PocketResidue(PocketResidue&& pocketResidue) :

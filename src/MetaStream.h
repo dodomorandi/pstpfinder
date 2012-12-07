@@ -48,6 +48,7 @@ namespace PstpFinder
   class MetaStream_Base : public T
   {
     public:
+      typedef T stream_type;
       typedef typename T::off_type off_type;
       typedef typename T::char_type char_type;
       typedef typename T::traits_type traits_type;
