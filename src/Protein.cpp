@@ -190,10 +190,13 @@ const AtomType&
 Protein<AtomType>::getAtomByIndex(unsigned int index) const
 {
   static AtomType unknown(-1);
-  for(const AtomType* atom : pAtoms)
+  for(const Residue<AtomType>& residue : pResidues)
   {
-    if(atom->index == index)
-      return *atom;
+    for(const AtomType& atom : residue.atoms)
+    {
+      if(atom.index == index)
+        return atom;
+    }
   }
 
   return unknown;

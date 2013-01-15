@@ -79,7 +79,11 @@ namespace PstpFinder
       ProteinAtom() = default;
       explicit ProteinAtom(const string& type)
       {
-        type.copy(this->type, 5);
+        if(type.size() > 4)
+          type.copy(this->type, 4);
+        else
+          type.copy(this->type, string::npos);
+        this->type[4] = '\0';
       }
 
       explicit ProteinAtom(int index) : index(index) {}
@@ -91,8 +95,9 @@ namespace PstpFinder
 
       string getTrimmedType() const
       {
-        string trimmedType = type;
-        remove(begin(trimmedType), end(trimmedType), ' ');
+        string trimmedType(begin(type), end(type));
+        trimmedType.erase(remove(begin(trimmedType), end(trimmedType), ' '),
+                          end(trimmedType));
         return trimmedType;
       }
   };
