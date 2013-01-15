@@ -418,10 +418,21 @@ namespace PstpFinder
     {
       sessionFile->seekg(0, ios_base::end);
       metaSas.end = 0;
-      metaSas.stream = unique_ptr<stream_type>(
-        new stream_type(sessionFileName,
-                        ios_base::in | ios_base::out | ios_base::binary,
-                        enumStreamType::STREAMTYPE_ADJUST, metaSas.start));
+      if(is_base_of<base_stream(basic_ostream, T), T>::value)
+      {
+        metaSas.stream = unique_ptr<stream_type>(
+          new stream_type(sessionFileName,
+                          ios_base::in | ios_base::out | ios_base::binary,
+                          enumStreamType::STREAMTYPE_ADJUST, metaSas.start));
+      }
+      else
+      {
+        metaSas.stream = unique_ptr<stream_type>(
+          new stream_type(sessionFileName,
+                          ios_base::in | ios_base::out | ios_base::binary,
+                          enumStreamType::STREAMTYPE_FIXED, metaSas.start,
+                          metaSas.end));
+      }
       return;
     }
 
@@ -451,10 +462,20 @@ namespace PstpFinder
     {
       sessionFile->seekg(0, ios_base::end);
       metaPdb.end = 0;
-      metaPdb.stream = unique_ptr<stream_type>(
-        new stream_type(sessionFileName,
-                        ios_base::in | ios_base::out | ios_base::binary,
-                        enumStreamType::STREAMTYPE_ADJUST, metaPdb.start));
+      if(is_base_of<base_stream(basic_ostream, T), T>::value)
+      {
+        metaPdb.stream = unique_ptr<stream_type>(
+          new stream_type(sessionFileName,
+                          ios_base::in | ios_base::out | ios_base::binary,
+                          enumStreamType::STREAMTYPE_ADJUST, metaPdb.start));
+      }
+      else
+      {
+          metaPdb.stream = unique_ptr<stream_type>(
+            new stream_type(sessionFileName,
+                ios_base::in | ios_base::out | ios_base::binary,
+                enumStreamType::STREAMTYPE_FIXED, metaPdb.start, metaPdb.end));
+      }
       return;
     }
 
@@ -486,11 +507,22 @@ namespace PstpFinder
       {
         sessionFile->seekg(0, ios_base::end);
         metaPittpi.end = 0;
-        metaPittpi.stream = unique_ptr<stream_type>(
-          new stream_type(sessionFileName,
-                          ios_base::in | ios_base::out | ios_base::binary,
-                          enumStreamType::STREAMTYPE_ADJUST,
-                          metaPittpi.start));
+        if(is_base_of<base_stream(basic_ostream, T), T>::value)
+        {
+          metaPittpi.stream = unique_ptr<stream_type>(
+            new stream_type(sessionFileName,
+                            ios_base::in | ios_base::out | ios_base::binary,
+                            enumStreamType::STREAMTYPE_ADJUST,
+                            metaPittpi.start));
+        }
+        else
+        {
+          metaPittpi.stream = unique_ptr<stream_type>(
+            new stream_type(sessionFileName,
+                            ios_base::in | ios_base::out | ios_base::binary,
+                            enumStreamType::STREAMTYPE_FIXED, metaPittpi.start,
+                            metaPittpi.end));
+        }
         return;
       }
     }
