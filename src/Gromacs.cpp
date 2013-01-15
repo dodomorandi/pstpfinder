@@ -38,6 +38,7 @@
 #include <gromacs/do_fit.h>
 #include <gromacs/smalloc.h>
 #include <gromacs/vec.h>
+#include <gromacs/confio.h>
 #include <gromacs/statutil.h>
 
 using namespace std;
@@ -192,7 +193,6 @@ namespace PstpFinder
     readyToGetX = gromacs.readyToGetX;
     solSize = gromacs.solSize;
     sasTarget = gromacs.sasTarget;
-    mtop = gromacs.mtop;
     abortFlag = false;
     _usePBC = gromacs._usePBC;
 
@@ -276,7 +276,7 @@ namespace PstpFinder
   void
   Gromacs::__calculateSas(Session<Stream>& session)
   {
-    bool bTop, bDGsol;
+    bool bDGsol;
     real totarea, totvolume;
     int nsurfacedots;
     real *dgs_factor, *radius, *area = 0, *surfacedots = 0, dgsolv;
@@ -284,7 +284,7 @@ namespace PstpFinder
     gmx_rmpbc_t gpbc = nullptr;
     int nx;
 
-    if(not gotTopology and not (bTop = getTopology()))
+    if(not gotTopology and not getTopology())
       gmx_fatal(FARGS, "Could not read topology file.\n");
 
     /* Just a precaution -- we could change this trough SasAnalysis */
@@ -666,16 +666,32 @@ namespace PstpFinder
     t_inputrec ir;
     matrix topbox;
     char title[1024];
+    string extension = file_extension(tprName);
+    transform(begin(extension), end(extension), begin(extension), ::tolower);
 
+    if(extension == ".tpr")
+    {
 #ifdef GMX45
     read_tpx(tprName.c_str(), &ir, fr.box, &natoms, 0, 0, 0, &mtop);
 #else
     read_tpx( tprName.c_str(), &step, &t, &lambda, &ir, box, &natoms,
         0, 0, 0, &mtop);
 #endif
+    }
+    else if(extension == ".pdb")
+    {
+      get_stx_coordnum(tprName.c_str(), &natoms);
+    }
+    else
+    {
+      gotTopology = false;
+      return gotTopology;
+    }
 
-    gotTopology = read_tps_conf(tprName.c_str(), title, &top, &ePBC, &xtop,
+    read_tps_conf(tprName.c_str(), title, &top, &ePBC, &xtop,
                                 NULL, topbox, FALSE);
+
+    gotTopology = true;
     return gotTopology;
   }
 
@@ -762,99 +778,106 @@ namespace PstpFinder
       return 0;
 
     int nFrames = 0;
-    /*
-     output_env_t _oenv;
-     t_trxstatus *_status;
-     real _t;
-     rvec* _x;
-     matrix _box;
-     int _natoms;
-
-     snew(_oenv, 1);
-     output_env_init_default(_oenv);
-
-     if((_natoms = read_first_x(_oenv,&_status, trjName.c_str(), &_t, &_x,
-     _box)) == 0)
-     {
-     output_env_done(_oenv);
-     return 0;
-     }
-     nFrames = 1;
-
-     while(read_next_x(_oenv, _status, &_t, _natoms, _x, _box))
-     nFrames++;
-
-     close_trx(_status);
-     output_env_done(_oenv);
-     */
-
-    /* This is a workaround to obtain the f*****g number of frames... */
-    ifstream trjStream(trjName.c_str(), ios::in | ios::binary);
-    bool gotFirst = false;
-    unsigned char cTmp[4];
-    int nAtoms;
-    int* iTmp = (int*) cTmp;
-    int step = -1;
-
-    trjStream.seekg(4, ios::beg);
-    cTmp[3] = trjStream.get();
-    cTmp[2] = trjStream.get();
-    cTmp[1] = trjStream.get();
-    cTmp[0] = trjStream.get();
-    nAtoms = *iTmp;
-
-    while(not trjStream.eof())
+    string extension = file_extension(trjName);
+    transform(begin(extension), end(extension), begin(extension), ::tolower);
+    if(extension == "pdb")
     {
+      /* I use old std legacy method for pdb files */
+      output_env_t _oenv;
+      t_trxstatus *_status;
+      real _t;
+      rvec* _x;
+      matrix _box;
+      int _natoms;
+
+      snew(_oenv, 1);
+      output_env_init_default(_oenv);
+
+      if((_natoms = read_first_x(_oenv, &_status, trjName.c_str(), &_t, &_x,
+                                 _box))
+         == 0)
+      {
+        output_env_done(_oenv);
+        return 0;
+      }
+      nFrames = 1;
+
+      while(read_next_x(_oenv, _status, &_t, _natoms, _x, _box))
+        nFrames++;
+
+      close_trx(_status);
+      output_env_done(_oenv);
+    }
+    else
+    {
+      /* This is a workaround to obtain the f*****g number of frames... */
+      ifstream trjStream(trjName.c_str(), ios::in | ios::binary);
+      bool gotFirst = false;
+      unsigned char cTmp[4];
+      int nAtoms;
+      int* iTmp = (int*) cTmp;
+      int step = -1;
+
+      trjStream.seekg(4, ios::beg);
       cTmp[3] = trjStream.get();
       cTmp[2] = trjStream.get();
       cTmp[1] = trjStream.get();
       cTmp[0] = trjStream.get();
+      nAtoms = *iTmp;
 
-      if(nAtoms == *iTmp and not gotFirst)
-      {
-        gotFirst = true;
-        continue;
-      }
-      else if(nAtoms == *iTmp)
+      while(not trjStream.eof())
       {
         cTmp[3] = trjStream.get();
         cTmp[2] = trjStream.get();
         cTmp[1] = trjStream.get();
         cTmp[0] = trjStream.get();
 
-        step = *iTmp;
-        gotFirst = false;
-        break;
-      }
-      trjStream.seekg(-3, ios::cur);
-    }
+        if(nAtoms == *iTmp and not gotFirst)
+        {
+          gotFirst = true;
+          continue;
+        }
+        else if(nAtoms == *iTmp)
+        {
+          cTmp[3] = trjStream.get();
+          cTmp[2] = trjStream.get();
+          cTmp[1] = trjStream.get();
+          cTmp[0] = trjStream.get();
 
-    if(step == -1)
-      return 0;
-
-    trjStream.seekg(-7, ios::end);
-
-    while(trjStream.seekg(-5, ios::cur))
-    {
-      cTmp[3] = trjStream.get();
-      cTmp[2] = trjStream.get();
-      cTmp[1] = trjStream.get();
-      cTmp[0] = trjStream.get();
-
-      if(nAtoms == *iTmp and not gotFirst)
-      {
-        gotFirst = true;
+          step = *iTmp;
+          gotFirst = false;
+          break;
+        }
         trjStream.seekg(-3, ios::cur);
       }
-      else if(nAtoms == *iTmp)
+
+      if(step == -1)
+        return 0;
+
+      trjStream.seekg(-7, ios::end);
+
+      while(trjStream.seekg(-5, ios::cur))
       {
         cTmp[3] = trjStream.get();
         cTmp[2] = trjStream.get();
         cTmp[1] = trjStream.get();
         cTmp[0] = trjStream.get();
 
-        nFrames = *iTmp / step + 1;
-        break;
+        if(nAtoms == *iTmp and not gotFirst)
+        {
+          gotFirst = true;
+          trjStream.seekg(-3, ios::cur);
+        }
+        else if(nAtoms == *iTmp)
+        {
+          cTmp[3] = trjStream.get();
+          cTmp[2] = trjStream.get();
+          cTmp[1] = trjStream.get();
+          cTmp[0] = trjStream.get();
+
+          nFrames = *iTmp / step + 1;
+          break;
+        }
       }
     }
 

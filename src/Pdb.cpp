@@ -117,7 +117,6 @@ Pdb<AtomType>::readFromStream(Stream&& stream)
   int modelIndex = 0;
   Aminoacids residueType;
 
-  streamLine.exceptions(ios_base::failbit);
   residue.index = 0;
 
   while(not stream.eof())
@@ -127,104 +126,118 @@ Pdb<AtomType>::readFromStream(Stream&& stream)
     streamLine.str(buffer);
     int residueIndex;
 
-      streamLine >> setw(6) >> buffer;
-      if(buffer == "ATOM")
+    streamLine.exceptions(ios_base::goodbit);
+    streamLine >> setw(6) >> buffer;
+
+    if(buffer == "ATOM")
+    {
+      AtomType atom;
+
+      if(protein == nullptr)
       {
-        SasPdbAtom atom;
-
-        // Mandatory atom section
-        try
-        {
-          if(protein == nullptr)
-          {
-            protein = new Protein<AtomType>();
-            protein->model = ++modelIndex;
-          }
-
-          streamLine >> setw(5) >> atom.index;
-          streamLine.seekg(1, ios_base::cur); // Empty space
-          streamLine >> noskipws >> setw(5) >> atom.type >> skipws;
-          streamLine.seekg(1, ios_base::cur);// Alternate location indicator
-          streamLine >> setw(3) >> buffer;
-          residueType = Residue<AtomType>::getTypeByName(buffer);
-          streamLine.seekg(2, ios_base::cur);// Empty space + Chain ID
-          streamLine >> setw(4) >> residueIndex;
-          streamLine.seekg(4, ios_base::cur);// Code for insertion
-                                             // of residues + 3 spaces
-          streamLine >> setw(8) >> atom.x;
-          streamLine >> setw(8) >> atom.y;
-          streamLine >> setw(8) >> atom.z;
-
-          atom.x /= 10.;
-          atom.y /= 10.;
-          atom.z /= 10.;
-        }
-        catch(ios_base::failure& fail)
-        {
-          continue;
-        }
-
-        // Non-mandatory atom section
-        try
-        {
-          streamLine >> setw(6) >> atom.occupancy;
-        }
-        catch(ios_base::failure& fail)
-        {
-          atom.occupancy = 0;
-        }
-
-        try
-        {
-          streamLine >> setw(6) >> atom.bFactor;
-        }
-        catch(ios_base::failure& fail)
-        {
-          atom.bFactor = 0;
-        }
-        // Then element and charge... but I don't mind of them
-
-        if(residue.index == 0)
-        {
-          residue.type = residueType;
-          residue.index = residueIndex;
-        }
-        else if(residueIndex != residue.index)
-        {
-          protein->appendResidue(move(residue));
-          residue = Residue<AtomType>();
-          residue.type = residueType;
-          residue.index = residueIndex;
-        }
-
-        residue.atoms.push_back(move(atom));
-      }
-      else if(buffer.substr(0,5) == "MODEL")
-      {
-        if(protein)
-        {
-          protein->appendResidue(move(residue));
-          protein->lock();
-          proteins.push_back(move(*protein));
-        }
         protein = new Protein<AtomType>();
-        residue = Residue<AtomType>();
-        residue.index = 0;
-
-        stringstream mdlIndex;
-        mdlIndex << buffer.substr(6);
-        mdlIndex >> modelIndex;
-        protein->model = modelIndex;
+        protein->model = ++modelIndex;
       }
-      else if(protein and buffer == "ENDMDL")
+
+      // Mandatory atom section
+      streamLine.exceptions(ios_base::failbit);
+      try
+      {
+        streamLine >> setw(5) >> atom.index;
+        streamLine.seekg(1, ios_base::cur); // Empty space
+        streamLine.read(atom.type, 4);
+        streamLine.seekg(1, ios_base::cur);// Alternate location indicator
+        streamLine >> setw(3) >> buffer;
+        residueType = Residue<AtomType>::getTypeByName(buffer);
+        streamLine.seekg(2, ios_base::cur);// Empty space + Chain ID
+        streamLine >> setw(4) >> residueIndex;
+        {
+          char insertionCode;
+          streamLine.read(&insertionCode, 1);
+          if(insertionCode != ' ')
+            continue;
+        }
+        streamLine.seekg(3, ios_base::cur);// Code for insertion
+                                           // of residues + 3 spaces
+        streamLine >> setw(8) >> atom.x;
+        streamLine >> setw(8) >> atom.y;
+        streamLine >> setw(8) >> atom.z;
+
+        atom.x /= 10.;
+        atom.y /= 10.;
+        atom.z /= 10.;
+      }
+      catch(ios_base::failure& fail)
+      {
+        continue;
+      }
+
+      // Non-mandatory atom section
+      try
+      {
+        streamLine >> setw(6) >> atom.occupancy;
+      }
+      catch(ios_base::failure& fail)
+      {
+        atom.occupancy = 0;
+      }
+
+      try
+      {
+        streamLine >> setw(6) >> atom.bFactor;
+      }
+      catch(ios_base::failure& fail)
+      {
+        atom.bFactor = 0;
+      }
+      // Then element and charge... but I don't mind of them
+
+      if(residue.index == 0)
+      {
+        residue.type = residueType;
+        residue.index = residueIndex;
+      }
+      else if(residueIndex != residue.index)
+      {
+        protein->appendResidue(move(residue));
+        residue = Residue<AtomType>();
+        residue.type = residueType;
+        residue.index = residueIndex;
+      }
+
+      residue.atoms.push_back(move(atom));
+    }
+    else if(buffer.substr(0,5) == "MODEL")
+    {
+      if(protein)
       {
         protein->appendResidue(move(residue));
         protein->lock();
         proteins.push_back(move(*protein));
-        protein = nullptr;
-        residue = Residue<AtomType>();
-        residue.index = 0;
       }
+      protein = new Protein<AtomType>();
+      residue = Residue<AtomType>();
+      residue.index = 0;
+
+      stringstream mdlIndex;
+      {
+        unsigned int nChars = 6;
+        if(buffer.size() < nChars)
+          nChars = buffer.size();
+        mdlIndex << buffer.substr(nChars);
+      }
+      mdlIndex >> modelIndex;
+      protein->model = modelIndex;
+    }
+    else if(protein and buffer == "ENDMDL")
+    {
+      protein->appendResidue(move(residue));
+      protein->lock();
+      proteins.push_back(move(*protein));
+      protein = nullptr;
+      residue = Residue<AtomType>();
+      residue.index = 0;
+    }
   }
 
   if(residue.atoms.size() > 0)

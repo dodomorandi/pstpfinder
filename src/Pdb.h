@@ -43,35 +43,6 @@ namespace PstpFinder
       explicit PdbAtom(ProteinAtom&& atom) :
           ProteinAtom(move(atom)), bFactor(0), occupancy(0) {}
 
-      /*
-      template<typename T,
-                typename enable_if<is_base_of<Atom,
-                    typename remove_reference<T>::type>::value and not
-                  is_same<PdbAtom,
-                    typename remove_reference<T>::type>::value>
-                  ::type* = nullptr>
-      explicit PdbAtom(T&& t) :
-        ProteinAtom(forward<T>(t)), bFactor(0), occupancy(0) {}
-      template<typename T,
-                typename enable_if<is_base_of<Atom,
-                    typename remove_reference<T>::type>::value and not
-                  is_same<PdbAtom,
-                    typename remove_reference<T>::type>::value>
-                  ::type* = nullptr>
-      PdbAtom& operator =(T&& t)
-      {
-        ProteinAtom::operator =(forward<T>(t));
-        if(is_base_of<PdbAtom, typename remove_reference<T>::type>::value)
-        {
-          const PdbAtom& tmp = static_cast<PdbAtom>(t);
-          bFactor = tmp.bFactor;
-          occupancy = tmp.occupancy;
-        }
-
-        return *this;
-      }
-      */
-
       explicit PdbAtom(int index) :
           ProteinAtom(index), bFactor(0), occupancy(0) {}
 
