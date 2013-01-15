@@ -198,6 +198,15 @@ namespace PstpFinder
 
       const AtomType& getAtomByType(const string& atomType) const;
       static Aminoacids getTypeByName(string residueName);
+      bool isComplete() const noexcept;
+
+    private:
+      bool checkAtomTypePresence(const vector<string>& atomTypes) const noexcept
+        { return __checkAtomTypePresence(atomTypes);}
+      bool checkAtomTypePresence(vector<string>&& atomTypes) const noexcept
+        { return __checkAtomTypePresence(atomTypes);}
+      template<typename VectorOfStrings>
+        bool __checkAtomTypePresence(VectorOfStrings&& atomTypes) const noexcept;
   };
 
   template<typename AtomType = ProteinAtom>
@@ -237,6 +246,7 @@ namespace PstpFinder
       typename enable_if<is_same<AtomType, NewAtomType>::value,
         vector<Residue<NewAtomType>>>::type
         convertResidues() const;
+      void removeUnknownResidues();
 
     protected:
       vector<Residue<AtomType>> pResidues;

@@ -23,6 +23,14 @@
 #include <locale>
 #include <algorithm>
 #include <cassert>
+#include <list>
+
+#ifdef __USE_POSIX
+#include <sys/types.h>
+#include <regex.h>
+#else
+#error "C++11 regex need to be implemented, POSIX needed"
+#endif /* __USE_POSIX */
 
 using namespace PstpFinder;
 using namespace std;
@@ -110,6 +118,98 @@ Residue<AtomType>::getTypeByName(string residueName)
   }
 
   return AA_UNK;
+}
+
+template<typename AtomType>
+bool
+Residue<AtomType>::isComplete() const noexcept
+{
+  if(not checkAtomTypePresence({"N", "CA", "C", "O"}))
+    return false;
+
+  switch(type)
+  {
+    case AA_ALA:
+      return checkAtomTypePresence({"CB"});
+    case AA_ARG:
+      return checkAtomTypePresence({"CB", "CG", "CD", "NE", "CZ"});
+    case AA_ASN:
+      return checkAtomTypePresence({"CB", "CG", "OD[12]", "ND[12]"});
+    case AA_ASP:
+      return checkAtomTypePresence({"CB", "CG", "OD1", "OD2"});
+    case AA_CYS:
+      return checkAtomTypePresence({"CB", "SG"});
+    case AA_GLN:
+      return checkAtomTypePresence({"CB", "CG", "CD", "OE[12]", "NE[12]"});
+    case AA_GLU:
+      return checkAtomTypePresence({"CB", "CG", "CD", "OE1", "OE2"});
+    case AA_GLY:
+      return true;
+    case AA_HIS:
+      return checkAtomTypePresence(
+        { "CB", "CG", "ND[12]", "CD[12]", "CE[12]", "NE[12]" });
+    case AA_ILE:
+      return checkAtomTypePresence({"CB", "CG1", "CG2", "CD1?"});
+    case AA_LEU:
+      return checkAtomTypePresence({"CB", "CG", "CD1", "CD2"});
+    case AA_LYS:
+      return checkAtomTypePresence({"CB", "CG", "CD", "CE", "NZ"});
+    case AA_MET:
+      return checkAtomTypePresence({"CB", "CG", "SD"});
+    case AA_PHE:
+      return checkAtomTypePresence(
+        { "CB", "CG", "CD1", "CD2", "CE1", "CE2", "CZ" });
+    case AA_PRO:
+      return checkAtomTypePresence({"CB", "CG", "CD"});
+    case AA_SER:
+      return checkAtomTypePresence({"CB", "OG"});
+    case AA_THR:
+      return checkAtomTypePresence({"CB", "OG[12]", "CG[12]"});
+    case AA_TRP:
+      return checkAtomTypePresence(
+        { "CB", "CG", "CD1", "CD2", "NE[123]", "CE[123]", "CE[123]",
+          "CZ[123]", "CZ[123]", "CH[123]?" });
+    case AA_TYR:
+      return checkAtomTypePresence(
+        { "CB", "CG", "CD1", "CD2", "CE1", "CE2", "CZ", "OH" });
+    default:
+      return false;
+  }
+}
+
+template<typename AtomType>
+template<typename VectorOfStrings>
+bool
+Residue<AtomType>::__checkAtomTypePresence(VectorOfStrings&& atomTypes) const noexcept
+{
+  list<string> trimmedTypes;
+  for(auto& atom : atoms)
+    trimmedTypes.push_back(atom.getTrimmedType());
+
+  for(string& atomType : atomTypes)
+  {
+    regex_t typeRegex;
+    if(::regcomp(&typeRegex, atomType.c_str(), REG_EXTENDED | REG_NOSUB) != 0)
+      throw;
+
+    bool foundType = false;
+    for(auto typeIter = begin(trimmedTypes); typeIter != end(trimmedTypes);
+        typeIter++)
+    {
+      if(::regexec(&typeRegex, typeIter->c_str(), 0, nullptr, 0) == 0)
+      {
+        foundType = true;
+        trimmedTypes.erase(typeIter);
+        break;
+      }
+    }
+
+    regfree(&typeRegex);
+    if(not foundType)
+      return false;
+  }
+
+  return true;
 }
 
 template<typename AtomType>
@@ -299,4 +399,18 @@ typename enable_if<is_same<AtomType, NewAtomType>::value,
 Protein<AtomType>::convertResidues() const
 {
   return vector<Residue<NewAtomType>>(pResidues);
+}
+
+template<typename AtomType>
+void
+Protein<AtomType>::removeUnknownResidues()
+{
+  locked = false;
+  for(auto iResidue = begin(pResidues); iResidue < end(pResidues);)
+  {
+    if(iResidue->type == AA_UNK)
+      pResidues.erase(iResidue);
+    else
+      iResidue++;
+  }
 }

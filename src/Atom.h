@@ -100,11 +100,17 @@ namespace PstpFinder
         return *this;
       }
 
-      float
+      inline float
       distance(const Atom& atom) const
       {
-        return std::sqrt(std::pow(x - atom.x, 2) + std::pow(y - atom.y, 2)
-            + std::pow(z - atom.z, 2));
+        return sqrt(distance2(atom));
+      }
+
+      inline float
+      distance2(const Atom& atom) const
+      {
+        return std::pow(x - atom.x, 2) + std::pow(y - atom.y, 2)
+            + std::pow(z - atom.z, 2);
       }
   };
 }
