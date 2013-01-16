@@ -56,7 +56,8 @@ namespace PstpFinder
     public:
       Pdb() = default;
       Pdb(const string& fileName);
-      Pdb(Protein<AtomType>&& protein);
+      Pdb(const Protein<AtomType>& protein) { buildPdb(protein);}
+      Pdb(Protein<AtomType>&& protein) { buildPdb(protein);}
 
       template<typename Stream>
       Pdb(Stream&& stream, typename enable_if<is_stream_base_of<
@@ -73,6 +74,9 @@ namespace PstpFinder
       vector<Protein<AtomType>> proteins;
 
     private:
+      template<typename Protein>
+        void buildPdb(Protein&& protein);
+
       template<typename Stream>
       typename enable_if<is_stream_base_of<basic_istream, Stream>::value>::type
       readFromStream(Stream&& stream);
