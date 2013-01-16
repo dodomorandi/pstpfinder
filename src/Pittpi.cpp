@@ -23,11 +23,14 @@
 #include <utility>
 #include <cassert>
 
+#ifdef HAVE_BOOST_PYTHON_HPP
 #include <boost/python.hpp>
 #include <boost/python/stl_iterator.hpp>
 
-using namespace std;
 namespace py = boost::python;
+#endif /* HAVE_BOOST_PYTHON_HPP */
+
+using namespace std;
 
 namespace PstpFinder
 {
@@ -807,6 +810,7 @@ namespace PstpFinder
   }
 
 #ifdef HAVE_PYMOD_SADIC
+#if HAVE_PYMOD_SADIC == 1
   Protein
   Pittpi::runSadic(const Protein& structure) const
   {
@@ -928,6 +932,8 @@ namespace PstpFinder
 
     return sadicProtein;
   }
+#endif /* HAVE_PYMOD_SADIC == 1 */
+#endif /* HAVE_PYMOD_SADIC */
 
   void
   Pittpi::abort()
@@ -1050,4 +1056,3 @@ namespace PstpFinder
     }
   }
 }
-#endif
