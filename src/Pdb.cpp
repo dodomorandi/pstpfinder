@@ -81,10 +81,9 @@ Pdb<AtomType>::write(Stream& stream) const
     {
       for(auto& atom : residue.atoms)
       {
-        string atomType(atom.type);
-        atomType.erase(atomType.begin() + 1, atomType.end());
+        string atomType(atom.type, 4);
         stream << "ATOM  " << setw(5) << atom.index << " ";
-        stream << setiosflags(ios::left) << setw(4) << atom.type << " ";
+        stream << setiosflags(ios::left) << setw(4) << atomType << " ";
         stream << setw(3) << aminoacidTriplet[residue.type] << " A";
         stream << resetiosflags(ios::left) << setw(4) << residue.index;
         stream << "    " << setiosflags(ios::right);
@@ -99,7 +98,7 @@ Pdb<AtomType>::write(Stream& stream) const
         stream << setprecision(2) << setw(6);
         stream << ((get<0>(aux) >= 100) ? 99.99 : get<0>(aux));
         stream << resetiosflags(ios::fixed);
-        stream << "            " << setw(2) << atomType;
+        stream << "            " << setw(2) << atom.getTrimmedType()[0];
         stream << resetiosflags(ios::right) << endl;
       }
     }
@@ -148,6 +147,7 @@ Pdb<AtomType>::readFromStream(Stream&& stream)
         streamLine >> setw(5) >> atom.index;
         streamLine.seekg(1, ios_base::cur); // Empty space
         streamLine.read(atom.type, 4);
+        atom.type[4] = '\0';
         streamLine.seekg(1, ios_base::cur);// Alternate location indicator
         streamLine >> setw(3) >> buffer;
         residueType = Residue<AtomType>::getTypeByName(buffer);
