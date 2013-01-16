@@ -43,10 +43,12 @@ Pdb<AtomType>::Pdb(Stream&& stream, typename enable_if<
 }
 
 template<typename AtomType>
-Pdb<AtomType>::Pdb(Protein<AtomType>&& protein)
+template<typename Protein>
+void
+Pdb<AtomType>::buildPdb(Protein&& protein)
 {
   proteins.clear();
-  proteins.push_back(forward<Protein<AtomType>>(protein));
+  proteins.push_back(forward<Protein>(protein));
 }
 
 template<typename AtomType>
