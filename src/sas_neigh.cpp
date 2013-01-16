@@ -130,6 +130,11 @@ int main(int argc, char* argv[])
 
   for(const path& pdbPath : pdbList)
   {
+    cout << "Analysing " <<  pdbPath.filename().string() << endl;
+    PstpFinder::Pdb<NeighSasPdbAtom> pdb(pdbPath.string());
+    if(pdb.proteins.size() == 0)
+      continue;
+
     PstpFinder::Gromacs gromacs(pdbPath.string(), pdbPath.string());
     {
       PstpFinder::Session<ofstream> session("/tmp/tmp.csf", gromacs, 0.14, 0);
@@ -138,7 +143,6 @@ int main(int argc, char* argv[])
     }
 
     PstpFinder::Session<ifstream> session("/tmp/tmp.csf");
-    PstpFinder::Pdb<NeighSasPdbAtom> pdb(pdbPath.string());
     PstpFinder::SasAtom* sasAtoms = 0;
     bool validThreshold = false;
     PstpFinder::SasAnalysis<ifstream> sasAnalysis(gromacs, session);
@@ -266,6 +270,11 @@ int main(int argc, char* argv[])
   double threshold2 = pow(threshold, 2.);
   for(const path& pdbPath : pdbList)
   {
+    cout << "Analysing " <<  pdbPath.filename().string() << endl;
+    PstpFinder::Pdb<NeighSasPdbAtom> pdb(pdbPath.string());
+    if(pdb.proteins.size() == 0)
+      continue;
+
     PstpFinder::Gromacs gromacs(pdbPath.string(), pdbPath.string());
     {
       PstpFinder::Session<ofstream> session("/tmp/tmp.csf", gromacs, 0.14, 0);
@@ -274,7 +283,6 @@ int main(int argc, char* argv[])
     }
 
     PstpFinder::Session<ifstream> session("/tmp/tmp.csf");
-    PstpFinder::Pdb<NeighSasPdbAtom> pdb(pdbPath.string());
     PstpFinder::SasAtom* sasAtoms = 0;
     PstpFinder::SasAnalysis<ifstream> sasAnalysis(gromacs, session);
     sasAnalysis >> sasAtoms;
