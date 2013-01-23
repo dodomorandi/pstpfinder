@@ -57,7 +57,7 @@ namespace PstpFinder
       Pdb() = default;
       Pdb(const string& fileName);
       Pdb(const Protein<AtomType>& protein) { buildPdb(protein);}
-      Pdb(Protein<AtomType>&& protein) { buildPdb(protein);}
+      Pdb(Protein<AtomType>&& protein) { buildPdb(move(protein));}
 
       template<typename Stream>
       Pdb(Stream&& stream, typename enable_if<is_stream_base_of<
