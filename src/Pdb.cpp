@@ -84,7 +84,8 @@ Pdb<AtomType>::write(Stream& stream) const
         string atomType(atom.type, 4);
         stream << "ATOM  " << setw(5) << atom.index << " ";
         stream << setiosflags(ios::left) << setw(4) << atomType << " ";
-        stream << setw(3) << aminoacidTriplet[residue.type] << " A";
+        stream << setw(3) << aminoacidTriplet[residue.type];
+        stream << " " << residue.chain;
         stream << resetiosflags(ios::left) << setw(4) << residue.index;
         stream << "    " << setiosflags(ios::right);
         stream << setiosflags(ios::fixed);
@@ -116,6 +117,7 @@ Pdb<AtomType>::readFromStream(Stream&& stream)
   Residue<AtomType> residue;
   string buffer;
   int modelIndex = 0;
+  char chain;
   Aminoacids residueType;
 
   residue.index = 0;
@@ -151,7 +153,8 @@ Pdb<AtomType>::readFromStream(Stream&& stream)
         streamLine.seekg(1, ios_base::cur);// Alternate location indicator
         streamLine >> setw(3) >> buffer;
         residueType = Residue<AtomType>::getTypeByName(buffer);
-        streamLine.seekg(2, ios_base::cur);// Empty space + Chain ID
+        streamLine.seekg(1, ios_base::cur);// Empty space
+        streamLine.read(&chain, 1);
         streamLine >> setw(4) >> residueIndex;
         {
           char insertionCode;
@@ -198,6 +201,7 @@ Pdb<AtomType>::readFromStream(Stream&& stream)
       {
         residue.type = residueType;
         residue.index = residueIndex;
+        residue.chain = chain;
       }
       else if(residueIndex != residue.index)
       {
@@ -205,6 +209,7 @@ Pdb<AtomType>::readFromStream(Stream&& stream)
         residue = Residue<AtomType>();
         residue.type = residueType;
         residue.index = residueIndex;
+        residue.chain = chain;
       }
 
       residue.atoms.push_back(move(atom));
