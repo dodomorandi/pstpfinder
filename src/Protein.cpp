@@ -44,6 +44,7 @@ Residue<AtomType>::operator =(const OldResidue<OldAtom>& residue)
   atoms.reserve(residue.atoms.size());
   for(auto atom : residue.atoms)
     atoms.push_back(atom);
+  chain = residue.chain;
 
   return *this;
 }
@@ -65,6 +66,7 @@ Residue<AtomType>::operator =(OldResidue<OldAtom>&& residue)
   atoms.reserve(residue.atoms.size());
   for(auto atom : residue.atoms)
     atoms.push_back(move(atom));
+  chain = move(residue.chain);
 
   return *this;
 }

@@ -108,6 +108,7 @@ namespace PstpFinder
       Aminoacids type;
       int index;
       vector<AtomType> atoms;
+      char chain;
 
       Residue() = default;
       explicit Residue(Aminoacids aminoacid) : type(aminoacid) {}
@@ -118,7 +119,8 @@ namespace PstpFinder
       Residue(const typename remove_reference<T>::type& residue) :
         type(residue.type),
         index(residue.index),
-        atoms(residue.atoms) {}
+        atoms(residue.atoms),
+        chain(residue.chain) {}
 
       template<typename T,
         typename enable_if<is_same<typename remove_reference<T>::type,
@@ -126,7 +128,8 @@ namespace PstpFinder
       Residue(typename remove_reference<T>::type&& residue) :
         type(move(residue.type)),
         index(move(residue.index)),
-        atoms(move(residue.atoms)) {}
+        atoms(move(residue.atoms)),
+        chain(move(residue.chain)) {}
 
       // TODO: a template template splitter
       template<template <typename> class OldResidue, typename OldAtom,
@@ -135,7 +138,8 @@ namespace PstpFinder
           Residue<AtomType>>::value>::type* = nullptr>
       Residue(OldResidue<OldAtom>&& residue) :
         type(move(residue.type)), index(move(residue.index)),
-        atoms(begin(residue.atoms), end(residue.atoms))
+        atoms(begin(residue.atoms), end(residue.atoms)),
+        chain(move(residue.chain))
       {
           static_assert(
               is_same<typename remove_reference<OldResidue<OldAtom>>::type,
@@ -147,7 +151,8 @@ namespace PstpFinder
           Residue<AtomType>>::value>::type* = nullptr>
       Residue(const OldResidue<OldAtom>& residue) :
         type(residue.type), index(residue.index),
-        atoms(begin(residue.atoms), end(residue.atoms))
+        atoms(begin(residue.atoms), end(residue.atoms)),
+        chain(residue.chain)
       {
           static_assert(
               is_same<typename remove_reference<OldResidue<OldAtom>>::type,
@@ -162,6 +167,7 @@ namespace PstpFinder
         type = residue.type;
         index = residue.index;
         atoms = residue.atoms;
+        chain = residue.chain;
 
         return *this;
       }
@@ -174,6 +180,7 @@ namespace PstpFinder
         type = move(residue.type);
         index = move(residue.index);
         atoms = move(residue.atoms);
+        chain = move(residue.chain);
 
         return *this;
       }
