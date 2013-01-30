@@ -247,6 +247,7 @@ namespace PstpFinder
         vector<Residue<NewAtomType>>>::type
         convertResidues() const;
       void removeUnknownResidues();
+      void remakeIndices();
 
     protected:
       vector<Residue<AtomType>> pResidues;
