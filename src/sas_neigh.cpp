@@ -73,7 +73,7 @@ string getStdAtomNameFromPdb(string atomType)
 
 template<typename AtomType>
 auto
-getBoundsFromNeighbours(vector<AtomType> atoms, const size_t& neighbours)
+getBoundsFromNeighbours(const vector<AtomType>& atoms, const size_t& neighbours)
     noexcept -> decltype(make_pair(begin(atoms), end(atoms)))
 {
   auto outBegin = begin(atoms);
