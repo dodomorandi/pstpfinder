@@ -29,12 +29,20 @@
 #include <cmath>
 #include <utility>
 #include <cstdio>
+#include <thread>
 
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/path.hpp>
 
 using namespace std;
 using namespace boost::filesystem;
+
+static double threshold = 0.286;
+static mutex threshold_mutex;
+static unsigned currentThread = 0;
+static const unsigned maxThreads = thread::hardware_concurrency();
+static mutex thread_mutex;
+static condition_variable thread_condition;
 
 struct NeighSasPdbAtom : public PstpFinder::SasPdbAtom
 {
@@ -100,6 +108,171 @@ void usage(string programName)
   cout << endl << "\tcorrelation between atom neighbours and SAS" << endl;
 }
 
+void analyzeProtein(path&& pdbPath,
+                    Protein<NeighSasPdbAtom>&& protein,
+                    unsigned int model)
+{
+  protein.removeUnknownResidues();
+  protein.remakeIndices();
+  if(protein.residues().size() <= 30)
+  {
+    cout << "Skipping model " << model + 1 << " for pdb "
+         << pdbPath.filename().string() << " (only "
+         << protein.residues().size() << " residues)" << endl;
+
+    {
+      unique_lock<mutex> threadLock(thread_mutex);
+      currentThread--;
+      thread_condition.notify_one();
+    }
+    return;
+  }
+
+  Pdb<NeighSasPdbAtom> temporaryPdb = Pdb<NeighSasPdbAtom>(protein);
+  string temporaryPdbName, temporarySessionFile;
+  {
+    stringstream tmpString;
+    tmpString << "/tmp/" << pdbPath.stem().string() << "_" << model << ".pdb";
+    temporaryPdbName = tmpString.str();
+    tmpString.str("");
+    tmpString << "/tmp/" << pdbPath.stem().string() << "_" << model << ".csf";
+    temporarySessionFile = tmpString.str();
+  }
+  temporaryPdb.write(temporaryPdbName);
+  PstpFinder::Gromacs gromacs(temporaryPdbName, temporaryPdbName);
+  {
+    gromacs.usePBC(false);
+    PstpFinder::Session<ofstream> session(temporarySessionFile, gromacs, 0.14, 0);
+    gromacs.calculateSas(session);
+    gromacs.waitOperation();
+  }
+
+  auto iterAtoms = begin(protein.atoms());
+  bool validThreshold = false;
+  unsigned long nAtoms = protein.atoms().size();
+  {
+    PstpFinder::Session<ifstream> session(temporarySessionFile);
+    PstpFinder::SasAtom* sasAtoms = 0;
+    PstpFinder::SasAnalysis<ifstream> sasAnalysis(gromacs, session);
+    sasAnalysis >> sasAtoms;
+
+    PstpFinder::SasAtom* atomPtr = sasAtoms;
+
+    for(unsigned int curAtomIndex = 0; curAtomIndex < nAtoms;
+        curAtomIndex++, iterAtoms++, atomPtr++)
+      (const_cast<NeighSasPdbAtom&>(**iterAtoms)).sas = atomPtr->sas;
+  }
+  remove(temporaryPdbName);
+  remove(temporarySessionFile);
+
+  while(threshold < 1)
+  {
+    double threshold2;
+    {
+      unique_lock<mutex> thresholdLock(threshold_mutex);
+      threshold += 0.001;
+      if(threshold >= 1)
+        break;
+      threshold2 = pow(threshold, 2.);
+    }
+    for(auto& atom : protein.atoms())
+      const_cast<NeighSasPdbAtom*>(atom)->neighbours = 0;
+
+    iterAtoms = begin(protein.atoms());
+    for(; iterAtoms != end(protein.atoms()); iterAtoms++)
+    {
+      NeighSasPdbAtom& atom1 = const_cast<NeighSasPdbAtom&>(**iterAtoms);
+      string atomType1 = getStdAtomNameFromPdb(atom1.type);
+      if(atomType1 == "H")
+        continue;
+
+      auto iterAtoms2 = begin(protein.atoms());
+      for(; iterAtoms2 != end(protein.atoms()); iterAtoms2++)
+      {
+        if(iterAtoms == iterAtoms2)
+          continue;
+
+        NeighSasPdbAtom& atom2 = const_cast<NeighSasPdbAtom&>(**iterAtoms2);
+        string atomType2 = getStdAtomNameFromPdb(atom2.type);
+        if(atomType2 == "H")
+          continue;
+
+        //if(atom1.distance2(atom2) <= 0.32 * 0.32) /* ~hydrogen bond length² */
+        if(atom1.distance2(atom2) <= threshold2)
+          atom1.neighbours++;
+      }
+    }
+
+    if(validThreshold)
+      break;
+
+    vector<NeighSas> tmpAtoms;
+    tmpAtoms.reserve(protein.atoms().size());
+    for(auto& residue : protein.residues())
+    {
+      if(not residue.isComplete())
+        continue;
+
+      for(auto& atom : residue.atoms)
+      {
+        if(getStdAtomNameFromPdb(atom.type) != "H")
+          tmpAtoms.push_back(atom);
+      }
+    }
+
+    if(tmpAtoms.size() == 0)
+      break;
+
+    sort(begin(tmpAtoms), end(tmpAtoms),
+         [&](const NeighSas& a, const NeighSas& b)
+         {
+            return a.neighbours < b.neighbours;
+         });
+
+    unsigned int maxNeighbours = tmpAtoms.back().neighbours;
+    {
+      unsigned int minNeighbours = tmpAtoms.front().neighbours;
+      if(minNeighbours == 0 or maxNeighbours < 6)
+      {
+        cout << "(" << pdbPath.filename().string()
+             << ") Not good for threshold = " << threshold
+             << " (min neighbours = " << minNeighbours << ", max = "
+             << maxNeighbours << "). Trying next..." << endl;
+        continue;
+      }
+    }
+
+    auto maxNeighBounds = getBoundsFromNeighbours(tmpAtoms, maxNeighbours);
+    bool repeat = false;
+    for(auto iter = maxNeighBounds.first;
+        not repeat and iter < maxNeighBounds.second; iter++)
+    {
+      if(iter->sas > 0)
+      {
+        repeat = true;
+        break;
+      }
+    }
+    if(not repeat)
+    {
+      cout << "(" << pdbPath.filename().string()
+           << ") Good for threshold = " << threshold << endl;
+      validThreshold = true;
+      break;
+    }
+    else
+      cout << "(" << pdbPath.filename().string()
+           << ") Not good for threshold = " << threshold
+           << ". Trying next..." << endl;
+  }
+
+  {
+    unique_lock<mutex> threadLock(thread_mutex);
+    currentThread--;
+    thread_condition.notify_one();
+  }
+}
+
 int main(int argc, char* argv[])
 {
   if(argc != 2)
@@ -125,9 +298,7 @@ int main(int argc, char* argv[])
       pdbList.push_back(i->path());
   }
 
-  vector<NeighSas> atoms;
-  double threshold = 0.286;
-
+  list<thread> threads;
   for(const path& pdbPath : pdbList)
   {
     cout << "Analysing " <<  pdbPath.filename().string() << endl;
@@ -137,140 +308,26 @@ int main(int argc, char* argv[])
 
     for(unsigned int model = 0; model < pdb.proteins.size(); model++)
     {
-      Protein<NeighSasPdbAtom>& protein = pdb.proteins[model];
-      protein.removeUnknownResidues();
-      protein.remakeIndices();
-      if(protein.residues().size() <= 30)
       {
-        cout << "Skipping model " << model + 1 << " for pdb "
-             << pdbPath.filename().string() << " (only "
-             << protein.residues().size() << " residues)" << endl;
-        continue;
-      }
+        unique_lock<mutex> threadLock(thread_mutex);
+        if(currentThread >= maxThreads)
+          thread_condition.wait(threadLock);
 
-      Pdb<NeighSasPdbAtom> temporaryPdb = Pdb<NeighSasPdbAtom>(protein);
-      temporaryPdb.write("/tmp/tmp.pdb");
-      PstpFinder::Gromacs gromacs("/tmp/tmp.pdb", "/tmp/tmp.pdb");
-      {
-        gromacs.usePBC(false);
-        PstpFinder::Session<ofstream> session("/tmp/tmp.csf", gromacs, 0.14, 0);
-        gromacs.calculateSas(session);
-        gromacs.waitOperation();
-      }
+        Protein<NeighSasPdbAtom>& protein = pdb.proteins[model];
+        threads.emplace_back(analyzeProtein, pdbPath, protein, model);
 
-      auto iterAtoms = begin(protein.atoms());
-      bool validThreshold = false;
-      unsigned long nAtoms = protein.atoms().size();
-      {
-        PstpFinder::Session<ifstream> session("/tmp/tmp.csf");
-        PstpFinder::SasAtom* sasAtoms = 0;
-        PstpFinder::SasAnalysis<ifstream> sasAnalysis(gromacs, session);
-        sasAnalysis >> sasAtoms;
-
-        PstpFinder::SasAtom* atomPtr = sasAtoms;
-
-        for(unsigned int curAtomIndex = 0; curAtomIndex < nAtoms;
-            curAtomIndex++, iterAtoms++, atomPtr++)
-          (const_cast<NeighSasPdbAtom&>(**iterAtoms)).sas = atomPtr->sas;
-      }
-      remove("/tmp/tmp.pdb");
-      remove("/tmp/tmp.csf");
-
-      for(; threshold < 1; threshold += 0.001)
-      {
-        double threshold2 = pow(threshold, 2.);
-        for(auto& atom : protein.atoms())
-          const_cast<NeighSasPdbAtom*>(atom)->neighbours = 0;
-
-        iterAtoms = begin(protein.atoms());
-        for(; iterAtoms != end(protein.atoms()); iterAtoms++)
-        {
-          NeighSasPdbAtom& atom1 = const_cast<NeighSasPdbAtom&>(**iterAtoms);
-          string atomType1 = getStdAtomNameFromPdb(atom1.type);
-          if(atomType1 == "H")
-            continue;
-
-          auto iterAtoms2 = begin(protein.atoms());
-          for(; iterAtoms2 != end(protein.atoms()); iterAtoms2++)
-          {
-            if(iterAtoms == iterAtoms2)
-              continue;
-
-            NeighSasPdbAtom& atom2 = const_cast<NeighSasPdbAtom&>(**iterAtoms2);
-            string atomType2 = getStdAtomNameFromPdb(atom2.type);
-            if(atomType2 == "H")
-              continue;
-
-            //if(atom1.distance2(atom2) <= 0.32 * 0.32) /* ~hydrogen bond length² */
-            if(atom1.distance2(atom2) <= threshold2)
-              atom1.neighbours++;
-          }
-        }
-
-        if(validThreshold)
-          break;
-
-        vector<NeighSas> tmpAtoms;
-        tmpAtoms.reserve(protein.atoms().size());
-        for(auto& residue : protein.residues())
-        {
-          if(not residue.isComplete())
-            continue;
-
-          for(auto& atom : residue.atoms)
-          {
-            if(getStdAtomNameFromPdb(atom.type) != "H")
-              tmpAtoms.push_back(atom);
-          }
-        }
-
-        if(tmpAtoms.size() == 0)
-          break;
-
-        sort(begin(tmpAtoms), end(tmpAtoms),
-             [&](const NeighSas& a, const NeighSas& b)
-             {
-                return a.neighbours < b.neighbours;
-             });
-
-        unsigned int maxNeighbours = tmpAtoms.back().neighbours;
-        {
-          unsigned int minNeighbours = tmpAtoms.front().neighbours;
-          if(minNeighbours == 0 or maxNeighbours < 6)
-          {
-            cout << "(" << pdbPath.filename().string()
-                 << ") Not good for threshold = " << threshold
-                 << " (min neighbours = " << minNeighbours << ", max = "
-                 << maxNeighbours << "). Trying next..." << endl;
-            continue;
-          }
-        }
-
-        auto maxNeighBounds = getBoundsFromNeighbours(tmpAtoms, maxNeighbours);
-        bool repeat = false;
-        for(auto iter = maxNeighBounds.first;
-            not repeat and iter < maxNeighBounds.second; iter++)
-        {
-          if(iter->sas > 0)
-          {
-            repeat = true;
-            break;
-          }
-        }
-        if(not repeat)
-        {
-          cout << "(" << pdbPath.filename().string()
-               << ") Good for threshold = " << threshold << endl;
-          validThreshold = true;
-          break;
-        }
-        else
-          cout << "(" << pdbPath.filename().string()
-               << ") Not good for threshold = " << threshold
-               << ". Trying next..." << endl;
+        currentThread++;
       }
     }
   }
+
+  for(thread& threadToJoin : threads)
+  {
+    if(threadToJoin.joinable())
+      threadToJoin.join();
+  }
+
+  vector<NeighSas> atoms;
 
   // Recalculate neighbours using best threshold
   double threshold2 = pow(threshold, 2.);
