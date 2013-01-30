@@ -135,22 +135,11 @@ int main(int argc, char* argv[])
     if(pdb.proteins.size() == 0)
       continue;
 
-    PstpFinder::Gromacs gromacs(pdbPath.string(), pdbPath.string());
-    {
-      PstpFinder::Session<ofstream> session("/tmp/tmp.csf", gromacs, 0.14, 0);
-      gromacs.calculateSas(session);
-      gromacs.waitOperation();
-    }
-
-    PstpFinder::Session<ifstream> session("/tmp/tmp.csf");
-    PstpFinder::SasAtom* sasAtoms = 0;
-    bool validThreshold = false;
-    PstpFinder::SasAnalysis<ifstream> sasAnalysis(gromacs, session);
-    sasAnalysis >> sasAtoms;
-    for(unsigned int model = 0; sasAtoms != 0; model++, sasAnalysis >> sasAtoms)
+    for(unsigned int model = 0; model < pdb.proteins.size(); model++)
     {
       Protein<NeighSasPdbAtom>& protein = pdb.proteins[model];
       protein.removeUnknownResidues();
+      protein.remakeIndices();
       if(protein.residues().size() <= 30)
       {
         cout << "Skipping model " << model + 1 << " for pdb "
@@ -159,14 +148,33 @@ int main(int argc, char* argv[])
         continue;
       }
 
-      unsigned long nAtoms = protein.atoms().size();
-      auto iterAtoms = begin(protein.atoms());
-      PstpFinder::SasAtom* atomPtr = sasAtoms;
+      Pdb<NeighSasPdbAtom> temporaryPdb = Pdb<NeighSasPdbAtom>(protein);
+      temporaryPdb.write("/tmp/tmp.pdb");
+      PstpFinder::Gromacs gromacs("/tmp/tmp.pdb", "/tmp/tmp.pdb");
+      {
+        gromacs.usePBC(false);
+        PstpFinder::Session<ofstream> session("/tmp/tmp.csf", gromacs, 0.14, 0);
+        gromacs.calculateSas(session);
+        gromacs.waitOperation();
+      }
 
-      // FIXME: it crashes with curAtomIndex=4089, model=0 in pdb=3adc
-      for(unsigned int curAtomIndex = 0; curAtomIndex < nAtoms;
-          curAtomIndex++, iterAtoms++, atomPtr++)
-        (const_cast<NeighSasPdbAtom&>(**iterAtoms)).sas = atomPtr->sas;
+      auto iterAtoms = begin(protein.atoms());
+      bool validThreshold = false;
+      unsigned long nAtoms = protein.atoms().size();
+      {
+        PstpFinder::Session<ifstream> session("/tmp/tmp.csf");
+        PstpFinder::SasAtom* sasAtoms = 0;
+        PstpFinder::SasAnalysis<ifstream> sasAnalysis(gromacs, session);
+        sasAnalysis >> sasAtoms;
+
+        PstpFinder::SasAtom* atomPtr = sasAtoms;
+
+        for(unsigned int curAtomIndex = 0; curAtomIndex < nAtoms;
+            curAtomIndex++, iterAtoms++, atomPtr++)
+          (const_cast<NeighSasPdbAtom&>(**iterAtoms)).sas = atomPtr->sas;
+      }
+      remove("/tmp/tmp.pdb");
+      remove("/tmp/tmp.csf");
 
       for(; threshold < 1; threshold += 0.001)
       {
@@ -262,8 +270,6 @@ int main(int argc, char* argv[])
                << ". Trying next..." << endl;
       }
     }
-
-    remove("/tmp/tmp.csf");
   }
 
   // Recalculate neighbours using best threshold
@@ -275,32 +281,41 @@ int main(int argc, char* argv[])
     if(pdb.proteins.size() == 0)
       continue;
 
-    PstpFinder::Gromacs gromacs(pdbPath.string(), pdbPath.string());
-    {
-      PstpFinder::Session<ofstream> session("/tmp/tmp.csf", gromacs, 0.14, 0);
-      gromacs.calculateSas(session);
-      gromacs.waitOperation();
-    }
-
-    PstpFinder::Session<ifstream> session("/tmp/tmp.csf");
-    PstpFinder::SasAtom* sasAtoms = 0;
-    PstpFinder::SasAnalysis<ifstream> sasAnalysis(gromacs, session);
-    sasAnalysis >> sasAtoms;
-
-    for(unsigned int model = 0; sasAtoms != 0; model++, sasAnalysis >> sasAtoms)
+    for(unsigned int model = 0; model < pdb.proteins.size(); model++)
     {
       auto& protein = pdb.proteins[model];
       protein.removeUnknownResidues();
+      protein.remakeIndices();
       if(protein.residues().size() <= 30)
         continue;
       unsigned long nAtoms = protein.atoms().size();
       unsigned long validAtoms = 0;
 
+      Pdb<NeighSasPdbAtom> temporaryPdb = Pdb<NeighSasPdbAtom>(protein);
+      temporaryPdb.write("/tmp/tmp.pdb");
+      PstpFinder::Gromacs gromacs("/tmp/tmp.pdb", "/tmp/tmp.pdb");
+      {
+        gromacs.usePBC(false);
+        PstpFinder::Session<ofstream> session("/tmp/tmp.csf", gromacs, 0.14, 0);
+        gromacs.calculateSas(session);
+        gromacs.waitOperation();
+      }
+
       auto iterAtoms = begin(protein.atoms());
-      PstpFinder::SasAtom* atomPtr = sasAtoms;
-      for(unsigned int curAtomIndex = 0; curAtomIndex < nAtoms;
-          curAtomIndex++, iterAtoms++, atomPtr++)
-        (const_cast<NeighSasPdbAtom&>(**iterAtoms)).sas = atomPtr->sas;
+      {
+        PstpFinder::Session<ifstream> session("/tmp/tmp.csf");
+        PstpFinder::SasAtom* sasAtoms = 0;
+        PstpFinder::SasAnalysis<ifstream> sasAnalysis(gromacs, session);
+        sasAnalysis >> sasAtoms;
+
+        PstpFinder::SasAtom* atomPtr = sasAtoms;
+
+        for(unsigned int curAtomIndex = 0; curAtomIndex < nAtoms;
+            curAtomIndex++, iterAtoms++, atomPtr++)
+          (const_cast<NeighSasPdbAtom&>(**iterAtoms)).sas = atomPtr->sas;
+      }
+      remove("/tmp/tmp.pdb");
+      remove("/tmp/tmp.csf");
 
       iterAtoms = begin(protein.atoms());
       for(; iterAtoms != end(protein.atoms()); iterAtoms++)

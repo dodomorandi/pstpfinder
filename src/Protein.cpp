@@ -414,3 +414,23 @@ Protein<AtomType>::removeUnknownResidues()
       iResidue++;
   }
 }
+
+template<typename AtomType>
+void
+Protein<AtomType>::remakeIndices()
+{
+  locked = false;
+  unsigned int resIndex = 1;
+  unsigned int atomIndex = 1;
+  for(auto& residue : pResidues)
+  {
+    for(auto& atom : residue.atoms)
+    {
+      atom.index = atomIndex;
+      atomIndex++;
+    }
+
+    residue.index = resIndex;
+    resIndex++;
+  }
+}
