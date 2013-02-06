@@ -1,3 +1,33 @@
+commit bda66b3f7f2bc52d7615a8628578732e4eb9538c
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Jan 16 13:36:15 2013 +0100
+
+    Fixed compliation issues for missing Sadic
+
+commit 3d6c16a3196cadb4fc89630eac7c4cdffea3970c
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue Jan 15 17:19:53 2013 +0100
+
+    Fixed bug in Session.h
+
+commit 55592dfb4feac52f90c4d7811587ca5939beff3a
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Dec 5 12:25:55 2012 +0100
+
+    Added support for N- and C-terminal residues
+
+commit 8b7bd7402f389ed143b37eb677864169eb13c46c
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Nov 14 17:10:11 2012 +0100
+
+    Added extra warnings and fixed some of them
+
+commit cbe2923e47fbf5e78506d58c26279900b2a1853e
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Nov 14 16:33:47 2012 +0100
+
+    Updated changelog
+
 commit 89e7dff42f04ffa2e3b66eb6a1069b328d765dab
 Author: Edoardo Morandi <morandidodo@gmail.com>
 Date:   Wed Nov 14 16:25:18 2012 +0100
