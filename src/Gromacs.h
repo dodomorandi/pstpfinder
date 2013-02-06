@@ -124,6 +124,8 @@ namespace PstpFinder
       void waitOperation();
       void abort();
       bool isAborting() const;
+      bool usePBC() const noexcept;
+      bool usePBC(bool value) noexcept;
     private:
 #ifdef GMX45
       output_env_t oenv;
@@ -155,6 +157,7 @@ namespace PstpFinder
       float _begin, _end;
       mutable float timeStepCached;
       bool abortFlag;
+      bool _usePBC;
     
       void init(float solventSize);
       bool getTopology();

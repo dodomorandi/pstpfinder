@@ -164,6 +164,7 @@ namespace PstpFinder
     sasTarget = gromacs.sasTarget;
     mtop = gromacs.mtop;
     abortFlag = false;
+    _usePBC = gromacs._usePBC;
 
     cachedNFrames = gromacs.cachedNFrames;
     averageStructure = gromacs.averageStructure;
@@ -193,6 +194,7 @@ namespace PstpFinder
     _end = -1;
     timeStepCached = 0;
     abortFlag = false;
+    _usePBC = true;
 
     // Damn it! I can't handle errors raised inside this f*****g function,
     // because it simply crashes on a ERROR HANDLING FUNCTION, overriding
@@ -291,7 +293,8 @@ namespace PstpFinder
       }
     }
 
-    gpbc = gmx_rmpbc_init(&top.idef, ePBC, natoms, box);
+    if(_usePBC)
+      gpbc = gmx_rmpbc_init(&top.idef, ePBC, natoms, box);
 
     SasAnalysis<Stream> sasAnalysis(nx, *this, session);
     {
@@ -315,10 +318,11 @@ namespace PstpFinder
         session.abort();
         break;
       }
-      gmx_rmpbc(gpbc, natoms, box, x);
+      if(_usePBC)
+        gmx_rmpbc(gpbc, natoms, box, x);
       if(nsc_dclm_pbc(x, radius, nx, 24, FLAG_ATOM_AREA, &totarea, &area,
                       &totvolume, &surfacedots, &nsurfacedots, index.data(),
-                      ePBC, box)
+                      ePBC, _usePBC ? box : nullptr)
          != 0)
         gmx_fatal(FARGS, "Something wrong in nsc_dclm_pbc");
 
@@ -359,7 +363,8 @@ namespace PstpFinder
     }
     while(readNextX());
 
-    gmx_rmpbc_done(gpbc);
+    if(_usePBC)
+      gmx_rmpbc_done(gpbc);
 
     if(bDGsol)
       delete[] dgs_factor;
@@ -407,14 +412,16 @@ namespace PstpFinder
     copy_mat(box, pdbbox);
 
     sub_xcm(xtop, isize, index.data(), top.atoms.atom, xcm, FALSE);
-    gpbc = gmx_rmpbc_init(&top.idef, ePBC, natoms, box);
+    if(_usePBC)
+      gpbc = gmx_rmpbc_init(&top.idef, ePBC, natoms, box);
 
     count = 0;
     do
     {
       if(abortFlag)
         break;
-      gmx_rmpbc(gpbc, natoms, box, x);
+      if(_usePBC)
+        gmx_rmpbc(gpbc, natoms, box, x);
       sub_xcm(x, isize, index.data(), top.atoms.atom, xcm, FALSE);
       do_fit(natoms, w_rls, xtop, x);
 
@@ -442,7 +449,8 @@ namespace PstpFinder
     if(abortFlag)
       return averageStructure;
 
-    gmx_rmpbc_done(gpbc);
+    if(_usePBC)
+      gmx_rmpbc_done(gpbc);
     invcount = 1.0 / count;
     for(int i = 0; i < isize; i++)
     {
@@ -930,6 +938,18 @@ namespace PstpFinder
   Gromacs::isAborting() const
   {
     return abortFlag;
+  }
+
+  bool
+  Gromacs::usePBC() const noexcept
+  {
+    return _usePBC;
+  }
+
+  bool
+  Gromacs::usePBC(bool value) noexcept
+  {
+    return _usePBC = value;
   }
 
   template void Gromacs::__calculateSas(Session<fstream>&);
