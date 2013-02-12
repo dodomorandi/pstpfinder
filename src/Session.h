@@ -132,6 +132,7 @@ namespace PstpFinder
       Session_Base(const string& fileName,
           initializer_list<tuple<SessionParameter,
                                  SessionParameterValue>>&& parameters);
+
       void readSession();
       void prepareForWrite();
       inline void assertRegularType() const;
@@ -148,7 +149,7 @@ namespace PstpFinder
         streamoff end;
         bool complete;
 
-        MetaData() : info(-1), start(-1), end(-1), complete(false) {};
+        MetaData() : stream(), info(-1), start(-1), end(-1), complete(false) {};
       };
 
       const bool ready;
@@ -156,9 +157,9 @@ namespace PstpFinder
       const string sessionFileName;
       unique_ptr<T> sessionFile;
       unique_ptr<Serializer<T>> serializer;
-      MetaData metaSas;
-      MetaData metaPdb;
       MetaData metaPittpi;
+      MetaData metaPdb;
+      MetaData metaSas;
   };
 
   template<typename T>

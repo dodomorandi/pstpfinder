@@ -208,7 +208,10 @@ namespace PstpFinder
       operationThread.join();
 #ifdef GMX45
     if(gotTrajectory)
+    {
       output_env_done(oenv);
+      close_trj(status);
+    }
 #endif
     gmx_atomprop_destroy(aps);
   }
@@ -365,6 +368,10 @@ namespace PstpFinder
 
     if(_usePBC)
       gmx_rmpbc_done(gpbc);
+
+    output_env_done(oenv);
+    close_trj(status);
+    gotTrajectory = false;
 
     if(bDGsol)
       delete[] dgs_factor;
