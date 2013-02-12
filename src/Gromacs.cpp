@@ -26,6 +26,7 @@
 #include <iostream>
 #include <fstream>
 #include <cstring>
+#include <mutex>
 
 #include <gromacs/tpxio.h>
 #include <gromacs/mtop_util.h>
@@ -42,6 +43,8 @@ using namespace std;
 
 namespace PstpFinder
 {
+  static mutex nsc_dclm_pbc_mutex;
+
   Gromacs::Gromacs(float solventSize)
   {
     init(solventSize);
@@ -323,10 +326,17 @@ namespace PstpFinder
       }
       if(_usePBC)
         gmx_rmpbc(gpbc, natoms, box, x);
-      if(nsc_dclm_pbc(x, radius, nx, 24, FLAG_ATOM_AREA, &totarea, &area,
-                      &totvolume, &surfacedots, &nsurfacedots, index.data(),
-                      ePBC, _usePBC ? box : nullptr)
-         != 0)
+
+      int nsc_dclm_pdc_result;
+      {
+        unique_lock<mutex> lock(nsc_dclm_pbc_mutex);
+        nsc_dclm_pdc_result = nsc_dclm_pbc(x, radius, nx, 24, FLAG_ATOM_AREA,
+                                           &totarea, &area, &totvolume,
+                                           &surfacedots, &nsurfacedots,
+                                           index.data(), ePBC,
+                                           _usePBC ? box : nullptr);
+      }
+      if(nsc_dclm_pdc_result != 0)
         gmx_fatal(FARGS, "Something wrong in nsc_dclm_pbc");
 
       SasAtom atoms[nx];
