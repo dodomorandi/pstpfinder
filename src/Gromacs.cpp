@@ -279,7 +279,7 @@ namespace PstpFinder
     int nsurfacedots;
     real *dgs_factor, *radius, *area = 0, *surfacedots = 0, dgsolv;
     vector<atom_id> index;
-    gmx_rmpbc_t gpbc;
+    gmx_rmpbc_t gpbc = nullptr;
     int nx;
 
     if(not gotTopology and not (bTop = getTopology()))
@@ -428,7 +428,7 @@ namespace PstpFinder
     real invcount;
     double *xav, *rmsf;
     double** U;
-    gmx_rmpbc_t gpbc;
+    gmx_rmpbc_t gpbc = nullptr;
     int statusCount = 0;
     averageStructure = Protein();
 

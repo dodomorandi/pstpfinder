@@ -976,6 +976,9 @@ namespace PstpFinder
 #ifndef NDEBUG
     const vector<const PdbAtom*>& atoms(protein.atoms());
     const vector<Residue>& residues(protein.residues());
+#else
+    // FIXME: useless argument if not in debug mode?
+    (void) protein;
 #endif
 
     for(auto& group : groups)

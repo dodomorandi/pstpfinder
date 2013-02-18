@@ -470,6 +470,8 @@ namespace PstpFinder
       typedef MetaStream_Base<T> Base;
       void init(off_type begin, off_type end, enumStreamType streamType)
       {
+        // FIXME: Unused streamType during initialization
+        (void) streamType;
         assert(streamType == enumStreamType::STREAMTYPE_FIXED);
 
         if(begin == -1)
@@ -531,6 +533,8 @@ namespace PstpFinder
       typedef MetaStream_Base<T> Base;
       void init(off_type begin, off_type end, enumStreamType streamType)
       {
+        // FIXME: Unused streamType during initialization
+        (void) streamType;
         assert(
             not (streamType == enumStreamType::STREAMTYPE_FIXED and
                 end == -1));
