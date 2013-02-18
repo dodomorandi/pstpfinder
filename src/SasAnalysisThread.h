@@ -218,6 +218,28 @@ namespace PstpFinder
       virtual ~SasAnalysisThread() {}
       virtual void
       threadSave() { Base::threadSave(); }
+
+      void waitForFlush()
+      {
+        if(Base::isStopped)
+          return;
+
+        Base::parent->bufferMutex.lock();
+        while(Base::parent->bufferCount < Base::parent->bufferMax and not Base::isStopped)
+        {
+          unique_lock<mutex> lock(Base::wakeMutex);
+          Base::parent->bufferMutex.unlock();
+          Base::wakeCondition.wait(lock);
+          Base::parent->bufferMutex.lock();
+
+          if(Base::parent->gromacs and Base::parent->gromacs->isAborting())
+          {
+            Base::parent->bufferMutex.unlock();
+            break;
+          }
+        }
+        Base::parent->bufferMutex.unlock();
+      }
   };
 }
 

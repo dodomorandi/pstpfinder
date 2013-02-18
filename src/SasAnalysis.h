@@ -303,6 +303,9 @@ namespace PstpFinder
     Base::analysisThread->stop();
     delete Base::analysisThread;
 
+    for(auto& frame : Base::frames)
+      delete[] frame;
+
     delete Base::serializer;
   }
 
@@ -314,8 +317,15 @@ namespace PstpFinder
 
     if(Base::frames.size() != 0)
       flush();
+    Base::analysisThread->waitForFlush();
     Base::analysisThread->stop();
     delete Base::analysisThread;
+
+    for(auto& chunk : Base::chunks)
+    {
+      for(auto& frame : chunk)
+        delete[] frame;
+    }
 
     delete Base::serializer;
     Base::sasMetaStream.close();

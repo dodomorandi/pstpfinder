@@ -38,6 +38,7 @@
 #include <gromacs/do_fit.h>
 #include <gromacs/smalloc.h>
 #include <gromacs/vec.h>
+#include <gromacs/statutil.h>
 
 using namespace std;
 
@@ -76,10 +77,7 @@ namespace PstpFinder
     lambda = gromacs.lambda;
 #endif
     status = gromacs.status;
-    t = gromacs.t;
-    x = gromacs.x;
     xtop = gromacs.xtop;
-    memcpy(box, gromacs.box, sizeof(*box));
     natoms = gromacs.natoms;
     ePBC = gromacs.ePBC;
     if(gromacs.gotTopology)
@@ -159,6 +157,34 @@ namespace PstpFinder
     else
       aps = 0;
 
+    memcpy(&fr, &gromacs.fr, sizeof(t_trxframe));
+    if(gromacs.fr.title != nullptr)
+      fr.title = strdup(gromacs.fr.title);
+
+    if(gromacs.fr.atoms != nullptr)
+      fr.atoms = copy_t_atoms(gromacs.fr.atoms);
+
+    if(gromacs.fr.x != nullptr)
+    {
+      snew(fr.x, gromacs.fr.natoms);
+      memcpy(fr.x, gromacs.fr.x, sizeof(rvec) * gromacs.fr.natoms);
+    }
+
+    if(gromacs.fr.v != nullptr)
+    {
+      snew(fr.v, gromacs.fr.natoms);
+      memcpy(fr.v, gromacs.fr.v, sizeof(rvec) * gromacs.fr.natoms);
+    }
+
+    if(gromacs.fr.f != nullptr)
+    {
+      snew(fr.f, gromacs.fr.natoms);
+      memcpy(fr.f, gromacs.fr.f, sizeof(rvec) * gromacs.fr.natoms);
+    }
+
+    // FIXME: vmdplugin copy
+    memcpy(&fr.vmdplugin, &gromacs.fr.vmdplugin, sizeof(t_gmxvmdplugin));
+
     trjName = gromacs.trjName;
     tprName = gromacs.tprName;
     gotTrajectory = gromacs.gotTrajectory;
@@ -213,8 +239,11 @@ namespace PstpFinder
     if(gotTrajectory)
     {
       output_env_done(oenv);
-      close_trj(status);
+      close_trx(status);
     }
+
+    if(gotTopology)
+      sfree(xtop);
 #endif
     gmx_atomprop_destroy(aps);
   }
@@ -300,7 +329,7 @@ namespace PstpFinder
     }
 
     if(_usePBC)
-      gpbc = gmx_rmpbc_init(&top.idef, ePBC, natoms, box);
+      gpbc = gmx_rmpbc_init(&top.idef, ePBC, natoms, fr.box);
 
     SasAnalysis<Stream> sasAnalysis(nx, *this, session);
     {
@@ -325,16 +354,16 @@ namespace PstpFinder
         break;
       }
       if(_usePBC)
-        gmx_rmpbc(gpbc, natoms, box, x);
+        gmx_rmpbc(gpbc, natoms, fr.box, fr.x);
 
       int nsc_dclm_pdc_result;
       {
         unique_lock<mutex> lock(nsc_dclm_pbc_mutex);
-        nsc_dclm_pdc_result = nsc_dclm_pbc(x, radius, nx, 24, FLAG_ATOM_AREA,
+        nsc_dclm_pdc_result = nsc_dclm_pbc(fr.x, radius, nx, 24, FLAG_ATOM_AREA,
                                            &totarea, &area, &totvolume,
                                            &surfacedots, &nsurfacedots,
                                            index.data(), ePBC,
-                                           _usePBC ? box : nullptr);
+                                           _usePBC ? fr.box : nullptr);
       }
       if(nsc_dclm_pdc_result != 0)
         gmx_fatal(FARGS, "Something wrong in nsc_dclm_pbc");
@@ -343,9 +372,9 @@ namespace PstpFinder
       dgsolv = 0;
       for(int i = 0; i < nx; i++)
       {
-        atoms[i].x = x[index[i]][0];
-        atoms[i].y = x[index[i]][1];
-        atoms[i].z = x[index[i]][2];
+        atoms[i].x = fr.x[index[i]][0];
+        atoms[i].y = fr.x[index[i]][1];
+        atoms[i].z = fr.x[index[i]][2];
         atoms[i].sas = area[i];
 
         if(bDGsol)
@@ -380,7 +409,7 @@ namespace PstpFinder
       gmx_rmpbc_done(gpbc);
 
     output_env_done(oenv);
-    close_trj(status);
+    close_trx(status);
     gotTrajectory = false;
 
     if(bDGsol)
@@ -406,7 +435,7 @@ namespace PstpFinder
     if(not getTopology())
       gmx_fatal(FARGS, "Could not read topology file.\n");
 
-    if(not getTrajectory())
+    if(not gotTrajectory and not getTrajectory())
       gmx_fatal(FARGS, "Could not read coordinates from statusfile.\n");
 
     currentFrame = 0;
@@ -426,11 +455,11 @@ namespace PstpFinder
 
     npdbatoms = top.atoms.nr;
     snew(top.atoms.pdbinfo, npdbatoms);
-    copy_mat(box, pdbbox);
+    copy_mat(fr.box, pdbbox);
 
     sub_xcm(xtop, isize, index.data(), top.atoms.atom, xcm, FALSE);
     if(_usePBC)
-      gpbc = gmx_rmpbc_init(&top.idef, ePBC, natoms, box);
+      gpbc = gmx_rmpbc_init(&top.idef, ePBC, natoms, fr.box);
 
     count = 0;
     do
@@ -438,9 +467,9 @@ namespace PstpFinder
       if(abortFlag)
         break;
       if(_usePBC)
-        gmx_rmpbc(gpbc, natoms, box, x);
-      sub_xcm(x, isize, index.data(), top.atoms.atom, xcm, FALSE);
-      do_fit(natoms, w_rls, xtop, x);
+        gmx_rmpbc(gpbc, natoms, fr.box, fr.x);
+      sub_xcm(fr.x, isize, index.data(), top.atoms.atom, xcm, FALSE);
+      do_fit(natoms, w_rls, xtop, fr.x);
 
       if(abortFlag)
         break;
@@ -449,9 +478,9 @@ namespace PstpFinder
         atom_id aid = index[i];
         for(int d = 0; d < DIM; d++)
         {
-          xav[i * DIM + d] += x[aid][d];
+          xav[i * DIM + d] += fr.x[aid][d];
           for(int m = 0; m < DIM; m++)
-            U[i][d * DIM + m] += x[aid][d] * x[aid][m];
+            U[i][d * DIM + m] += fr.x[aid][d] * fr.x[aid][m];
         }
       }
 
@@ -619,6 +648,7 @@ namespace PstpFinder
 
     sfree(gnames);
     sfree(grps->index);
+    sfree(grps->a);
     sfree(grps);
     delete m_atoms;
 
@@ -632,8 +662,8 @@ namespace PstpFinder
     matrix topbox;
     char title[1024];
 
-#ifdef GMX45    
-    read_tpx(tprName.c_str(), &ir, box, &natoms, 0, 0, 0, &mtop);
+#ifdef GMX45
+    read_tpx(tprName.c_str(), &ir, fr.box, &natoms, 0, 0, 0, &mtop);
 #else
     read_tpx( tprName.c_str(), &step, &t, &lambda, &ir, box, &natoms,
         0, 0, 0, &mtop);
@@ -653,12 +683,15 @@ namespace PstpFinder
       snew(oenv, 1);
       output_env_init_default(oenv);
     }
+    else
+      close_trx(status);
 
     cachedNFrames = 0;
     timeStepCached = 0;
     currentFrame = 0;
 
-    if((natoms = read_first_x(oenv, &status, trjName.c_str(), &t, &x, box))
+    if((natoms = read_first_frame(oenv, &status, trjName.c_str(), &fr,
+                                  TRX_NEED_X))
        == 0)
 #else
     if((natoms =
@@ -690,7 +723,7 @@ namespace PstpFinder
     bool out;
 
 #ifdef GMX45
-    out = read_next_x(oenv, status, &t, natoms, x, box);
+    out = read_next_frame(oenv, status, &fr);
 #else
     out = read_next_x(status, &t, natoms, x, box);
 #endif

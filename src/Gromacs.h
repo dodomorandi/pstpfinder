@@ -135,11 +135,10 @@ namespace PstpFinder
       int status, step;
       real lambda;
 #endif
-      real t;
-      rvec *x, *xtop;
-      matrix box;
+      rvec *xtop;
       int natoms, ePBC;
       t_topology top;
+      t_trxframe fr;
 
       gmx_atomprop_t aps;
       string trjName, tprName;
