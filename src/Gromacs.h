@@ -142,7 +142,7 @@ namespace PstpFinder
 
       gmx_atomprop_t aps;
       string trjName, tprName;
-      bool gotTrajectory, gotTopology;
+      bool gotTrajectory, gotTopology, readyToGetX;
       float solSize;
       string sasTarget;
       gmx_mtop_t mtop;

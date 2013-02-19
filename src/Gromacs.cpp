@@ -189,6 +189,7 @@ namespace PstpFinder
     tprName = gromacs.tprName;
     gotTrajectory = gromacs.gotTrajectory;
     gotTopology = gromacs.gotTopology;
+    readyToGetX = gromacs.readyToGetX;
     solSize = gromacs.solSize;
     sasTarget = gromacs.sasTarget;
     mtop = gromacs.mtop;
@@ -217,6 +218,7 @@ namespace PstpFinder
     sasTarget = "Protein";
     gotTopology = false;
     gotTrajectory = false;
+    readyToGetX = false;
     currentFrame = 0;
     cachedNFrames = 0;
     _begin = -1;
@@ -699,10 +701,14 @@ namespace PstpFinder
 #endif
     {
       output_env_done(oenv);
+      readyToGetX = false;
       return gotTrajectory = false;
     }
     else
+    {
+      readyToGetX = true;
       return gotTrajectory = true;
+    }
   }
 
   string
@@ -722,6 +728,10 @@ namespace PstpFinder
   {
     bool out;
 
+    if(not gotTrajectory or not readyToGetX)
+      if(not getTrajectory())
+        throw;
+
 #ifdef GMX45
     out = read_next_frame(oenv, status, &fr);
 #else
@@ -729,10 +739,7 @@ namespace PstpFinder
 #endif
 
     if(not out)
-    {
-      close_trx(status);
-      getTrajectory();
-    }
+      readyToGetX = false;
 
     return out;
   }
