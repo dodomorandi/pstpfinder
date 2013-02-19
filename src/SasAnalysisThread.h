@@ -225,7 +225,7 @@ namespace PstpFinder
           return;
 
         Base::parent->bufferMutex.lock();
-        while(Base::parent->bufferCount < Base::parent->bufferMax and not Base::isStopped)
+        while(Base::parent->bufferCount < Base::parent->bufferMax - 1 and not Base::isStopped)
         {
           unique_lock<mutex> lock(Base::wakeMutex);
           Base::parent->bufferMutex.unlock();
