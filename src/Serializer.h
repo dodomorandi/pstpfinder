@@ -34,6 +34,7 @@
 #include <functional>
 #include <algorithm>
 #include <vector>
+#include <sstream>
 
 using namespace std;
 
