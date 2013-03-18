@@ -881,6 +881,46 @@ namespace PstpFinder
     return _usePBC = value;
   }
 
+  const matrix&
+  Gromacs::getBox()
+  {
+    if(not gotTopology and not getTopology())
+      throw;
+
+    return fr.box;
+  }
+
+  void
+  Gromacs::loadTrajectoryAndTopology()
+  {
+    if(not gotTrajectory)
+      getTrajectory();
+
+    if(not gotTopology)
+      getTopology();
+  }
+
+  vector<AtomInfo>
+  Gromacs::getGroupInfo(const string& groupName) const
+  {
+    vector<AtomInfo> atomsInfo;
+    vector<atom_id> group = getGroup(groupName);
+    atomsInfo.reserve(group.size());
+
+    for(atom_id id : group)
+    {
+      AtomInfo info;
+      info.element = **top.atoms.atomname[id];
+      info.index = id;
+      gmx_atomprop_query(aps, epropVDW,
+                         *(top.atoms.resinfo[top.atoms.atom[id].resind].name),
+                         *(top.atoms.atomname[id]), &info.radius);
+      atomsInfo.push_back(move(info));
+    }
+
+    return atomsInfo;
+  }
+
   template void Gromacs::__calculateSas(Session<fstream>&);
   template void Gromacs::__calculateSas(Session<ofstream>&);
 

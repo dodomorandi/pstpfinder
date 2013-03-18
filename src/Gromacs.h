@@ -28,6 +28,7 @@
 #endif
 
 #include "Protein.h"
+#include "AtomInfo.h"
 
 #include <string>
 #include <thread>
@@ -126,6 +127,10 @@ namespace PstpFinder
       bool isAborting() const;
       bool usePBC() const noexcept;
       bool usePBC(bool value) noexcept;
+      const matrix& getBox();
+      void loadTrajectoryAndTopology();
+      vector<AtomInfo> getGroupInfo(const string& groupName = "Protein") const;
+
     private:
 #ifdef GMX45
       output_env_t oenv;
