@@ -31,6 +31,7 @@
 #include "Session.h"
 #include "SasAtom.h"
 #include "AtomInfo.h"
+#include "Viewer3D.h"
 
 using namespace std;
 
@@ -68,8 +69,12 @@ int main(int argc, char* argv[])
   unsigned long atomsSize = gromacs.getGroup("Protein").size();
   vector<PstpFinder::AtomInfo> atomsInfo = gromacs.getGroupInfo();
   // Add water radius to atoms radius
+  /*
   for(PstpFinder::AtomInfo& info : atomsInfo)
     info.radius += 0.14;
+  */
+
+  PstpFinder::Viewer3D viewer(atomsInfo);
 
   unsigned long frameIndex = 0;
   PstpFinder::SasAtom* sasAtom;
@@ -77,6 +82,7 @@ int main(int argc, char* argv[])
   while(sasAtom != nullptr)
   {
     unsigned long atomIndex = 0;
+    viewer.setAtoms(sasAtom);
     PstpFinder::SasAtom* atomPtr = sasAtom;
     for(; atomIndex < atomsSize; atomIndex++, atomPtr++)
     {
@@ -88,7 +94,6 @@ int main(int argc, char* argv[])
 
       list<PstpFinder::SpaceCube*> involvedCubes = space.getInvolvedCubes(
           atomPtr->x, atomPtr->y, atomPtr->z, radius);
-      unordered_map<array<unsigned, 3>, float> distance2Map;
       list<PstpFinder::SpaceCube*> cubesNotInvolved;
 
       for(PstpFinder::SpaceCube* cube : involvedCubes)
@@ -110,16 +115,18 @@ int main(int argc, char* argv[])
               *indexIter += *vertexIter;
           }
 
-          array<float, 3> point =
-            {
-              { PstpFinder::cubesize * index[0], PstpFinder::cubesize
-                  * index[1],
-                PstpFinder::cubesize * index[2] } };
+          array<float, 3> point = space.getPointCoordinatesAtIndex(index);
           distance2 = pow(atomPtr->x - point[0], 2)
               + pow(atomPtr->y - point[1], 2) + pow(atomPtr->z - point[2], 2);
-
           if(distance2 <= radius2)
           {
+            if(not cube->flags.test(vertexIndex) or distance2
+                < cube->verticesDistance[vertexIndex].second)
+            {
+              cube->verticesDistance[vertexIndex].first = atomIndex;
+              cube->verticesDistance[vertexIndex].second = distance2;
+            }
+
             cube->flags.set(vertexIndex, true);
             cubeInvolved = true;
           }
@@ -149,13 +156,13 @@ int main(int argc, char* argv[])
       }
     }
 
-    cout << "cmd.select(\"frame_" << frameIndex + 1 << "\", \"ID ";
-    for(unsigned long index : involvedAtoms)
-      cout << index + 1 << "+";
-    cout << "\", state=" << frameIndex + 1 << ")" << endl;
+    viewer.setSpace(space);
 
     space.clearFlags();
     frameIndex++;
+    break;
     sasAnalysis >> sasAtom;
   }
+
+  viewer.run();
 }

@@ -18,9 +18,6 @@ AX_CXX_CHECK_STD
 CXXFLAGS="$OLD_CXXFLAGS"
 CPPFLAGS="$OLD_CPPFLAGS"
 CFLAGS="$OLD_CFLAGS"
-AC_SUBST([CPPFLAGS])
-AC_SUBST([CXXFLAGS])
-AC_SUBST([CFLAGS])
 
 # Check for endianness
 AX_ENDIAN
@@ -40,17 +37,11 @@ PKG_CHECK_MODULES([GTKMM30], [gtkmm-3.0], [
    CFLAGS="$CFLAGS $GTKMM30_CFLAGS"
    CXXFLAGS="$CXXFLAGS $GTKMM30_CFLAGS"
    LIBS="$LIBS $GTKMM30_LIBS"
-   AC_SUBST([CFLAGS])
-   AC_SUBST([CXXFLAGS])
-   AC_SUBST([LIBS])
    AC_DEFINE([GTKMM_MAJOR], [3], "GtkMM major version")
 ], [PKG_CHECK_MODULES([GTKMM24], [gtkmm-2.4], [
       CFLAGS="$CFLAGS $GTKMM24_CFLAGS"
       CXXFLAGS="$CXXFLAGS $GTKMM24_CFLAGS"
       LIBS="$LIBS $GTKMM24_LIBS"
-      AC_SUBST([CFLAGS])
-      AC_SUBST([CXXFLAGS])
-      AC_SUBST([LIBS])
       AC_DEFINE([GTKMM_MAJOR], [2], "GtkMM major version")
    ])
 ])
@@ -59,9 +50,6 @@ PKG_CHECK_MODULES([PYTHON], [python >= 2.6], [
    CFLAGS="$CFLAGS $PYTHON_CFLAGS"
    CXXFLAGS="$CXXFLAGS $PYTHON_CFLAGS"
    LIBS="$LIBS $PYTHON_LIBS"
-   AC_SUBST([CFLAGS])
-   AC_SUBST([CXXFLAGS])
-   AC_SUBST([LIBS])
    AC_DEFINE([HAVE_PYTHON], [1], "Python")
    HAVE_PYTHON=1
 ], [
@@ -73,31 +61,53 @@ if test $HAVE_PYTHON -eq 1; then
    AX_PYTHON_MODULE([sadic])
    if test "$HAVE_PYMOD_SADIC" = "yes"; then
       AC_DEFINE([HAVE_PYMOD_SADIC], [1], "Sadic Python module")
+      HAVE_PYMOD_SADIC=1
    else
       AC_DEFINE([HAVE_PYMOD_SADIC], [0], "Sadic Python module")
+      HAVE_PYMOD_SADIC=0
    fi
 else
    AC_DEFINE([HAVE_PYMOD_SADIC], [0], "Sadic Python module")
+   HAVE_PYMOD_SADIC=0
 fi
 
 BOOST_REQUIRE([1.37])
 BOOST_SYSTEM
-if test $HAVE_PYTHON -eq 1; then
+if test $HAVE_PYTHON -eq 1 -a $HAVE_PYMOD_SADIC -eq 1; then
    BOOST_PYTHON
 fi
 LIBS="$LIBS $BOOST_SYSTEM_LIBS $BOOST_PYTHON_LIBS"
-AC_SUBST([LIBS])
+CPPFLAGS="$CPPFLAGS $BOOST_CPPFLAGS"
 
 # Checks for header files.
-
-CPPFLAGS="$CPPFLAGS $BOOST_CPPFLAGS"
-AC_SUBST([CPPFLAGS])
+AC_CHECK_HEADER([GL/gl.h])
+AC_CHECK_HEADER([GL/glu.h])
+AC_CHECK_HEADER([GL/glfw.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AX_CONF_ARGS
 AX_ENABLE_WARNINGS
 
 # Checks for library functions.
+AC_CHECK_LIB([GL], [glClear])
+AC_CHECK_LIB([GLU], [gluBeginCurve])
+AC_CHECK_LIB([glfw], [glfwInit])
+
+# Checks if everything for GL context is ok
+if test x$ac_cv_header_GL_gl_h = xyes -a x$ac_cv_header_GL_glu_h = xyes -a \
+    x$ac_cv_header_GL_glfw_h = xyes -a x$ac_cv_lib_GL_glClear = xyes -a \
+    x$ac_cv_lib_GLU_gluBeginCurve = xyes -a x$ac_cv_lib_glfw_glfwInit  = xyes
+then
+  GL_CONTEXT_OK=1
+else
+  GL_CONTEXT_OK=0
+fi
+
+# Define EXTRAS for bin_PROGRAMS
+if test $GL_CONTEXT_OK -eq 1; then
+  EXTRAS=marching_cubes
+fi
+AC_SUBST([EXTRAS])
 
 AC_CONFIG_FILES([Makefile
                  src/Makefile])
@@ -105,6 +115,13 @@ AC_OUTPUT
 
 # Write out status
 echo
+echo -n "Compiling marching_cubes: "
+if test $GL_CONTEXT_OK -eq 1; then
+   echo "yes"
+else
+   echo "no (missing GL/GLU/GLFW package)"
+fi
+
 echo -n "Python support: "
 if test $HAVE_PYTHON -eq 1; then
    echo "yes"

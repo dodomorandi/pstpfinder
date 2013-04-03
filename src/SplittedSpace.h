@@ -44,7 +44,11 @@ namespace PstpFinder
       list<SpaceCube*>
         getInvolvedCubes(float x, float y, float z, float radius);
       vector<SpaceCube>& getCubes() noexcept;
+      const vector<SpaceCube>& getCubes() const noexcept;
       void clearFlags() noexcept;
+      /* Can also be used for OOB indices. However be careful! */
+      array<float, 3>
+        getPointCoordinatesAtIndex(const array<unsigned, 3>& index) const;
 
     private:
       const array<float, 3> size;

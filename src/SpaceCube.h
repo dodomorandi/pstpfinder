@@ -23,6 +23,7 @@
 #include <array>
 #include <bitset>
 #include <list>
+#include <utility>
 
 using namespace std;
 
@@ -33,6 +34,7 @@ namespace PstpFinder
     public:
       const array<float, 3> base;
       bitset<8> flags;
+      array<pair<unsigned, float>, 8> verticesDistance;
       list<unsigned long> involvedAtomsIndices;
 
       SpaceCube(float baseX, float baseY, float baseZ) noexcept :

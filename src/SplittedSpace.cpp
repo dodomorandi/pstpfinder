@@ -68,7 +68,7 @@ SplittedSpace::getNCubes(float sizeX, float sizeY, float sizeZ, float cubeSize)
   nCubes[1] = sizeY / cubeSize;
   nCubes[2] = sizeZ / cubeSize;
 
-  if(cubeSize * nCubes[0]< sizeX)
+  if(cubeSize * nCubes[0] < sizeX)
     nCubes[0]++;
   if(cubeSize * nCubes[1] < sizeY)
     nCubes[1]++;
@@ -87,16 +87,17 @@ SplittedSpace::operator()(unsigned xIndex, unsigned yIndex, unsigned zIndex)
 const SpaceCube&
 SplittedSpace::cubeAt(float x, float y, float z)
 {
-  return operator()(x / cubeSize, y / cubeSize, z / cubeSize);
+  return operator()(x / cubeSize, y / cubeSize,
+                    z / cubeSize);
 }
 
 array<unsigned, 3>
 SplittedSpace::cubeIndexAt(float x, float y, float z)
 {
   return array<unsigned, 3>
-    {
-      { static_cast<unsigned>(x / cubeSize),
-        static_cast<unsigned>(y / cubeSize), static_cast<unsigned>(z / cubeSize) } };
+    {{ static_cast<unsigned>(x / cubeSize),
+       static_cast<unsigned>(y / cubeSize),
+       static_cast<unsigned>(z / cubeSize) }};
 }
 
 list<SpaceCube*>
@@ -147,6 +148,12 @@ SplittedSpace::getCubes() noexcept
   return spaceCubes;
 }
 
+const vector<SpaceCube>&
+SplittedSpace::getCubes() const noexcept
+{
+  return spaceCubes;
+}
+
 void
 SplittedSpace::clearFlags() noexcept
 {
@@ -155,4 +162,14 @@ SplittedSpace::clearFlags() noexcept
     cube.flags.reset();
     cube.involvedAtomsIndices.clear();
   }
+}
+
+array<float, 3>
+SplittedSpace::getPointCoordinatesAtIndex(const array<unsigned, 3>& index) const
+{
+  array<float, 3> point;
+  point[0] = cubeSize * index[0];
+  point[1] = cubeSize * index[1];
+  point[2] = cubeSize * index[2];
+  return point;
 }
