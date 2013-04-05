@@ -242,14 +242,16 @@ namespace PstpFinder
       if(nsc_dclm_pdc_result != 0)
         gmx_fatal(FARGS, "Something wrong in nsc_dclm_pbc");
 
-      SasAtom atoms[nx];
+      vector<SasAtom> atoms;
       dgsolv = 0;
       for(int i = 0; i < nx; i++)
       {
-        atoms[i].x = fr.x[index[i]][0];
-        atoms[i].y = fr.x[index[i]][1];
-        atoms[i].z = fr.x[index[i]][2];
-        atoms[i].sas = area[i];
+        SasAtom tmpAtom;
+        tmpAtom.x = fr.x[index[i]][0];
+        tmpAtom.y = fr.x[index[i]][1];
+        tmpAtom.z = fr.x[index[i]][2];
+        tmpAtom.sas = area[i];
+        atoms.push_back(move(tmpAtom));
 
         if(bDGsol)
           dgsolv += area[i] * dgs_factor[i];
@@ -261,7 +263,7 @@ namespace PstpFinder
       }
 
       operationMutex.lock();
-      sasAnalysis << atoms;
+      sasAnalysis.push_back(atoms);
       currentFrame++;
       wakeCondition.notify_all();
       operationMutex.unlock();

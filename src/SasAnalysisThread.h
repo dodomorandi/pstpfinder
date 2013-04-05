@@ -23,6 +23,8 @@
 #include "SasAnalysis.h"
 
 #include <thread>
+#include <mutex>
+#include <condition_variable>
 
 using namespace std;
 
@@ -84,12 +86,6 @@ namespace PstpFinder
 
       if(parent->save())
       {
-        vector<SasAtom*>& curChunk = parent->chunks.front();
-        for(std::vector<SasAtom*>::iterator i = curChunk.begin();
-            i < curChunk.end(); i++)
-          delete[] *i;
-        curChunk.clear();
-
         parent->chunks.pop_front();
         parent->bufferCount++;
         parent->bufferCountCondition.notify_all();

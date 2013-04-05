@@ -18,7 +18,6 @@
  */
 
 #include "Viewer3D.h"
-#include "marching_cubes.h"
 
 #include <iostream>
 #include <tuple>
@@ -28,12 +27,11 @@
 #include <GL/glfw.h>
 
 using namespace std;
-using namespace PstpFinder;
+using namespace PstpFinder::MarchingCubes;
 
-Viewer3D::Viewer3D(const vector<PstpFinder::AtomInfo>& atomsInfo) :
+Viewer3D::Viewer3D() :
     boundariesSet(false)
 {
-  this->atomsInfo = atomsInfo;
   glfwInit();
 }
 
@@ -43,45 +41,43 @@ Viewer3D::~Viewer3D()
 }
 
 void
-Viewer3D::setAtoms(const SasAtom* atoms)
+Viewer3D::setPointsRadii(const vector<PointRadius>& points)
 {
-  unsigned nAtoms = atomsInfo.size();
-  this->atoms.clear();
+  this->points.clear();
 
-  const SasAtom* atomPtr = atoms;
   if(not boundariesSet)
   {
-    boundaries = {{ {{ atomPtr->x, atomPtr->y, atomPtr->z }},
-                    {{ atomPtr->x, atomPtr->y, atomPtr->z }} }};
+    boundaries = {{ {{ points[0].x, points[0].y, points[0].z }},
+                    {{ points[0].x, points[0].y, points[0].z }} }};
     boundariesSet = true;
   }
-  for(unsigned atomIndex = 0; atomIndex < nAtoms; atomIndex++, atomPtr++)
+  for(const PointRadius& point : points)
   {
-    this->atoms.push_back(*atomPtr);
-    if(atomPtr->x < boundaries[0][0])
-      boundaries[0][0] = atomPtr->x;
-    if(atomPtr->x > boundaries[1][0])
-      boundaries[1][0] = atomPtr->x;
-    if(atomPtr->y < boundaries[0][1])
-      boundaries[0][1] = atomPtr->y;
-    if(atomPtr->y > boundaries[1][1])
-      boundaries[1][1] = atomPtr->y;
-    if(atomPtr->z < boundaries[0][2])
-      boundaries[0][2] = atomPtr->z;
-    if(atomPtr->z > boundaries[1][2])
-      boundaries[1][2] = atomPtr->z;
+    this->points.push_back(point);
+    if(point.x < boundaries[0][0])
+      boundaries[0][0] = point.x;
+    if(point.x > boundaries[1][0])
+      boundaries[1][0] = point.x;
+    if(point.y < boundaries[0][1])
+      boundaries[0][1] = point.y;
+    if(point.y > boundaries[1][1])
+      boundaries[1][1] = point.y;
+    if(point.z < boundaries[0][2])
+      boundaries[0][2] = point.z;
+    if(point.z > boundaries[1][2])
+      boundaries[1][2] = point.z;
   }
 }
 
 void
 Viewer3D::setSpace(const SplittedSpace& space)
 {
-  list<array<array<GLfloat, 3>, 2>> points;
+  list<array<array<GLfloat, 3>, 2>> meshPoints;
   for(const SpaceCube& cube : space.getCubes())
   {
-    const bitset<12>& flags = cubeEdgeFlags[cube.flags.to_ulong()];
-    const array<int, 15>& triangleEdgesIndices = triangleConnectionTable[cube.flags
-        .to_ulong()];
+    const bitset<12>& flags = DataSet::cubeEdgeFlags[cube.flags.to_ulong()];
+    const array<int, 15>& triangleEdgesIndices =
+        DataSet::triangleConnectionTable[cube.flags.to_ulong()];
     array<tuple<bool, unsigned, float>, 8> distanceCache;
     for(auto cache : distanceCache)
       get<0>(cache) = false;
@@ -99,55 +95,59 @@ Viewer3D::setSpace(const SplittedSpace& space)
         if(edgeIndex == -1)
           break;
 
-        const array<unsigned, 2>& vertexIndices = edgesVertices[edgeIndex];
-        unsigned atomIndex;
+        const array<unsigned, 2>& vertexIndices =
+            DataSet::edgesVertices[edgeIndex];
+        unsigned pointIndex;
         array<float, 2> distances2;
         array<float, 2> distances;
         array<array<float, 3>, 2> positions;
-        Atom atom;
+        PointRadius point;
 
         for(unsigned i = 0; i < 2; i++)
         {
-          positions[i][0] = cube.x() + cubesize * vertices[vertexIndices[i]][0];
-          positions[i][1] = cube.y() + cubesize * vertices[vertexIndices[i]][1];
-          positions[i][2] = cube.z() + cubesize * vertices[vertexIndices[i]][2];
+          positions[i][0] = cube.x()
+              + space.cubeEdgeSize * DataSet::vertices[vertexIndices[i]][0];
+          positions[i][1] = cube.y()
+              + space.cubeEdgeSize * DataSet::vertices[vertexIndices[i]][1];
+          positions[i][2] = cube.z()
+              + space.cubeEdgeSize * DataSet::vertices[vertexIndices[i]][2];
         }
 
         if(cube.flags[vertexIndices[0]])
         {
-          tie(atomIndex, distances2[0]) =
+          tie(pointIndex, distances2[0]) =
               cube.verticesDistance[vertexIndices[0]];
-          atom = atoms[atomIndex];
-          distances2[1] = pow(atom.x - positions[1][0], 2)
-                  + pow(atom.y - positions[1][1], 2)
-                  + pow(atom.z - positions[1][2], 2);
+          point = points[pointIndex];
+          distances2[1] = pow(point.x - positions[1][0], 2)
+                  + pow(point.y - positions[1][1], 2)
+                  + pow(point.z - positions[1][2], 2);
         }
         else
         {
-          tie(atomIndex, distances2[1]) =
+          tie(pointIndex, distances2[1]) =
               cube.verticesDistance[vertexIndices[1]];
-          atom = atoms[atomIndex];
-          distances2[0] = pow(atom.x - positions[0][0], 2)
-              + pow(atom.y - positions[0][1], 2)
-              + pow(atom.z - positions[0][2], 2);
+          point = points[pointIndex];
+          distances2[0] = pow(point.x - positions[0][0], 2)
+              + pow(point.y - positions[0][1], 2)
+              + pow(point.z - positions[0][2], 2);
         }
 
         float offset;
-        distances = {{ sqrt(distances[0]), sqrt(distances[1]) }};
+        distances = {{ sqrt(distances2[0]), sqrt(distances2[1]) }};
         float delta = distances[1] - distances[0];
-        if(delta < 0.00001)
-          offset = cubesize / 2;
+        if(abs(delta) < 0.00001)
+          offset =  0.5;
         else
-          offset = (atomsInfo[atomIndex].radius - distances[0])/delta;
+          offset = (point.radius - distances[0])/delta;
 
         array<array<GLfloat, 3>, 2> pointNNormal;
         pointNNormal[0] = array<GLfloat, 3>
-          {{ positions[0][0] + offset * edgesDirections[edgeIndex][0],
-             positions[0][1] + offset * edgesDirections[edgeIndex][1],
-             positions[0][2] + offset * edgesDirections[edgeIndex][2] }};
+          {{ positions[0][0] + space.cubeEdgeSize * offset * DataSet::edgesDirections[edgeIndex][0],
+             positions[0][1] + space.cubeEdgeSize * offset * DataSet::edgesDirections[edgeIndex][1],
+             positions[0][2] + space.cubeEdgeSize * offset * DataSet::edgesDirections[edgeIndex][2] }};
         pointNNormal[1] = array<GLfloat, 3>
-          {{ pointNNormal[0][0] - atom.x, pointNNormal[0][1] - atom.y,
-             pointNNormal[0][2] - atom.z }};
+          {{ pointNNormal[0][0] - point.x, pointNNormal[0][1] - point.y,
+             pointNNormal[0][2] - point.z }};
 
         float normFactor = sqrt(
             pow(pointNNormal[1][0], 2) + pow(pointNNormal[1][1], 2)
@@ -158,12 +158,12 @@ Viewer3D::setSpace(const SplittedSpace& space)
             {{ pointNNormal[1][0] / normFactor, pointNNormal[1][1] / normFactor,
                 pointNNormal[1][2] / normFactor }};
 
-        points.push_back(pointNNormal);
+        meshPoints.push_back(pointNNormal);
       }
     }
   }
 
-  frames.push_back(points);
+  frames.push_back(meshPoints);
 }
 
 void

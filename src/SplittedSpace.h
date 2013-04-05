@@ -30,37 +30,41 @@ using namespace std;
 
 namespace PstpFinder
 {
-  class SplittedSpace
+  namespace MarchingCubes
   {
-    public:
-      SplittedSpace(float sizeX, float sizeY, float sizeZ, float cubeEdge);
-      SplittedSpace(float sizeX, float sizeY, float sizeZ,
+    class SplittedSpace
+    {
+      public:
+        SplittedSpace(float sizeX, float sizeY, float sizeZ, float cubeEdge);
+        SplittedSpace(float sizeX, float sizeY, float sizeZ,
+                      unsigned cubesPerDimension);
+        inline SpaceCube&
+          operator()(unsigned xIndex, unsigned yIndex, unsigned zIndex);
+        const SpaceCube& cubeAt(float x, float y, float z);
+        array<unsigned, 3>
+          cubeIndexAt(float x, float y, float z);
+        list<SpaceCube*>
+          getInvolvedCubes(float x, float y, float z, float radius);
+        vector<SpaceCube>& getCubes() noexcept;
+        const vector<SpaceCube>& getCubes() const noexcept;
+        void clear() noexcept;
+        /* Can also be used for OOB indices. However be careful! */
+        array<float, 3>
+          getPointCoordinatesAtIndex(const array<unsigned, 3>& index) const;
+
+        const float cubeEdgeSize;
+
+      private:
+        const array<float, 3> size;
+        const array<unsigned, 3> nCubes;
+        vector<SpaceCube> spaceCubes;
+
+        static float
+          getCubeSize(float sizeX, float sizeY, float sizeZ,
                     unsigned cubesPerDimension);
-      inline SpaceCube&
-        operator()(unsigned xIndex, unsigned yIndex, unsigned zIndex);
-      const SpaceCube& cubeAt(float x, float y, float z);
-      array<unsigned, 3>
-        cubeIndexAt(float x, float y, float z);
-      list<SpaceCube*>
-        getInvolvedCubes(float x, float y, float z, float radius);
-      vector<SpaceCube>& getCubes() noexcept;
-      const vector<SpaceCube>& getCubes() const noexcept;
-      void clearFlags() noexcept;
-      /* Can also be used for OOB indices. However be careful! */
-      array<float, 3>
-        getPointCoordinatesAtIndex(const array<unsigned, 3>& index) const;
-
-    private:
-      const array<float, 3> size;
-      const float cubeSize;
-      const array<unsigned, 3> nCubes;
-      vector<SpaceCube> spaceCubes;
-
-      static float
-        getCubeSize(float sizeX, float sizeY, float sizeZ,
-                  unsigned cubesPerDimension);
-      static array<unsigned, 3>
-        getNCubes(float sizeX, float sizeY, float sizeZ, float cubeSize);
-  };
+        static array<unsigned, 3>
+          getNCubes(float sizeX, float sizeY, float sizeZ, float cubeSize);
+    };
+  } /* namespace MarchingCubes */
 } /* namespace PstpFinder */
 #endif /* SPLITTEDSPACE_H_ */

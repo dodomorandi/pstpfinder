@@ -20,13 +20,13 @@
 #include "SplittedSpace.h"
 
 using namespace std;
-using namespace PstpFinder;
+using namespace PstpFinder::MarchingCubes;
 
 SplittedSpace::SplittedSpace(float sizeX, float sizeY, float sizeZ,
                              float cubeEdge) :
+    cubeEdgeSize(cubeEdge),
     size({{sizeX, sizeY, sizeZ}}),
-    cubeSize(cubeEdge),
-    nCubes(getNCubes(sizeX, sizeY, sizeZ, cubeSize))
+    nCubes(getNCubes(sizeX, sizeY, sizeZ, cubeEdgeSize))
 {
   spaceCubes.reserve(nCubes[0] * nCubes[1] * nCubes[2]);
   for(unsigned z = 0; z < nCubes[2]; z++)
@@ -34,7 +34,7 @@ SplittedSpace::SplittedSpace(float sizeX, float sizeY, float sizeZ,
     for(unsigned y = 0; y < nCubes[1]; y++)
     {
       for(unsigned x = 0; x < nCubes[0]; x++)
-        spaceCubes.emplace_back(cubeSize * x, cubeSize * y, cubeSize * z);
+        spaceCubes.emplace_back(cubeEdgeSize * x, cubeEdgeSize * y, cubeEdgeSize * z);
     }
   }
 }
@@ -60,19 +60,19 @@ SplittedSpace::getCubeSize(float sizeX, float sizeY, float sizeZ,
 }
 
 array<unsigned, 3>
-SplittedSpace::getNCubes(float sizeX, float sizeY, float sizeZ, float cubeSize)
+SplittedSpace::getNCubes(float sizeX, float sizeY, float sizeZ, float cubeEdgeSize)
 {
   array<unsigned, 3> nCubes;
 
-  nCubes[0] = sizeX / cubeSize;
-  nCubes[1] = sizeY / cubeSize;
-  nCubes[2] = sizeZ / cubeSize;
+  nCubes[0] = sizeX / cubeEdgeSize;
+  nCubes[1] = sizeY / cubeEdgeSize;
+  nCubes[2] = sizeZ / cubeEdgeSize;
 
-  if(cubeSize * nCubes[0] < sizeX)
+  if(cubeEdgeSize * nCubes[0] < sizeX)
     nCubes[0]++;
-  if(cubeSize * nCubes[1] < sizeY)
+  if(cubeEdgeSize * nCubes[1] < sizeY)
     nCubes[1]++;
-  if(cubeSize * nCubes[2] < sizeZ)
+  if(cubeEdgeSize * nCubes[2] < sizeZ)
     nCubes[2]++;
 
   return nCubes;
@@ -87,17 +87,17 @@ SplittedSpace::operator()(unsigned xIndex, unsigned yIndex, unsigned zIndex)
 const SpaceCube&
 SplittedSpace::cubeAt(float x, float y, float z)
 {
-  return operator()(x / cubeSize, y / cubeSize,
-                    z / cubeSize);
+  return operator()(x / cubeEdgeSize, y / cubeEdgeSize,
+                    z / cubeEdgeSize);
 }
 
 array<unsigned, 3>
 SplittedSpace::cubeIndexAt(float x, float y, float z)
 {
   return array<unsigned, 3>
-    {{ static_cast<unsigned>(x / cubeSize),
-       static_cast<unsigned>(y / cubeSize),
-       static_cast<unsigned>(z / cubeSize) }};
+    {{ static_cast<unsigned>(x / cubeEdgeSize),
+       static_cast<unsigned>(y / cubeEdgeSize),
+       static_cast<unsigned>(z / cubeEdgeSize) }};
 }
 
 list<SpaceCube*>
@@ -106,8 +106,8 @@ SplittedSpace::getInvolvedCubes(float x, float y, float z, float radius)
   list<SpaceCube*> cubesList;
   array<unsigned, 3> minIndices, maxIndices, centralIndex;
 
-  unsigned discreteRadius = radius / cubeSize;
-  if(cubeSize * discreteRadius < radius)
+  unsigned discreteRadius = radius / cubeEdgeSize;
+  if(cubeEdgeSize * discreteRadius < radius)
     discreteRadius++;
 
   centralIndex = cubeIndexAt(x, y, z);
@@ -155,12 +155,12 @@ SplittedSpace::getCubes() const noexcept
 }
 
 void
-SplittedSpace::clearFlags() noexcept
+SplittedSpace::clear() noexcept
 {
   for(SpaceCube& cube : spaceCubes)
   {
     cube.flags.reset();
-    cube.involvedAtomsIndices.clear();
+    cube.involvedPointsIndices.clear();
   }
 }
 
@@ -168,8 +168,8 @@ array<float, 3>
 SplittedSpace::getPointCoordinatesAtIndex(const array<unsigned, 3>& index) const
 {
   array<float, 3> point;
-  point[0] = cubeSize * index[0];
-  point[1] = cubeSize * index[1];
-  point[2] = cubeSize * index[2];
+  point[0] = cubeEdgeSize * index[0];
+  point[1] = cubeEdgeSize * index[1];
+  point[2] = cubeEdgeSize * index[2];
   return point;
 }

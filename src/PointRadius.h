@@ -17,13 +17,8 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef SPACECUBE_H_
-#define SPACECUBE_H_
-
-#include <array>
-#include <bitset>
-#include <list>
-#include <utility>
+#ifndef POINTRADIUS_H_
+#define POINTRADIUS_H_
 
 using namespace std;
 
@@ -31,20 +26,16 @@ namespace PstpFinder
 {
   namespace MarchingCubes
   {
-    class SpaceCube
+    struct PointRadius
     {
-      public:
-        const array<float, 3> base;
-        bitset<8> flags;
-        array<pair<unsigned, float>, 8> verticesDistance;
-        list<unsigned long> involvedPointsIndices;
+        PointRadius() = default;
+        template<typename AtomType>
+        PointRadius(const AtomType& atom, float radius) :
+          x(atom.x), y(atom.y), z(atom.z), radius(radius) {}
 
-        SpaceCube(float baseX, float baseY, float baseZ) noexcept :
-            base({{baseX, baseY, baseZ}}) {}
-        inline float x() const noexcept { return base[0]; }
-        inline float y() const noexcept { return base[1]; }
-        inline float z() const noexcept { return base[2]; }
+        float x, y, z, radius;
     };
-  } /* namespace MarchingCubes */
-} /* namespace PstpFinder */
-#endif /* SPACECUBE_H_ */
+  }
+}
+
+#endif /* POINTRADIUS_H_ */

@@ -24,6 +24,8 @@
 #include "SasAtom.h"
 #include "AtomInfo.h"
 #include "Atom.h"
+#include "MarchingCubes.h"
+#include "PointRadius.h"
 
 #include <array>
 #include <list>
@@ -33,31 +35,33 @@
 
 namespace PstpFinder
 {
-  class Viewer3D
+  namespace MarchingCubes
   {
-    public:
-      Viewer3D(const vector<PstpFinder::AtomInfo>& atomsInfo);
-      ~Viewer3D();
-      void run();
-      void setAtoms(const SasAtom* atoms);
-      void setSpace(const SplittedSpace& space);
+    class Viewer3D
+    {
+      public:
+        Viewer3D();
+        ~Viewer3D();
+        void run();
+        void setPointsRadii(const vector<PointRadius>& points);
+        void setSpace(const SplittedSpace& space);
 
-    private:
-      int window;
-      vector<AtomInfo> atomsInfo;
-      vector<Atom> atoms;
-      // A list of frame. Every frame has got lots of vertex info. Every vertex
-      // info is compound of two triplet of floats. The first triplet represents
-      // the coordinates, the other the normal vector. Each triplet is simply
-      // x, y and z.
-      list<list<array<array<GLfloat, 3>, 2>>> frames;
-      array<int, 2> lastMousePosition;
-      array<float, 2> rotationXZ;
-      array<array<float, 3>, 2> boundaries;
-      bool boundariesSet;
+      private:
+        int window;
+        vector<PointRadius> points;
+        // A list of frame. Every frame has got lots of vertex info. Every vertex
+        // info is compound of two triplet of floats. The first triplet represents
+        // the coordinates, the other the normal vector. Each triplet is simply
+        // x, y and z.
+        list<list<array<array<GLfloat, 3>, 2>>> frames;
+        array<int, 2> lastMousePosition;
+        array<float, 2> rotationXZ;
+        array<array<float, 3>, 2> boundaries;
+        bool boundariesSet;
 
-      void init();
-      void display();
-  };
+        void init();
+        void display();
+    };
+  } /* namespace MarchingCubes */
 } /* namespace PstpFinder */
 #endif /* VIEWER3D_H_ */

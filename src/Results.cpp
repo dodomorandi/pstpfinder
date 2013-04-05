@@ -284,6 +284,7 @@ Results::drawResultsGraphExposeEvent(GdkEventExpose* event) throw()
 #endif
 {
 #if GTKMM_MAJOR == 2
+  (void) event;
   Glib::RefPtr<Gdk::Window> window(drawResultsGraph.get_window());
   window->clear();
   Cairo::RefPtr<Cairo::Context> context(window->create_cairo_context());

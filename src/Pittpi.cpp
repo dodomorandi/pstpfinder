@@ -624,10 +624,6 @@ namespace PstpFinder
   void
   Pittpi::fillGroups(const string& sessionFileName, unsigned int timeStep)
   {
-    float* sas;
-    float* meanSas;
-    float* fIndex;
-    SasAtom* sasAtoms = 0;
     SasAnalysis<ifstream>* sasAnalysis;
     unsigned int counter = 0;
 
@@ -635,36 +631,30 @@ namespace PstpFinder
     vector<int> protein = gromacs.getGroup("Protein");
     const int nAtoms = protein.size();
 
-    meanSas = new float[nAtoms]();
+    vector<float> meanSas(nAtoms, 0.f);
     unsigned int* notZero = new unsigned int[nAtoms]();
 
     /* First of all we need to calculate SAS means */
     setStatusDescription("Calculating SAS means");
     setStatus(0);
     sasAnalysis = new SasAnalysis<ifstream>(gromacs, sessionFileName);
-    (*sasAnalysis) >> sasAtoms;
-    while(sasAtoms != 0)
+    for(const vector<SasAtom>& sasAtoms : *sasAnalysis)
     {
       if(abortFlag) return;
 
-      fIndex = meanSas;
-      SasAtom* m_end = sasAtoms + nAtoms;
-      unsigned int* ptr;
-      SasAtom* atom;
+      auto fIndex = begin(meanSas);
+      auto atom = begin(sasAtoms);
 
-      for(atom = sasAtoms, ptr = notZero; atom < m_end; atom++, fIndex++, ptr++)
+      for(; atom < end(sasAtoms); atom++, fIndex++)
         *fIndex += atom->sas;
 
       counter++;
       setStatus(static_cast<float>(counter) / gromacs.getFramesCount());
-      (*sasAnalysis) >> sasAtoms;
     }
 
     {
-      unsigned int* ptr;
-      for(fIndex = meanSas, ptr = notZero; fIndex < meanSas + nAtoms;
-          fIndex++, ptr++)
-        *fIndex /= counter;
+      for(auto& sas : meanSas)
+        sas /= counter;
     }
 
     delete[] notZero;
@@ -675,14 +665,14 @@ namespace PstpFinder
       i->sas.reserve(frames);
 
     /* Now we have to normalize values and store results per group */
-    sas = new float[protein.size()];
-    float* sasCounter = new float[protein.size()];
+    vector<float> sas, sasCounter;
+    sas.reserve(protein.size());
+    sasCounter.reserve(protein.size());
     setStatusDescription("Searching for zeros and normalizing SAS");
     setStatus(0);
     counter = 0;
     sasAnalysis = new SasAnalysis<ifstream>(gromacs, sessionFileName);
-    (*sasAnalysis) >> sasAtoms;
-    while(sasAtoms != 0)
+    for(const vector<SasAtom>& sasAtoms : *sasAnalysis)
     {
       if(abortFlag) return;
 
@@ -701,31 +691,27 @@ namespace PstpFinder
        */
 
       if(counter % timeStep == 0)
-      {
-        for(float* i = sasCounter; i < sasCounter + protein.size(); i++)
-          *i = 0.0;
-      }
+        fill(begin(sasCounter), end(sasCounter), 0.f);
 
-      fIndex = sas;
-      for(SasAtom* atom = sasAtoms; atom < sasAtoms + protein.size();
-          atom++, fIndex++)
-        *fIndex = atom->sas;
+      auto fIndex = begin(sas);
+      for(auto atomIter = begin(sasAtoms); atomIter < end(sasAtoms);
+          atomIter++, fIndex++)
+        *fIndex = atomIter->sas;
 
       {
-        float* i;
-        float* j;
-        for(i = sasCounter, j = sas; i < sasCounter + protein.size(); i++, j++)
-          *i += *j;
+        auto sasCounterIter = begin(sasCounter);
+        for(auto sasIter = begin(sas); sasIter < end(sas); sasIter++, sasCounterIter++)
+          *sasCounterIter += *sasIter;
       }
 
       if((counter + 1) % timeStep == 0)
       {
-        for(float* i = sasCounter; i < sasCounter + protein.size(); i++)
-          *i /= timeStep;
+        for(float& element : sasCounter)
+          element /= timeStep;
 
         if(abortFlag) return;
 
-        for(vector<Group>::iterator i = groups.begin(); i < groups.end(); i++)
+        for(auto i = begin(groups); i < end(groups); i++)
         {
           if(abortFlag) return;
           i->sas.push_back(0);
@@ -761,17 +747,16 @@ namespace PstpFinder
 
       counter++;
       setStatus(static_cast<float>(counter) / gromacs.getFramesCount());
-      (*sasAnalysis) >> sasAtoms;
     }
 
     if(counter % timeStep != 0)
     {
-      for(float* i = sasCounter; i < sasCounter + protein.size(); i++)
-        *i /= (counter % timeStep);
+      for(float& element : sasCounter)
+        element /= (counter % timeStep);
 
       if(abortFlag) return;
 
-      for(vector<Group>::iterator i = groups.begin(); i < groups.end(); i++)
+      for(auto i = begin(groups); i < end(groups); i++)
       {
         if(abortFlag) return;
         i->sas.push_back(0);
@@ -803,10 +788,7 @@ namespace PstpFinder
       }
     }
 
-    delete[] sasCounter;
     delete sasAnalysis;
-    delete[] meanSas;
-    delete[] sas;
   }
 
 #ifdef HAVE_PYMOD_SADIC

@@ -23,7 +23,7 @@
 #include <functional>
 #include <set>
 
-#include "marching_cubes.h"
+#include "MarchingCubes.h"
 #include "SplittedSpace.h"
 #include "SpaceCube.h"
 #include "SasAnalysis.h"
@@ -34,6 +34,9 @@
 #include "Viewer3D.h"
 
 using namespace std;
+using namespace PstpFinder::MarchingCubes;
+
+constexpr static float cubesize = 0.12;
 
 int main(int argc, char* argv[])
 {
@@ -63,10 +66,6 @@ int main(int argc, char* argv[])
     return -2;
   }
 
-  PstpFinder::SplittedSpace space(box[XX][XX], box[YY][YY], box[ZZ][ZZ],
-                                  PstpFinder::cubesize);
-
-  unsigned long atomsSize = gromacs.getGroup("Protein").size();
   vector<PstpFinder::AtomInfo> atomsInfo = gromacs.getGroupInfo();
   // Add water radius to atoms radius
   /*
@@ -74,94 +73,41 @@ int main(int argc, char* argv[])
     info.radius += 0.14;
   */
 
-  PstpFinder::Viewer3D viewer(atomsInfo);
+  Viewer3D viewer;
+  MarchingCubes marchingCubes(cubesize, array<float, 3>
+    {{ box[XX][XX], box[YY][YY], box[ZZ][ZZ] }});
 
   unsigned long frameIndex = 0;
-  PstpFinder::SasAtom* sasAtom;
-  sasAnalysis >> sasAtom;
-  while(sasAtom != nullptr)
+  for(const vector<PstpFinder::SasAtom>& sasAtoms : sasAnalysis)
   {
-    unsigned long atomIndex = 0;
-    viewer.setAtoms(sasAtom);
-    PstpFinder::SasAtom* atomPtr = sasAtom;
-    for(; atomIndex < atomsSize; atomIndex++, atomPtr++)
+    unsigned atomIndex = 0;
+    vector<PointRadius> points;
+    for(const PstpFinder::SasAtom& atom : sasAtoms)
     {
-      if(atomsInfo[atomIndex].element == 'H')
+      PstpFinder::AtomInfo info = atomsInfo[atomIndex++];
+      if(info.element == 'H')
         continue;
 
-      real radius = atomsInfo[atomIndex].radius;
-      real radius2 = radius * radius;
-
-      list<PstpFinder::SpaceCube*> involvedCubes = space.getInvolvedCubes(
-          atomPtr->x, atomPtr->y, atomPtr->z, radius);
-      list<PstpFinder::SpaceCube*> cubesNotInvolved;
-
-      for(PstpFinder::SpaceCube* cube : involvedCubes)
-      {
-        unsigned vertexIndex = 0;
-        cube->involvedAtomsIndices.push_back(atomIndex);
-        array<unsigned, 3> cubeIndex = space.cubeIndexAt(cube->x(), cube->y(),
-                                                         cube->z());
-
-        bool cubeInvolved = false;
-        for(const array<unsigned, 3>& vertex : PstpFinder::vertices)
-        {
-          array<unsigned, 3> index = cubeIndex;
-          float distance2;
-          {
-            auto vertexIter = begin(vertex);
-            auto indexIter = begin(index);
-            for(; indexIter != end(index); indexIter++, vertexIter++)
-              *indexIter += *vertexIter;
-          }
-
-          array<float, 3> point = space.getPointCoordinatesAtIndex(index);
-          distance2 = pow(atomPtr->x - point[0], 2)
-              + pow(atomPtr->y - point[1], 2) + pow(atomPtr->z - point[2], 2);
-          if(distance2 <= radius2)
-          {
-            if(not cube->flags.test(vertexIndex) or distance2
-                < cube->verticesDistance[vertexIndex].second)
-            {
-              cube->verticesDistance[vertexIndex].first = atomIndex;
-              cube->verticesDistance[vertexIndex].second = distance2;
-            }
-
-            cube->flags.set(vertexIndex, true);
-            cubeInvolved = true;
-          }
-
-          vertexIndex++;
-        }
-
-        if(not cubeInvolved)
-          cubesNotInvolved.push_back(cube);
-      }
-
-      for(PstpFinder::SpaceCube* cubeNotInvolved : cubesNotInvolved)
-      {
-        cubeNotInvolved->involvedAtomsIndices.remove(atomIndex);
-        involvedCubes.remove(cubeNotInvolved);
-      }
+      points.emplace_back(atom, info.radius);
     }
+    viewer.setPointsRadii(points);
+    const SplittedSpace& space = marchingCubes.run(points);
 
     set<unsigned long> involvedAtoms;
-    for(PstpFinder::SpaceCube& cube : space.getCubes())
+    for(const SpaceCube& cube : space.getCubes())
     {
-      bitset<12> flags = PstpFinder::cubeEdgeFlags[cube.flags.to_ulong()];
+      bitset<12> flags = DataSet::cubeEdgeFlags[cube.flags.to_ulong()];
       if(flags.any() and not flags.all())
       {
-        for(unsigned int index : cube.involvedAtomsIndices)
+        for(unsigned int index : cube.involvedPointsIndices)
           involvedAtoms.insert(index);
       }
     }
 
     viewer.setSpace(space);
 
-    space.clearFlags();
     frameIndex++;
     break;
-    sasAnalysis >> sasAtom;
   }
 
   viewer.run();
