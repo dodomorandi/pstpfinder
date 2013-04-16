@@ -18,6 +18,7 @@
  */
 
 #include "SplittedSpace.h"
+#include <cmath>
 
 using namespace std;
 using namespace PstpFinder::MarchingCubes;
@@ -94,10 +95,31 @@ SplittedSpace::cubeAt(float x, float y, float z)
 array<unsigned, 3>
 SplittedSpace::cubeIndexAt(float x, float y, float z)
 {
-  return array<unsigned, 3>
+  array<unsigned, 3> coord =
     {{ static_cast<unsigned>(x / cubeEdgeSize),
        static_cast<unsigned>(y / cubeEdgeSize),
        static_cast<unsigned>(z / cubeEdgeSize) }};
+
+  // Damned approximations...
+  while(x < operator()(coord[0], coord[1], coord[2]).x())
+    coord[0]--;
+
+  while(x >= operator()(coord[0] + 1, coord[1], coord[2]).x())
+    coord[0]++;
+
+  while(y < operator()(coord[0], coord[1], coord[2]).y())
+    coord[1]--;
+
+  while(y >= operator()(coord[0], coord[1] + 1, coord[2]).y())
+    coord[1]++;
+
+  while(z < operator()(coord[0], coord[1], coord[2]).z())
+    coord[2]--;
+
+  while(z >= operator()(coord[0], coord[1], coord[2] + 1).z())
+    coord[2]++;
+
+  return coord;
 }
 
 list<SpaceCube*>
@@ -106,15 +128,13 @@ SplittedSpace::getInvolvedCubes(float x, float y, float z, float radius)
   list<SpaceCube*> cubesList;
   array<unsigned, 3> minIndices, maxIndices, centralIndex;
 
-  unsigned discreteRadius = radius / cubeEdgeSize;
-  if(cubeEdgeSize * discreteRadius < radius)
-    discreteRadius++;
-
+  // I need one more cube more than the rounded version of radius / cubeEdge
+  unsigned discreteRadius = ceil(radius / cubeEdgeSize) + 1;
   centralIndex = cubeIndexAt(x, y, z);
   minIndices = centralIndex;
   for(unsigned& index : minIndices)
   {
-    if(index >= discreteRadius)
+    if(index > discreteRadius)
       index -= discreteRadius;
     else
       index = 0;

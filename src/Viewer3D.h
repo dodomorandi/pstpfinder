@@ -26,9 +26,9 @@
 #include "Atom.h"
 #include "MarchingCubes.h"
 #include "PointRadius.h"
+#include "Vector3d.h"
 
 #include <array>
-#include <list>
 #include <vector>
 
 #include <GL/gl.h>
@@ -43,20 +43,14 @@ namespace PstpFinder
         Viewer3D();
         ~Viewer3D();
         void run();
-        void setPointsRadii(const vector<PointRadius>& points);
-        void setSpace(const SplittedSpace& space);
+        void appendFrame(const vector<PointAndNormal>& frame);
 
       private:
         int window;
-        vector<PointRadius> points;
-        // A list of frame. Every frame has got lots of vertex info. Every vertex
-        // info is compound of two triplet of floats. The first triplet represents
-        // the coordinates, the other the normal vector. Each triplet is simply
-        // x, y and z.
-        list<list<array<array<GLfloat, 3>, 2>>> frames;
+        vector<vector<PointAndNormal>> frames;
         array<int, 2> lastMousePosition;
-        array<float, 2> rotationXZ;
-        array<array<float, 3>, 2> boundaries;
+        array<float, 2> rotationXY;
+        array<Vector3d, 2> boundaries;
         bool boundariesSet;
 
         void init();

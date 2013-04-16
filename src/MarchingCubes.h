@@ -27,6 +27,7 @@
 
 #include "SplittedSpace.h"
 #include "PointRadius.h"
+#include "Vector3d.h"
 
 #include <memory>
 
@@ -44,9 +45,10 @@ namespace PstpFinder
         /* Warning: return value is valid until another call to run! */
         /* TODO: multithread support */
         const SplittedSpace& run(const vector<PointRadius>& points);
+        vector<PointAndNormal> getMesh(const vector<PointRadius>& points) const;
 
       private:
-        const float cubeEdge;
+        float cubeEdge;
         const array<float, 3> boxSize;
         unique_ptr<SplittedSpace> space;
     };
