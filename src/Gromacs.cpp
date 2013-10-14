@@ -564,9 +564,8 @@ namespace PstpFinder
     timeStepCached = 0;
     currentFrame = 0;
 
-    if((natoms = read_first_frame(oenv, &status, trjName.c_str(), &fr,
+    if(not read_first_frame(oenv, &status, trjName.c_str(), &fr,
                                   TRX_NEED_X))
-       == 0)
 #else
     if((natoms =
             read_first_x(&status, trjName.c_str(), &t, &x, box)) == 0)
@@ -578,6 +577,9 @@ namespace PstpFinder
     }
     else
     {
+#ifdef GMX45
+      natoms = fr.natoms;
+#endif
       readyToGetX = true;
       return gotTrajectory = true;
     }
@@ -773,15 +775,13 @@ namespace PstpFinder
 
     output_env_t _oenv;
     t_trxstatus *_status;
-    int _natoms;
     t_trxframe _fr;
     float time1, time2;
 
     snew(_oenv, 1);
     output_env_init_default(_oenv);
 
-    if((_natoms = read_first_frame(_oenv, &_status, trjName.c_str(), &_fr, 0))
-       == 0)
+    if(not read_first_frame(_oenv, &_status, trjName.c_str(), &_fr, 0))
     {
       output_env_done(_oenv);
       return 0;
@@ -806,14 +806,12 @@ namespace PstpFinder
 
     output_env_t _oenv;
     t_trxstatus *_status;
-    int _natoms;
     t_trxframe _fr;
 
     snew(_oenv, 1);
     output_env_init_default(_oenv);
 
-    if((_natoms = read_first_frame(_oenv, &_status, trjName.c_str(), &_fr, 0))
-       == 0)
+    if(read_first_frame(_oenv, &_status, trjName.c_str(), &_fr, 0))
     {
       close_trx(_status);
       output_env_done(_oenv);
