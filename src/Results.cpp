@@ -430,9 +430,15 @@ Results::drawResultsGraphExposeEvent(GdkEventExpose* event) throw()
         foundSelection = true;
       }
 
+#if GTKMM_MAJOR == 2
+      context->set_source_rgb(color.get_red_p(),
+                              color.get_green_p(),
+                              color.get_blue_p());
+#else
       context->set_source_rgb(color.get_red(),
                               color.get_green(),
                               color.get_blue());
+#endif
       context->rectangle(columnOffsetX, columnOffsetY - columnHeight,
                          columnModuleX * 2, columnHeight);
       context->fill();
