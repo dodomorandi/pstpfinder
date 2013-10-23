@@ -39,6 +39,7 @@
 #include <gromacs/smalloc.h>
 #include <gromacs/vec.h>
 #include <gromacs/statutil.h>
+#include <gromacs/xdrf.h>
 
 using namespace std;
 
@@ -632,104 +633,42 @@ namespace PstpFinder
     if(not exists(trjName))
       return 0;
 
-    int nFrames = 0;
-    /*
-     output_env_t _oenv;
-     t_trxstatus *_status;
-     real _t;
-     rvec* _x;
-     matrix _box;
-     int _natoms;
+    output_env_t _oenv;
+    t_trxstatus *_status;
+    t_trxframe _fr;
+    t_fileio *fio;
+    gmx_bool ok;
 
-     snew(_oenv, 1);
-     output_env_init_default(_oenv);
+    snew(_oenv, 1);
+    output_env_init_default(_oenv);
 
-     if((_natoms = read_first_x(_oenv,&_status, trjName.c_str(), &_t, &_x,
-     _box)) == 0)
-     {
-     output_env_done(_oenv);
-     return 0;
-     }
-     nFrames = 1;
-
-     while(read_next_x(_oenv, _status, &_t, _natoms, _x, _box))
-     nFrames++;
-
-     close_trx(_status);
-     output_env_done(_oenv);
-     */
-
-    /* This is a workaround to obtain the f*****g number of frames... */
-    ifstream trjStream(trjName.c_str(), ios::in | ios::binary);
-    bool gotFirst = false;
-    unsigned char cTmp[4];
-    int nAtoms;
-    int* iTmp = (int*) cTmp;
-    int step = -1;
-
-    trjStream.seekg(4, ios::beg);
-    cTmp[3] = trjStream.get();
-    cTmp[2] = trjStream.get();
-    cTmp[1] = trjStream.get();
-    cTmp[0] = trjStream.get();
-    nAtoms = *iTmp;
-
-    while(not trjStream.eof())
+    if(not read_first_frame(_oenv, &_status, trjName.c_str(), &_fr, 0))
     {
-      cTmp[3] = trjStream.get();
-      cTmp[2] = trjStream.get();
-      cTmp[1] = trjStream.get();
-      cTmp[0] = trjStream.get();
-
-      if(nAtoms == *iTmp and not gotFirst)
-      {
-        gotFirst = true;
-        continue;
-      }
-      else if(nAtoms == *iTmp)
-      {
-        cTmp[3] = trjStream.get();
-        cTmp[2] = trjStream.get();
-        cTmp[1] = trjStream.get();
-        cTmp[0] = trjStream.get();
-
-        step = *iTmp;
-        gotFirst = false;
-        break;
-      }
-      trjStream.seekg(-3, ios::cur);
-    }
-
-    if(step == -1)
+      output_env_done(_oenv);
       return 0;
-
-    trjStream.seekg(-7, ios::end);
-
-    while(trjStream.seekg(-5, ios::cur))
-    {
-      cTmp[3] = trjStream.get();
-      cTmp[2] = trjStream.get();
-      cTmp[1] = trjStream.get();
-      cTmp[0] = trjStream.get();
-
-      if(nAtoms == *iTmp and not gotFirst)
-      {
-        gotFirst = true;
-        trjStream.seekg(-3, ios::cur);
-      }
-      else if(nAtoms == *iTmp)
-      {
-        cTmp[3] = trjStream.get();
-        cTmp[2] = trjStream.get();
-        cTmp[1] = trjStream.get();
-        cTmp[0] = trjStream.get();
-
-        nFrames = *iTmp / step + 1;
-        break;
-      }
     }
+    int firstStep = _fr.step;
 
-    return cachedNFrames = nFrames;
+    if(not read_next_frame(_oenv, _status, &_fr))
+    {
+      output_env_done(_oenv);
+      return 0;
+    }
+    int secondStep = _fr.step;
+
+    fio = trx_get_fileio(_status);
+    int lastStep = xdr_xtc_get_last_frame_number(gmx_fio_getfp(fio),
+                                               gmx_fio_getxdr(fio),
+                                               _fr.natoms,
+                                               &ok);
+
+    close_trx(_status);
+    output_env_done(_oenv);
+    if(not ok)
+      throw "ERROR: can not get the frame number";
+
+    cachedNFrames = (lastStep - firstStep) / (secondStep - firstStep) + 1;
+    return cachedNFrames;
   }
 
   unsigned int

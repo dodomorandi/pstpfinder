@@ -34,6 +34,12 @@
 #include <mutex>
 #include <condition_variable>
 
+/* Workaround - is not defined as "C", let's include it before others */
+extern "C"
+{
+#include <gromacs/gmxfio.h>
+}
+
 #include <gromacs/atomprop.h>
 #include <gromacs/statutil.h>
 
