@@ -633,41 +633,8 @@ namespace PstpFinder
     if(not exists(trjName))
       return 0;
 
-    output_env_t _oenv;
-    t_trxstatus *_status;
-    t_trxframe _fr;
-    t_fileio *fio;
-    gmx_bool ok;
 
-    snew(_oenv, 1);
-    output_env_init_default(_oenv);
-
-    if(not read_first_frame(_oenv, &_status, trjName.c_str(), &_fr, 0))
-    {
-      output_env_done(_oenv);
-      return 0;
-    }
-    int firstStep = _fr.step;
-
-    if(not read_next_frame(_oenv, _status, &_fr))
-    {
-      output_env_done(_oenv);
-      return 0;
-    }
-    int secondStep = _fr.step;
-
-    fio = trx_get_fileio(_status);
-    int lastStep = xdr_xtc_get_last_frame_number(gmx_fio_getfp(fio),
-                                               gmx_fio_getxdr(fio),
-                                               _fr.natoms,
-                                               &ok);
-
-    close_trx(_status);
-    output_env_done(_oenv);
-    if(not ok)
-      throw "ERROR: can not get the frame number";
-
-    cachedNFrames = (lastStep - firstStep) / (secondStep - firstStep) + 1;
+    cachedNFrames = getLastFrameTime() / getTimeStep() + 1;
     return cachedNFrames;
   }
 
@@ -701,6 +668,40 @@ namespace PstpFinder
       wakeCondition.wait(slock);
     }
     operationMutex.unlock();
+  }
+
+  float
+  Gromacs::getLastFrameTime() const
+  {
+    if(not exists(trjName))
+      return 0;
+
+    output_env_t _oenv;
+    t_trxstatus *_status;
+    t_trxframe _fr;
+    t_fileio *fio;
+    gmx_bool ok;
+
+    snew(_oenv, 1);
+    output_env_init_default(_oenv);
+
+    if(not read_first_frame(_oenv, &_status, trjName.c_str(), &_fr, 0))
+    {
+      output_env_done(_oenv);
+      return 0;
+    }
+
+    fio = trx_get_fileio(_status);
+    float lastTime = xdr_xtc_get_last_frame_time(gmx_fio_getfp(fio),
+                                                 gmx_fio_getxdr(fio),
+                                                 _fr.natoms, &ok);
+
+    close_trx(_status);
+    output_env_done(_oenv);
+    if(not ok)
+      throw "ERROR: can not get the last frame time";
+
+    return lastTime;
   }
 
   float

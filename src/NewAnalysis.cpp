@@ -354,8 +354,8 @@ namespace PstpFinder
     signal_start_spin();
 
     Gromacs tmpGromacs(trjChooser.get_filename(), "");
-    __frames = tmpGromacs.getFramesCount();
     __timeStep = tmpGromacs.getTimeStep();
+    __frames = tmpGromacs.getFramesCount();
 
     signal_stop_spin();
     signal_update_limits();

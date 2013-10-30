@@ -99,6 +99,7 @@ namespace PstpFinder
       unsigned long getAtomsCount() const;
       unsigned int getFramesCount() const;
       float getTimeStep() const; // In nsec
+      float getLastFrameTime() const;
       unsigned int getFrameStep() const;
       float getBegin() const;
       void setBegin(float beginTime);
@@ -132,6 +133,7 @@ namespace PstpFinder
       bool isAborting() const;
       bool usePBC() const noexcept;
       bool usePBC(bool value) noexcept;
+
     private:
 #ifdef GMX45
       output_env_t oenv;
