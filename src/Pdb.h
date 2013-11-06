@@ -26,8 +26,6 @@
 #include <tuple>
 #include <type_traits>
 
-using namespace std;
-
 namespace PstpFinder
 {
   struct PdbAtom : public ProteinAtom
@@ -41,7 +39,7 @@ namespace PstpFinder
       explicit PdbAtom(const ProteinAtom& atom) :
           ProteinAtom(atom), bFactor(0), occupancy(0) {}
       explicit PdbAtom(ProteinAtom&& atom) :
-          ProteinAtom(move(atom)), bFactor(0), occupancy(0) {}
+          ProteinAtom(std::move(atom)), bFactor(0), occupancy(0) {}
 
       explicit PdbAtom(int index) :
           ProteinAtom(index), bFactor(0), occupancy(0) {}
@@ -55,42 +53,44 @@ namespace PstpFinder
   {
     public:
       Pdb() = default;
-      Pdb(const string& fileName);
+      Pdb(const std::string& fileName);
       Pdb(const Protein<AtomType>& protein) { buildPdb(protein);}
-      Pdb(Protein<AtomType>&& protein) { buildPdb(move(protein));}
+      Pdb(Protein<AtomType>&& protein) { buildPdb(std::move(protein));}
 
       template<typename Stream>
-      Pdb(Stream&& stream, typename enable_if<is_stream_base_of<
-          basic_istream, Stream>::value>::type* = nullptr);
+      Pdb(Stream&& stream, typename std::enable_if<is_stream_base_of<
+          std::basic_istream, Stream>::value>::type* = nullptr);
 
-      void write(const string& filename) const;
+      void write(const std::string& filename) const;
 
       template<typename Stream>
-      typename enable_if<is_base_of<base_stream(basic_istream, Stream),
-                          Stream>::value
-                          or is_base_of<base_stream(basic_ostream, Stream),
-                          Stream>::value>::type
+      typename std::enable_if<
+          std::is_base_of<base_stream(std::basic_istream, Stream),
+          Stream>::value
+          or std::is_base_of<base_stream(std::basic_ostream, Stream),
+          Stream>::value>::type
       write(Stream& stream) const;
-      vector<Protein<AtomType>> proteins;
+      std::vector<Protein<AtomType>> proteins;
 
     private:
       template<typename Protein>
         void buildPdb(Protein&& protein);
 
       template<typename Stream>
-      typename enable_if<is_stream_base_of<basic_istream, Stream>::value>::type
+      typename std::enable_if<is_stream_base_of<
+          std::basic_istream, Stream>::value>::type
       readFromStream(Stream&& stream);
 
-      inline tuple<float, float>
+      inline std::tuple<float, float>
       getAuxParameters(const PdbAtom& atom) const
       {
-        return make_tuple(atom.bFactor, atom.occupancy);
+        return std::make_tuple(atom.bFactor, atom.occupancy);
       }
 
-      inline tuple<float, float>
+      inline std::tuple<float, float>
       getAuxParameters(const Atom& atom) const
       {
-        return tuple<float, float>({0., 1.});
+        return std::tuple<float, float>({0., 1.});
       }
   };
 }

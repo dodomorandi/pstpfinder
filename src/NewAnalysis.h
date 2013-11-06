@@ -28,14 +28,11 @@
 #include <gtkmm.h>
 #include <glibmm.h>
 
-using namespace Gtk;
-
 namespace PstpFinder
 {
   class Results;
 
-  class NewAnalysis :
-      public Window
+  class NewAnalysis : public Gtk::Window
   {
     public:
       enum parallelOperation
@@ -44,8 +41,8 @@ namespace PstpFinder
       };
 
       NewAnalysis();
-      NewAnalysis(Window& parent);
-      void openSessionFile(const string& sessionFileName);
+      NewAnalysis(Gtk::Window& parent);
+      void openSessionFile(const std::string& sessionFileName);
       void deleteResultsWindow(const Results& resultsWindow);
       Glib::Dispatcher signal_start_spin;
       Glib::Dispatcher signal_stop_spin;
@@ -58,25 +55,26 @@ namespace PstpFinder
         ANALYSIS_FINISHED
       };
 
-      Frame mainFrame;
-      VBox vboxFrame1, vboxFrame2, vboxMain;
-      FileChooserButton trjChooser, tprChooser;
-      Label labelTrajectory, labelTopology, labelBegin, labelEnd, labelRadius,
-            labelPocketThreshold, labelPs, labelAngstrom, labelSessionFile;
-      HBox hboxTrajectory, hboxTopology, hboxBegin, hboxEnd, hboxFrame, hboxRadius,
-           hboxPocketThreshold, hboxSession;
-      Entry entrySessionFile;
-      HButtonBox buttonBoxRun, buttonBoxBrowse;
-      Button buttonRun, buttonBrowseFile, buttonShowResults;
-      ProgressBar progress;
-      Alignment progressAligner;
-      SpinButton spinBegin, spinEnd, spinRadius, spinPocketThreshold;
-      HScale hScaleBegin, hScaleEnd;
-      Spinner spinnerWait;
-      VSeparator vSeparator;
-      Statusbar statusBar;
+      Gtk::Frame mainFrame;
+      Gtk::VBox vboxFrame1, vboxFrame2, vboxMain;
+      Gtk::FileChooserButton trjChooser, tprChooser;
+      Gtk::Label labelTrajectory, labelTopology, labelBegin, labelEnd,
+          labelRadius, labelPocketThreshold, labelPs, labelAngstrom,
+          labelSessionFile;
+      Gtk::HBox hboxTrajectory, hboxTopology, hboxBegin, hboxEnd, hboxFrame,
+          hboxRadius, hboxPocketThreshold, hboxSession;
+      Gtk::Entry entrySessionFile;
+      Gtk::HButtonBox buttonBoxRun, buttonBoxBrowse;
+      Gtk::Button buttonRun, buttonBrowseFile, buttonShowResults;
+      Gtk::ProgressBar progress;
+      Gtk::Alignment progressAligner;
+      Gtk::SpinButton spinBegin, spinEnd, spinRadius, spinPocketThreshold;
+      Gtk::HScale hScaleBegin, hScaleEnd;
+      Gtk::Spinner spinnerWait;
+      Gtk::VSeparator vSeparator;
+      Gtk::Statusbar statusBar;
       unsigned int statusBarContext;
-      shared_ptr<Pittpi> pittpiPtr;
+      std::shared_ptr<Pittpi> pittpiPtr;
       Gromacs* gromacs;
       enumAnalysisStatus analysisStatus;
       int __frames;
@@ -95,8 +93,8 @@ namespace PstpFinder
       void buttonShowResultsClicked() throw();
       void update_limits() throw();
       bool close_window(GdkEventAny* event) throw();
-      void runPittpi(const string& SessionFileName,
-                                    float radius, float threshold);
+      void runPittpi(const std::string& SessionFileName, float radius,
+                     float threshold);
       template<typename Session>
       void calculateSas(Session& session);
 

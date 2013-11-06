@@ -112,7 +112,7 @@ Results::init() throw()
 
   labelPocketResidues.set_text("Involved residues:");
   labelPocketResidues.set_alignment(0, 0.5);
-  textPocketResidues.set_wrap_mode(WrapMode::WRAP_WORD);
+  textPocketResidues.set_wrap_mode(Gtk::WrapMode::WRAP_WORD);
   textPocketResidues.set_editable(false);
   textPocketResidues.set_border_width(1);
 #if GTKMM_MAJOR == 3
@@ -886,14 +886,14 @@ Results::buildMenu()
       "  </menubar>"
       "</ui>";
 
-  actionGroup = ActionGroup::create();
-  actionGroup->add(Action::create("graphMenu", "_Graph"));
+  actionGroup = Gtk::ActionGroup::create();
+  actionGroup->add(Gtk::Action::create("graphMenu", "_Graph"));
   actionGroup->add(
-      Action::create("changeColors", "_Change colors",
+      Gtk::Action::create("changeColors", "_Change colors",
                      "Change default colors for every bar"),
       sigc::mem_fun(*this, &Results::runColorsChooserDialog));
 
-  uiManager = UIManager::create();
+  uiManager = Gtk::UIManager::create();
   uiManager->insert_action_group(actionGroup);
   uiManager->add_ui_from_string(menuString);
 }
@@ -903,7 +903,7 @@ Results::runColorsChooserDialog()
 {
   ColorsChooser colorsChooser;
   colorsChooser.set_colors(colors);
-  if(colorsChooser.run() != ResponseType::RESPONSE_OK)
+  if(colorsChooser.run() != Gtk::ResponseType::RESPONSE_OK)
     return;
 
   colors = colorsChooser.get_colors();

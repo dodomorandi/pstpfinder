@@ -40,9 +40,10 @@ namespace PstpFinder
       SasPdbAtom& operator =(SasPdbAtom&& atom) = default;
 
       explicit SasPdbAtom(const PdbAtom& atom) : PdbAtom(atom), sas(0) {}
-      explicit SasPdbAtom(PdbAtom&& atom) : PdbAtom(move(atom)), sas(0) {}
+      explicit SasPdbAtom(PdbAtom&& atom) : PdbAtom(std::move(atom)), sas(0) {}
       explicit SasPdbAtom(const ProteinAtom& atom) : PdbAtom(atom), sas(0) {}
-      explicit SasPdbAtom(ProteinAtom&& atom) : PdbAtom(move(atom)), sas(0) {}
+      explicit SasPdbAtom(ProteinAtom&& atom) :
+          PdbAtom(std::move(atom)), sas(0) {}
 
       /*
       template<typename T,

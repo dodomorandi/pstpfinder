@@ -31,8 +31,6 @@
 #include <type_traits>
 #include <functional>
 
-using namespace std;
-
 namespace PstpFinder
 {
   enum class enumStreamType
@@ -54,10 +52,10 @@ namespace PstpFinder
       typedef typename T::traits_type traits_type;
       typedef typename T::int_type int_type;
 
-      function<void(size_t)> callbackBeforeExtending;
-      function<void()> callbackAfterExtending;
-      function<void()> callbackClose;
-      function<void()> callbackDestroy;
+      std::function<void(std::size_t)> callbackBeforeExtending;
+      std::function<void()> callbackAfterExtending;
+      std::function<void()> callbackClose;
+      std::function<void()> callbackDestroy;
 
       /*
        * FIXME
@@ -83,8 +81,8 @@ namespace PstpFinder
        */
       // MetaStream_Base(T&& stream, enumStreamType streamType);
 
-      MetaStream_Base(const string& filename,
-                        ios_base::ios_base::openmode flags,
+      MetaStream_Base(const std::string& filename,
+                        std::ios_base::ios_base::openmode flags,
                         enumStreamType streamType) :
         T(filename, flags),
         streamType(streamType),
@@ -109,9 +107,9 @@ namespace PstpFinder
           {
             callbackDestroy();
           }
-          catch(const bad_function_call& e)
+          catch(const std::bad_function_call& e)
           {
-            cerr << "Warning: " << e.what() << endl;
+            std::cerr << "Warning: " << e.what() << std::endl;
           }
         }
       }
@@ -124,7 +122,7 @@ namespace PstpFinder
         assert_basic_istream();
         assert(valid);
 
-        streamoff currentPosition = T::tellg();
+        std::streamoff currentPosition = T::tellg();
         off_type finalPosition;
         {
           U tempObject(out);
@@ -135,14 +133,15 @@ namespace PstpFinder
 
         if(finalPosition > streamEnd)
         {
-          stringstream tempStream(stringstream::in | stringstream::out);
-          streamsize tempStreamSize = streamEnd - currentPosition;
+          std::stringstream tempStream(
+              std::stringstream::in | std::stringstream::out);
+          std::streamsize tempStreamSize = streamEnd - currentPosition;
           char *remainingData = new char[tempStreamSize];
           T::read(remainingData, tempStreamSize);
           tempStream.write(remainingData, tempStreamSize);
           tempStream >> out;
           delete[] remainingData;
-          T::setstate(ios_base::eofbit);
+          T::setstate(std::ios_base::eofbit);
         }
         else
           T::operator>>(out);
@@ -150,20 +149,20 @@ namespace PstpFinder
         return *this;
       }
 
-      streamsize
-      read(char_type* data, streamsize length)
+      std::streamsize
+      read(char_type* data, std::streamsize length)
       {
         assert_basic_istream();
         assert(valid);
 
-        streamsize size;
-        streamoff currentPosition = T::tellg();
+        std::streamsize size;
+        std::streamoff currentPosition = T::tellg();
 
         if(currentPosition + length > streamEnd)
         {
           T::read(data, streamEnd - currentPosition);
           size = streamEnd - currentPosition;
-          T::setstate(ios_base::eofbit);
+          T::setstate(std::ios_base::eofbit);
         }
         else
         {
@@ -175,7 +174,7 @@ namespace PstpFinder
       }
 
       MetaStream_Base&
-      seekg(streamsize pos)
+      seekg(std::streamsize pos)
       {
         assert_basic_istream();
 
@@ -184,21 +183,21 @@ namespace PstpFinder
       }
 
       MetaStream_Base&
-      seekg(streamsize off, ios_base::seek_dir way)
+      seekg(std::streamsize off, std::ios_base::seek_dir way)
       {
         assert_basic_istream();
 
-        if(way == ios_base::beg)
+        if(way == std::ios_base::beg)
           T::seekg(streamBegin + off);
-        else if(way == ios_base::end)
+        else if(way == std::ios_base::end)
           T::seekg(streamEnd - off);
         else
-          T::seekg(off, ios_base::cur);
+          T::seekg(off, std::ios_base::cur);
 
         return *this;
       }
 
-      streamsize
+      std::streamsize
       tellg()
       {
         assert_basic_istream();
@@ -212,8 +211,8 @@ namespace PstpFinder
         off_t position { T::tellg() };
         if(position >= streamEnd)
         {
-          T::setstate(ios_base::eofbit);
-          return char_traits<char_type>::eof();
+          T::setstate(std::ios_base::eofbit);
+          return std::char_traits<char_type>::eof();
         }
         else
           return T::peek();
@@ -228,21 +227,21 @@ namespace PstpFinder
       }
 
       MetaStream_Base&
-      operator <<(base_stream(basic_ostream, T)&(*pf)
-                  (base_stream(basic_ostream, T)&))
+      operator <<(base_stream(std::basic_ostream, T)&(*pf)
+                  (base_stream(std::basic_ostream, T)&))
       {
         return dumpStream(pf);
       }
 
       MetaStream_Base&
-      operator <<(ios_base&(*pf)(ios_base&))
+      operator <<(std::ios_base&(*pf)(std::ios_base&))
       {
         return dumpStream(pf);
       }
 
       MetaStream_Base&
-      operator <<(basic_ios<char_type, traits_type>&(*pf)
-                  (basic_ios<char_type, traits_type>&))
+      operator <<(std::basic_ios<char_type, traits_type>&(*pf)
+                  (std::basic_ios<char_type, traits_type>&))
       {
         return dumpStream(pf);
       }
@@ -254,12 +253,12 @@ namespace PstpFinder
         assert_basic_ostream();
         assert(valid);
 
-        streamoff currentPosition = T::tellp();
+        std::streamoff currentPosition = T::tellp();
         off_type finalPosition = currentPosition;
-        static basic_stringstream<char_type> tempBuffer;
+        static std::basic_stringstream<char_type> tempBuffer;
         {
           tempBuffer << in;
-          streamoff tempOffset(tempBuffer.tellp());
+          std::streamoff tempOffset(tempBuffer.tellp());
           if(tempOffset > 0)
           {
             currentPosition += tempOffset;
@@ -278,9 +277,9 @@ namespace PstpFinder
             {
               callbackBeforeExtending(finalPosition - streamEnd);
             }
-            catch(const bad_function_call& e)
+            catch(const std::bad_function_call& e)
             {
-              cerr << "Warning: " << e.what() << endl;
+              std::cerr << "Warning: " << e.what() << std::endl;
             }
           }
 
@@ -293,9 +292,9 @@ namespace PstpFinder
             {
               callbackAfterExtending();
             }
-            catch(const bad_function_call& e)
+            catch(const std::bad_function_call& e)
             {
-              cerr << "Warning: " << e.what() << endl;
+              std::cerr << "Warning: " << e.what() << std::endl;
             }
           }
         }
@@ -306,20 +305,20 @@ namespace PstpFinder
       }
 
       MetaStream_Base&
-      write(const char_type* data, streamsize length)
+      write(const char_type* data, std::streamsize length)
       {
         assert_basic_ostream();
         assert(valid);
 
-        streamoff currentPosition = T::tellp();
+        std::streamoff currentPosition = T::tellp();
         if(currentPosition + length > streamEnd)
         {
-          streamsize writtenBytes;
+          std::streamsize writtenBytes;
           if(streamEnd - currentPosition >= 0)
               writtenBytes = streamEnd - currentPosition;
           else
               writtenBytes = 0;
-          streamsize remainingBytes { length - writtenBytes };
+          std::streamsize remainingBytes { length - writtenBytes };
           T::write(data, writtenBytes);
 
           if(streamType == enumStreamType::STREAMTYPE_FIXED)
@@ -331,9 +330,9 @@ namespace PstpFinder
             {
               callbackBeforeExtending(remainingBytes);
             }
-            catch(const bad_function_call& e)
+            catch(const std::bad_function_call& e)
             {
-              cerr << "Warning: " << e.what() << endl;
+              std::cerr << "Warning: " << e.what() << std::endl;
             }
           }
 
@@ -346,9 +345,9 @@ namespace PstpFinder
             {
               callbackAfterExtending();
             }
-            catch(const bad_function_call& e)
+            catch(const std::bad_function_call& e)
             {
-              cerr << "Warning: " << e.what() << endl;
+              std::cerr << "Warning: " << e.what() << std::endl;
             }
           }
         }
@@ -359,7 +358,7 @@ namespace PstpFinder
       }
 
       MetaStream_Base&
-      seekp(streamsize pos)
+      seekp(std::streamsize pos)
       {
         assert_basic_ostream();
 
@@ -368,21 +367,21 @@ namespace PstpFinder
       }
 
       MetaStream_Base&
-      seekp(streamsize off, ios_base::seek_dir way)
+      seekp(std::streamsize off, std::ios_base::seek_dir way)
       {
         assert_basic_ostream();
 
-        if(way == ios_base::beg)
+        if(way == std::ios_base::beg)
           T::seekp(streamBegin + off);
-        else if(way == ios_base::end)
+        else if(way == std::ios_base::end)
           T::seekp(streamEnd - off);
         else
-          T::seekp(off, ios_base::cur);
+          T::seekp(off, std::ios_base::cur);
 
         return *this;
       }
 
-      streamsize
+      std::streamsize
       tellp()
       {
         assert_basic_ostream();
@@ -399,9 +398,9 @@ namespace PstpFinder
             {
               callbackClose();
             }
-            catch(const bad_function_call& e)
+            catch(const std::bad_function_call& e)
             {
-              cerr << "Warning: " << e.what() << endl;
+              std::cerr << "Warning: " << e.what() << std::endl;
             }
           }
         }
@@ -419,30 +418,31 @@ namespace PstpFinder
       inline void
       assert_basic_istream() const
       {
-        static_assert(is_base_of<base_stream(basic_istream, T), T>::value,
+        static_assert(std::is_base_of<base_stream(std::basic_istream, T), T>::value,
                       "class derives from basic_istream");
       }
 
       inline void
       assert_basic_ostream() const
       {
-        static_assert(is_base_of<base_stream(basic_ostream, T), T>::value,
+        static_assert(std::is_base_of<base_stream(std::basic_ostream, T), T>::value,
                       "class derives from basic_ostream");
       }
 
       inline void
       assert_basic_stream() const
       {
-        static_assert(is_base_of<base_stream(basic_istream, T), T>::value or
-                      is_base_of<base_stream(basic_ostream, T), T>::value,
-                      "class derives from basic_istream or basic_ostream");
+        static_assert(std::is_base_of<base_stream(std::basic_istream, T), T>::value or
+          std::is_base_of<base_stream(std::basic_ostream, T), T>::value,
+          "class derives from basic_istream or basic_ostream");
       }
   };
 
   template<typename T>
-  class MetaStream<T, typename enable_if<
-            is_base_of<base_stream(basic_istream, T), T>::value and
-            not is_base_of<base_stream(basic_ostream, T), T>::value>::type>
+  class MetaStream<T,
+        typename std::enable_if<
+            std::is_base_of<base_stream(std::basic_istream, T), T>::value and
+    not std::is_base_of<base_stream(std::basic_ostream, T), T>::value>::type>
     : public MetaStream_Base<T>
   {
     public:
@@ -459,7 +459,7 @@ namespace PstpFinder
         init(begin, end, streamType);
       }
 
-      MetaStream(const string& filename, ios_base::openmode flags,
+      MetaStream(const std::string& filename, std::ios_base::openmode flags,
                  enumStreamType streamType = enumStreamType::STREAMTYPE_FIXED,
                  off_type begin = -1, off_type end = -1) :
             Base(filename, flags, streamType)
@@ -482,7 +482,7 @@ namespace PstpFinder
 
         if(end == -1)
         {
-          T::seekg(0, ios_base::end);
+          T::seekg(0, std::ios_base::end);
           Base::streamEnd = T::tellg();
         }
         else
@@ -491,14 +491,15 @@ namespace PstpFinder
         if(Base::streamEnd < Base::streamBegin)
           Base::streamEnd = Base::streamBegin;
 
-        T::seekg(Base::streamBegin, ios_base::beg);
+        T::seekg(Base::streamBegin, std::ios_base::beg);
       }
   };
 
   template<typename T>
-  class MetaStream<T, typename enable_if<
-            not is_base_of<base_stream(basic_istream, T), T>::value and
-            is_base_of<base_stream(basic_ostream, T), T>::value>::type>
+  class MetaStream<T,
+        typename std::enable_if<
+            not std::is_base_of<base_stream(std::basic_istream, T), T>::value and
+    std::is_base_of<base_stream(std::basic_ostream, T), T>::value>::type>
     : public MetaStream_Base<T>
   {
     public:
@@ -515,7 +516,7 @@ namespace PstpFinder
         init(begin, end, streamType);
       }
 
-      MetaStream(const string& filename, ios_base::openmode flags,
+      MetaStream(const std::string& filename, std::ios_base::openmode flags,
                  enumStreamType streamType = enumStreamType::STREAMTYPE_ADJUST,
                  off_type begin = -1, off_type end = -1) :
             Base(filename, flags, streamType)
@@ -547,7 +548,7 @@ namespace PstpFinder
 
         if(end == -1)
         {
-          T::seekp(0, ios_base::end);
+          T::seekp(0, std::ios_base::end);
           Base::streamEnd = T::tellp();
         }
         else
@@ -556,14 +557,15 @@ namespace PstpFinder
         if(Base::streamEnd < Base::streamBegin)
           Base::streamEnd = Base::streamBegin;
 
-        T::seekp(Base::streamBegin, ios_base::beg);
+        T::seekp(Base::streamBegin, std::ios_base::beg);
       }
   };
 
   template<typename T>
-  class MetaStream<T, typename enable_if<
-            is_base_of<base_stream(basic_istream, T), T>::value and
-            is_base_of<base_stream(basic_ostream, T), T>::value>::type>
+  class MetaStream<T,
+        typename std::enable_if<
+            std::is_base_of<base_stream(std::basic_istream, T),T>::value and
+          std::is_base_of<base_stream(std::basic_ostream, T), T>::value>::type>
     : public MetaStream_Base<T>
   {
     public:
@@ -580,7 +582,7 @@ namespace PstpFinder
         init(begin, end, streamType);
       }
 
-      MetaStream(const string& filename, ios_base::openmode flags,
+      MetaStream(const std::string& filename, std::ios_base::openmode flags,
                  enumStreamType streamType = enumStreamType::STREAMTYPE_ADJUST,
                  off_type begin = -1, off_type end = -1) :
             Base(filename, flags, streamType)
@@ -606,14 +608,14 @@ namespace PstpFinder
           else if(tellp == -1)
             Base::streamBegin = tellg;
           else
-            Base::streamBegin = min(tellg, tellp);
+            Base::streamBegin = std::min(tellg, tellp);
         }
         else
           Base::streamBegin = begin;
 
         if(end == -1)
         {
-          T::seekg(0, ios_base::end);
+          T::seekg(0, std::ios_base::end);
           Base::streamEnd = T::tellg();
         }
         else
@@ -622,7 +624,7 @@ namespace PstpFinder
         if(Base::streamEnd < Base::streamBegin)
           Base::streamEnd = Base::streamBegin;
 
-        T::seekg(Base::streamBegin, ios_base::beg);
+        T::seekg(Base::streamBegin, std::ios_base::beg);
       }
   };
 

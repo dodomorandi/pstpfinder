@@ -29,23 +29,20 @@
 
 namespace PstpFinder
 {
-  using namespace Gtk;
-  using namespace std;
-
-  class ColorsChooser : public Dialog
+  class ColorsChooser : public Gtk::Dialog
   {
     public:
       ColorsChooser();
-      void set_colors(const vector<Results::Color>& pocketColors);
-      vector<Results::Color> get_colors() const;
+      void set_colors(const std::vector<Results::Color>& pocketColors);
+      std::vector<Results::Color> get_colors() const;
       virtual int run();
 
     private:
-      HScale hScalePocketChooser;
-      ColorSelection colorSelection;
+      Gtk::HScale hScalePocketChooser;
+      Gtk::ColorSelection colorSelection;
 
-      vector<Results::Color> colors, oldColors;
-      size_t oldColorIndex;
+      std::vector<Results::Color> colors, oldColors;
+      std::size_t oldColorIndex;
 
       void signalHScalePocketChooserValueChanged();
       void signalResponse(int responseID);

@@ -23,28 +23,26 @@
 #include <string>
 #include <type_traits>
 
-using namespace std;
-
 namespace PstpFinder
 {
   #define base_stream(stream, T) stream<typename T::char_type, \
                                       typename T::traits_type>
 
   template<typename T>
-  using remove_all = typename remove_cv<
-      typename remove_reference<typename remove_pointer<
-        typename remove_all_extents<T>::type>::type>::type>::type;
+  using remove_all = typename std::remove_cv<
+      typename std::remove_reference<typename std::remove_pointer<
+        typename std::remove_all_extents<T>::type>::type>::type>::type;
 
   template<template<typename, typename> class Stream, typename T,
-            bool = is_base_of<ios_base, remove_all<T>>::value>
-    struct is_stream_base_of_helper : public false_type {};
+            bool = std::is_base_of<std::ios_base, remove_all<T>>::value>
+    struct is_stream_base_of_helper : public std::false_type {};
 
   template<template<typename, typename> class Stream,
             typename T>
   struct is_stream_base_of_helper<Stream, T, true>
   {
       typedef remove_all<T> __T;
-      typedef typename is_base_of<Stream<typename __T::char_type,
+      typedef typename std::is_base_of<Stream<typename __T::char_type,
                                            typename __T::traits_type>,
                                     __T>::type type;
       static constexpr bool value = type::value;
@@ -53,8 +51,9 @@ namespace PstpFinder
   template<template<typename, typename> class Stream, typename T>
   struct is_stream_base_of : public is_stream_base_of_helper<Stream, T> {};
 
-  bool exists(const string& filename);
-  string file_extension(const string& filename);
-  string change_extension(string filename, const string& new_extension);
+  bool exists(const std::string& filename);
+  std::string file_extension(const std::string& filename);
+  std::string change_extension(std::string filename,
+                               const std::string& new_extension);
 }
 #endif /* UTILS_H_ */

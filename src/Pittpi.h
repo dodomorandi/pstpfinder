@@ -28,8 +28,6 @@
 #include <vector>
 #include <thread>
 
-using namespace std;
-
 namespace PstpFinder
 {
   class Group
@@ -45,12 +43,12 @@ namespace PstpFinder
       Group& operator =(Group&& group);
       Group& operator <<(const Residue<SasPdbAtom>& value);
       Group& operator <<(const Group& group);
-      const vector<const Residue<SasPdbAtom>*>& getResidues() const;
+      const std::vector<const Residue<SasPdbAtom>*>& getResidues() const;
       const SasPdbAtom& getCentralH() const;
       const Residue<SasPdbAtom>& getCentralRes() const;
       static bool sortByZeros(const Group& a, const Group& b);
 
-      vector<float> sas;
+      std::vector<float> sas;
       unsigned int zeros;
       protected:
       Group() : referenceAtom(nullptr), referenceRes(nullptr)
@@ -58,7 +56,7 @@ namespace PstpFinder
 
       const SasPdbAtom* referenceAtom;
       const Residue<SasPdbAtom>* referenceRes;
-      vector<const Residue<SasPdbAtom>*> residues;
+      std::vector<const Residue<SasPdbAtom>*> residues;
     };
 
   struct Pocket
@@ -143,10 +141,10 @@ namespace PstpFinder
       void
       setStatus(float value) const;
       void
-      setStatusDescription(const string& description) const;
+      setStatusDescription(const std::string& description) const;
       float
       getStatus() const;
-      string
+      std::string
       getStatusDescription() const;
       void
       waitNextStatus();
@@ -154,7 +152,7 @@ namespace PstpFinder
       isFinished();
       void
       abort();
-      const vector<Pocket>&
+      const std::vector<Pocket>&
       getPockets() const;
 
       template<typename Stream>
@@ -182,16 +180,16 @@ namespace PstpFinder
             };
 
             SerializablePockets() = default;
-            SerializablePockets(const vector<Pocket>& pockets,
-                const vector<Group>& groups);
+            SerializablePockets(const std::vector<Pocket>& pockets,
+                const std::vector<Group>& groups);
 
             template<typename Serializer>
             void serialize(Serializer serializer);
-            void updatePockets(vector<Pocket>& pocketsToUpdate,
-                const vector<Group>& groups) const;
+            void updatePockets(std::vector<Pocket>& pocketsToUpdate,
+                const std::vector<Group>& groups) const;
 
             private:
-            vector<SerializablePocket> pockets;
+            std::vector<SerializablePocket> pockets;
           };
 
           class SerializableGroups
@@ -203,7 +201,7 @@ namespace PstpFinder
               template<typename, typename> friend class Serializer;
               friend class Pittpi::SerializableGroups;
               long referenceAtomIndex, referenceResIndex;
-              vector<long> residuesIndex;
+              std::vector<long> residuesIndex;
 
               SerializableGroup() = default;
               SerializableGroup(const Group& group) : Group(group)
@@ -214,20 +212,20 @@ namespace PstpFinder
             };
 
             SerializableGroups() = default;
-            SerializableGroups(const vector<Group>& groups,
+            SerializableGroups(const std::vector<Group>& groups,
                 const Protein<SasPdbAtom>& protein);
 
             template<typename Serializer>
             void serialize(Serializer serializer);
-            void updateGroups(vector<Group>& groupsToUpdate,
+            void updateGroups(std::vector<Group>& groupsToUpdate,
                 const Protein<SasPdbAtom>& protein) const;
 
             private:
-            vector<SerializableGroup> groups;
+            std::vector<SerializableGroup> groups;
           };
 
           void makeGroups(float radius);
-          void fillGroups(const string& sessionFileName, unsigned int timeStep);
+          void fillGroups(const std::string& sessionFileName, unsigned int timeStep);
           std::vector<Group> makeGroupsByDistance(const std::vector<Atom>& centers,
               float radius);
           std::vector<Group> makeGroupsByDistance(const std::vector<Atom>& centers,
@@ -249,17 +247,17 @@ namespace PstpFinder
           float radius;
           unsigned long threshold;
           Protein<SasPdbAtom> averageStructure;
-          thread pittpiThread;
-          mutable mutex statusMutex;
-          mutable mutex nextStatusMutex;
-          mutable condition_variable nextStatusCondition;
+          std::thread pittpiThread;
+          mutable std::mutex statusMutex;
+          mutable std::mutex nextStatusMutex;
+          mutable std::condition_variable nextStatusCondition;
           mutable float __status;
-          mutable string __statusDescription;
+          mutable std::string __statusDescription;
           bool sync;
-          mutable mutex syncLock;
+          mutable std::mutex syncLock;
           bool abortFlag;
-          vector<Pocket> pockets;
-          vector<Group> groups;
+          std::vector<Pocket> pockets;
+          std::vector<Group> groups;
         };
 
   template<typename Stream>

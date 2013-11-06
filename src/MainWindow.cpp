@@ -61,7 +61,7 @@ namespace PstpFinder
     }
     catch(IconThemeError& error)
     {
-      cerr << "Warning: can't set PSTP-finder icon." << endl;
+      std::cerr << "Warning: can't set PSTP-finder icon." << std::endl;
     }
     buttonNew.set_label("New analysis");
     buttonNew.signal_clicked().connect(
@@ -113,7 +113,7 @@ namespace PstpFinder
   MainWindow::buttonOpenClicked()
   {
     int response;
-    string filename;
+    std::string filename;
     {
       GtkmmWrapper<FileFilter> filter;
       filter->add_pattern("*.csf");

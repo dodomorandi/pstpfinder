@@ -26,8 +26,6 @@
 #include <vector>
 #include <algorithm>
 
-using namespace std;
-
 namespace PstpFinder
 {
   enum Aminoacids
@@ -55,49 +53,48 @@ namespace PstpFinder
     AA_ASN
   };
 
-  const string aminoacidLetter[] =
+  const std::string aminoacidLetter[] =
     { "X", "A", "V", "G", "L", "I", "T", "S", "M", "C", "P", "Y", "W", "F",
       "H", "R", "K", "E", "D", "Q", "N" };
 
-  const string aminoacidTriplet[] =
+  const std::string aminoacidTriplet[] =
     { "UNK", "ALA", "VAL", "GLY", "LEU", "ILE", "THR", "SER", "MET", "CYS",
       "PRO", "TYR", "TRP", "PHE", "HIS", "ARG", "LYS", "GLU", "ASP", "GLN",
       "ASN" };
-  const string aminoacidUncommonTranslator[] =
+  const std::string aminoacidUncommonTranslator[] =
     { "CYP", "CYS", "CYD", "CYS", "HID", "HIS", "HIE", "HIS", "HIP", "HIS",
       "LYP", "LYS", "LYD", "LYS", "LYN", "LYS", "ASH", "ASP", "GLH", "GLU" };
   const unsigned int aminoacidUncommonTranslatorSize =
       sizeof(aminoacidUncommonTranslator)
           / sizeof(*aminoacidUncommonTranslator);
 
-  struct ProteinAtom :
-      public Atom
+  struct ProteinAtom : public Atom
   {
       char type[5];
       unsigned int index;
 
       ProteinAtom() = default;
-      explicit ProteinAtom(const string& type)
+      explicit ProteinAtom(const std::string& type)
       {
         if(type.size() > 4)
           type.copy(this->type, 4);
         else
-          type.copy(this->type, string::npos);
+          type.copy(this->type, std::string::npos);
         this->type[4] = '\0';
       }
 
       explicit ProteinAtom(int index) : index(index) {}
 
-      inline bool isType(const string& type) const
+      inline bool isType(const std::string& type) const
       {
         return type == this->type;
       }
 
-      string getTrimmedType() const
+      std::string getTrimmedType() const
       {
-        string trimmedType(begin(type), end(type));
-        trimmedType.erase(remove(begin(trimmedType), end(trimmedType), ' '),
-                          end(trimmedType));
+        std::string trimmedType(std::begin(type), std::end(type));
+        trimmedType.erase(remove(std::begin(trimmedType), std::end(trimmedType), ' '),
+                          std::end(trimmedType));
         return trimmedType;
       }
   };
@@ -107,25 +104,25 @@ namespace PstpFinder
   {
       Aminoacids type;
       int index;
-      vector<AtomType> atoms;
+      std::vector<AtomType> atoms;
       char chain;
 
       Residue() = default;
       explicit Residue(Aminoacids aminoacid) : type(aminoacid) {}
 
       template<typename T,
-        typename enable_if<is_same<typename remove_reference<T>::type,
+        typename std::enable_if<std::is_same<typename std::remove_reference<T>::type,
           Residue<AtomType>>::value>::type* = nullptr>
-      Residue(const typename remove_reference<T>::type& residue) :
+      Residue(const typename std::remove_reference<T>::type& residue) :
         type(residue.type),
         index(residue.index),
         atoms(residue.atoms),
         chain(residue.chain) {}
 
       template<typename T,
-        typename enable_if<is_same<typename remove_reference<T>::type,
+        typename std::enable_if<std::is_same<typename std::remove_reference<T>::type,
           Residue<AtomType>>::value>::type* = nullptr>
-      Residue(typename remove_reference<T>::type&& residue) :
+      Residue(typename std::remove_reference<T>::type&& residue) :
         type(move(residue.type)),
         index(move(residue.index)),
         atoms(move(residue.atoms)),
@@ -133,36 +130,36 @@ namespace PstpFinder
 
       // TODO: a template template splitter
       template<template <typename> class OldResidue, typename OldAtom,
-        typename enable_if<not is_same<
-          typename remove_reference<OldResidue<OldAtom>>::type,
+        typename std::enable_if<not std::is_same<
+          typename std::remove_reference<OldResidue<OldAtom>>::type,
           Residue<AtomType>>::value>::type* = nullptr>
       Residue(OldResidue<OldAtom>&& residue) :
         type(move(residue.type)), index(move(residue.index)),
-        atoms(begin(residue.atoms), end(residue.atoms)),
+        atoms(std::begin(residue.atoms), std::end(residue.atoms)),
         chain(move(residue.chain))
       {
           static_assert(
-              is_same<typename remove_reference<OldResidue<OldAtom>>::type,
+              std::is_same<typename std::remove_reference<OldResidue<OldAtom>>::type,
               Residue<OldAtom>>::value, "Argument type is not Residue");
       }
       template<template <typename> class OldResidue, typename OldAtom,
-        typename enable_if<not is_same<
-          typename remove_reference<OldResidue<OldAtom>>::type,
+        typename std::enable_if<not std::is_same<
+          typename std::remove_reference<OldResidue<OldAtom>>::type,
           Residue<AtomType>>::value>::type* = nullptr>
       Residue(const OldResidue<OldAtom>& residue) :
         type(residue.type), index(residue.index),
-        atoms(begin(residue.atoms), end(residue.atoms)),
+        atoms(std::begin(residue.atoms), std::end(residue.atoms)),
         chain(residue.chain)
       {
           static_assert(
-              is_same<typename remove_reference<OldResidue<OldAtom>>::type,
+              std::is_same<typename std::remove_reference<OldResidue<OldAtom>>::type,
               Residue<OldAtom>>::value, "Argument type is not Residue");
       }
 
-      template<typename T, typename enable_if<is_same<
-          typename remove_reference<T>::type,
+      template<typename T, typename std::enable_if<std::is_same<
+          typename std::remove_reference<T>::type,
           Residue<AtomType>>::value>::type* = nullptr>
-      Residue& operator =(const typename remove_reference<T>::type& residue)
+      Residue& operator =(const typename std::remove_reference<T>::type& residue)
       {
         type = residue.type;
         index = residue.index;
@@ -172,10 +169,10 @@ namespace PstpFinder
         return *this;
       }
 
-      template<typename T, typename enable_if<is_same<
-          typename remove_reference<T>::type,
+      template<typename T, typename std::enable_if<std::is_same<
+          typename std::remove_reference<T>::type,
           Residue<AtomType>>::value>::type* = nullptr>
-      Residue& operator =(typename remove_reference<T>::type&& residue)
+      Residue& operator =(typename std::remove_reference<T>::type&& residue)
       {
         type = move(residue.type);
         index = move(residue.index);
@@ -186,18 +183,18 @@ namespace PstpFinder
       }
 
       template<template <typename> class OldResidue, typename OldAtom,
-        typename enable_if<not is_same<
-          typename remove_reference<OldResidue<OldAtom>>::type,
+        typename std::enable_if<not std::is_same<
+          typename std::remove_reference<OldResidue<OldAtom>>::type,
           Residue<AtomType>>::value>::type* = nullptr>
       Residue& operator =(OldResidue<OldAtom>&& residue);
       template<template <typename> class OldResidue, typename OldAtom,
-        typename enable_if<not is_same<
-          typename remove_reference<OldResidue<OldAtom>>::type,
+        typename std::enable_if<not std::is_same<
+          typename std::remove_reference<OldResidue<OldAtom>>::type,
           Residue<AtomType>>::value>::type* = nullptr>
       Residue& operator =(const OldResidue<OldAtom>& residue);
 
-      const AtomType& getAtomByType(const string& atomType) const;
-      static Aminoacids getTypeByName(string residueName);
+      const AtomType& getAtomByType(const std::string& atomType) const;
+      static Aminoacids getTypeByName(std::string residueName);
   };
 
   template<typename AtomType = ProteinAtom>
@@ -205,7 +202,7 @@ namespace PstpFinder
   {
     public:
       typedef AtomType atom_type;
-      string name;
+      std::string name;
       int model;
 
       Protein();
@@ -214,12 +211,12 @@ namespace PstpFinder
       template<typename OldAtom>
         Protein& operator =(const Protein<OldAtom>& proteinr);
 
-      const vector<Residue<AtomType>>& residues() const;
-      vector<Residue<AtomType>>& residuesRW();
-      vector<const AtomType*>& atoms() const;
+      const std::vector<Residue<AtomType>>& residues() const;
+      std::vector<Residue<AtomType>>& residuesRW();
+      std::vector<const AtomType*>& atoms() const;
       template<typename ResidueType>
-        bool appendResidue(ResidueType&& residue,typename enable_if<
-          is_same<typename remove_reference<ResidueType>::type,
+        bool appendResidue(ResidueType&& residue,typename std::enable_if<
+          std::is_same<typename std::remove_reference<ResidueType>::type,
           Residue<AtomType>>::value>::type* = nullptr);
 
       const AtomType& getAtomByIndex(unsigned int index) const;
@@ -230,17 +227,17 @@ namespace PstpFinder
       void forceUnlock() const;
 
       template<typename NewAtomType>
-      typename enable_if<not is_same<AtomType, NewAtomType>::value,
-        vector<Residue<NewAtomType>>>::type
+      typename std::enable_if<not std::is_same<AtomType, NewAtomType>::value,
+        std::vector<Residue<NewAtomType>>>::type
         convertResidues() const;
       template<typename NewAtomType>
-      typename enable_if<is_same<AtomType, NewAtomType>::value,
-        vector<Residue<NewAtomType>>>::type
+      typename std::enable_if<std::is_same<AtomType, NewAtomType>::value,
+        std::vector<Residue<NewAtomType>>>::type
         convertResidues() const;
 
     protected:
-      vector<Residue<AtomType>> pResidues;
-      mutable vector<const AtomType*> pAtoms;
+      std::vector<Residue<AtomType>> pResidues;
+      mutable std::vector<const AtomType*> pAtoms;
       mutable bool locked;
   };
 }

@@ -55,7 +55,8 @@ namespace PstpFinder
   {
     public:
       SasAnalysis_Base(unsigned int nAtoms, const Gromacs&, Session<T>&);
-      SasAnalysis_Base(const Gromacs& gromacs, const string& sessionFileName);
+      SasAnalysis_Base(const Gromacs& gromacs,
+                       const std::string& sessionFileName);
       SasAnalysis_Base(const Gromacs&, Session<T>&);
       virtual bool setMaxBytes(unsigned long bytes);
       virtual unsigned long getMaxBytes();
@@ -74,8 +75,8 @@ namespace PstpFinder
       unsigned long maxFrames, maxBytes, maxChunk;
       unsigned int bufferCount;
       unsigned int bufferMax;
-      mutable condition_variable bufferCountCondition;
-      mutable mutex bufferMutex, bufferCountMutex;
+      mutable std::condition_variable bufferCountCondition;
+      mutable std::mutex bufferMutex, bufferCountMutex;
       bool changeable;
 
       template<typename, typename> friend class SasAnalysisThread_Base;
@@ -95,7 +96,8 @@ namespace PstpFinder
       SasAnalysis_Read(unsigned int nAtoms, const Gromacs& gromacs,
                         Session<T>& sessionFile) :
           Base(nAtoms, gromacs, sessionFile) { updateChunks(); }
-      SasAnalysis_Read(const Gromacs& gromacs, const string& sessionFileName) :
+      SasAnalysis_Read(const Gromacs& gromacs,
+                       const std::string& sessionFileName) :
           Base(gromacs, sessionFileName) { updateChunks(); }
       SasAnalysis_Read(const Gromacs& gromacs, Session<T>& sessionFile) :
           Base(gromacs, sessionFile) { updateChunks(); }
@@ -122,7 +124,8 @@ namespace PstpFinder
       SasAnalysis_Write(unsigned int nAtoms, const Gromacs& gromacs,
                         Session<T>& sessionFile) :
           Base(nAtoms, gromacs, sessionFile), readFrames(0) { updateChunks(); }
-      SasAnalysis_Write(const Gromacs& gromacs, const string& sessionFileName) :
+      SasAnalysis_Write(const Gromacs& gromacs,
+                        const std::string& sessionFileName) :
           Base(gromacs, sessionFileName), readFrames(0) { updateChunks(); }
       SasAnalysis_Write(const Gromacs& gromacs, Session<T>& sessionFile) :
           Base(gromacs, sessionFile), readFrames(0) { updateChunks(); }
@@ -147,10 +150,10 @@ namespace PstpFinder
 
   template<typename T>
   class SasAnalysis<T,
-      typename enable_if<is_base_of<base_stream(basic_istream, T), T>::value
-                          and not is_base_of<base_stream(basic_ostream, T),
-                                              T>::value>
-                ::type> :
+      typename std::enable_if<
+          std::is_base_of<base_stream(std::basic_istream, T), T>::value
+          and not std::is_base_of<base_stream(std::basic_ostream, T),
+          T>::value>::type> :
       public SasAnalysis_Read<T>
   {
     public:
@@ -159,15 +162,16 @@ namespace PstpFinder
           SasAnalysis_Read<T>(nAtoms, gromacs, sessionFile) {}
       SasAnalysis(const Gromacs& gromacs, Session<T>& sessionFile) :
           SasAnalysis_Read<T>(gromacs, sessionFile) {}
-      SasAnalysis(const Gromacs& gromacs, const string& sessionFileName) :
+      SasAnalysis(const Gromacs& gromacs,
+                  const std::string& sessionFileName) :
           SasAnalysis_Read<T>(gromacs, sessionFileName) {}
   };
 
   template<typename T>
   class SasAnalysis<T,
-      typename enable_if<
-        not is_base_of<base_stream(basic_istream, T), T>::value and
-        is_base_of<base_stream(basic_ostream, T), T>::value>::type> :
+      typename std::enable_if<
+        not std::is_base_of<base_stream(std::basic_istream, T), T>::value and
+        std::is_base_of<base_stream(std::basic_ostream, T), T>::value>::type> :
       public SasAnalysis_Write<T>
   {
     public:
@@ -176,15 +180,16 @@ namespace PstpFinder
           SasAnalysis_Write<T>(nAtoms, gromacs, sessionFile) {}
       SasAnalysis(const Gromacs& gromacs, Session<T>& sessionFile) :
           SasAnalysis_Write<T>(gromacs, sessionFile) {}
-      SasAnalysis(const Gromacs& gromacs, const string& sessionFileName) :
+      SasAnalysis(const Gromacs& gromacs,
+                  const std::string& sessionFileName) :
           SasAnalysis_Write<T>(gromacs, sessionFileName) {}
   };
 
   template<typename T>
   class SasAnalysis<T,
-      typename enable_if<
-        is_base_of<base_stream(basic_istream, T), T>::value and
-        is_base_of<base_stream(basic_ostream, T), T>::value>::type> :
+      typename std::enable_if<
+      std::is_base_of<base_stream(std::basic_istream, T), T>::value and
+      std::is_base_of<base_stream(std::basic_ostream, T), T>::value>::type> :
       public SasAnalysis_Write<T>
   {
     public:
@@ -193,7 +198,8 @@ namespace PstpFinder
           SasAnalysis_Write<T>(nAtoms, gromacs, sessionFile) { init(); }
       SasAnalysis(const Gromacs& gromacs, Session<T>& sessionFile) :
           SasAnalysis_Write<T>(gromacs, sessionFile) { init(); }
-      SasAnalysis(const Gromacs& gromacs, const string& sessionFileName) :
+      SasAnalysis(const Gromacs& gromacs,
+                  const std::string& sessionFileName) :
           SasAnalysis_Write<T>(gromacs, sessionFileName) { init(); }
 
     private:
@@ -210,7 +216,7 @@ namespace PstpFinder
           unsigned int validatedChunks(0);
           unsigned int chunkSize;
           unsigned long totalFrames(0);
-          streampos backupPosition;
+          std::streampos backupPosition;
 
           *Base::serializer >> chunkSize;
           backupPosition = Base::sasMetaStream.tellg();
@@ -218,7 +224,7 @@ namespace PstpFinder
           while(not Base::sasMetaStream.eof())
           {
             Base::sasMetaStream.seekg(chunkSize * sasAtomSize * Base::nAtoms,
-                                      ios_base::cur);
+                                      std::ios_base::cur);
 
             if(Base::sasMetaStream.eof())
             {
@@ -236,7 +242,7 @@ namespace PstpFinder
           if(totalFrames == 0)
             Base::sasMetaStream.seekg(0);
           else
-            Base::sasMetaStream.seekg(0, ios_base::end);
+            Base::sasMetaStream.seekg(0, std::ios_base::end);
 
           Base::readFrames = totalFrames;
           Base::sasMetaStream.seekp(Base::sasMetaStream.tellg());
@@ -267,7 +273,7 @@ namespace PstpFinder
 
   template<typename T>
   SasAnalysis_Base<T>::SasAnalysis_Base(const Gromacs& gromacs,
-                                        const string& sessionFileName) :
+                                        const std::string& sessionFileName) :
       rawSession(sessionFileName), sasMetaStream(rawSession.getSasStream())
   {
     nAtoms = gromacs.getGroup("Protein").size();
@@ -375,7 +381,7 @@ namespace PstpFinder
       Base::bufferMutex.lock();
       while(Base::bufferCount == 0)
       {
-        unique_lock<mutex> bufferCountLock(Base::bufferCountMutex);
+        std::unique_lock<std::mutex> bufferCountLock(Base::bufferCountMutex);
         Base::bufferMutex.unlock();
         Base::bufferCountCondition.wait(bufferCountLock);
         Base::bufferMutex.lock();
@@ -399,7 +405,7 @@ namespace PstpFinder
       if(Base::bufferCount == 0)
       {
         Base::bufferMutex.unlock();
-        unique_lock<mutex> bufferCountLock(Base::bufferCountMutex);
+        std::unique_lock<std::mutex> bufferCountLock(Base::bufferCountMutex);
         Base::bufferCountCondition.wait(bufferCountLock);
         Base::bufferMutex.lock();
       }
@@ -440,7 +446,7 @@ namespace PstpFinder
     Base::bufferMutex.lock();
     while(Base::bufferCount == 0)
     {
-      unique_lock<mutex> bufferCountLock(Base::bufferCountMutex);
+      std::unique_lock<std::mutex> bufferCountLock(Base::bufferCountMutex);
       Base::bufferMutex.unlock();
       Base::bufferCountCondition.wait(bufferCountLock);
       Base::bufferMutex.lock();
@@ -473,17 +479,17 @@ namespace PstpFinder
     if(Base::sasMetaStream.eof())
       return false;
 
-    vector<SasAtom*> chunk = loadChunk(*Base::serializer);
+    std::vector<SasAtom*> chunk = loadChunk(*Base::serializer);
     unsigned long chunkSize = chunk.capacity()
                               * (sizeof(SasAtom*)
                                  + sizeof(SasAtom) * Base::nAtoms)
-                              + sizeof(vector<SasAtom*> );
+                              + sizeof(std::vector<SasAtom*> );
     if(chunkSize > Base::maxChunk)
     {
       // bufferMutex already lock_upgrade from ThreadOpen
       while(Base::bufferCount != 0)
       {
-        unique_lock<mutex> lock(Base::bufferCountMutex);
+        std::unique_lock<std::mutex> lock(Base::bufferCountMutex);
         Base::bufferMutex.unlock();
         Base::bufferCountCondition.wait(lock);
         Base::bufferMutex.lock();
@@ -603,16 +609,17 @@ namespace PstpFinder
   {
     // SasAtom serialization produces real * 4
     maxFrames = maxChunk / (nAtoms * sizeof(real) * 4);
-    vector<SasAtom*> testVector(maxFrames);
+    std::vector<SasAtom*> testVector(maxFrames);
     unsigned int vectorSize = testVector.capacity()
                               * (sizeof(SasAtom*) + sizeof(SasAtom) * nAtoms)
-                              + sizeof(vector<SasAtom*> );
+                              + sizeof(std::vector<SasAtom*> );
 
     bufferMax = maxBytes / vectorSize;
     if(bufferMax == 0)
     {
-      cerr << "Can't allocate memory... Strange. Is your RAM full?" << endl;
-      throw bad_alloc();
+      std::cerr << "Can't allocate memory... Strange. Is your RAM full?" <<
+          std::endl;
+      throw std::bad_alloc();
     }
 
     chunks = boost::circular_buffer<std::vector<SasAtom*> >(bufferMax);

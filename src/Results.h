@@ -24,8 +24,6 @@
 #include "NewAnalysis.h"
 #include <gtkmm.h>
 
-using namespace Gtk;
-
 namespace PstpFinder
 {
   class NewAnalysis;
@@ -33,7 +31,7 @@ namespace PstpFinder
   struct PocketResidue
   {
     const Residue<SasPdbAtom>* residue;
-    vector<const Pocket*> pockets;
+    std::vector<const Pocket*> pockets;
 
     PocketResidue(const Residue<SasPdbAtom>& residue) :
       residue(&residue) { ; }
@@ -51,7 +49,7 @@ namespace PstpFinder
     }
   };
 
-  class Results: public Window
+  class Results: public Gtk::Window
   {
     public:
 #if GTKMM_MAJOR == 2
@@ -60,7 +58,7 @@ namespace PstpFinder
       typedef Gdk::RGBA Color;
 #endif
 
-      Results(NewAnalysis& parent, const shared_ptr<Pittpi>& pittpi,
+      Results(NewAnalysis& parent, const std::shared_ptr<Pittpi>& pittpi,
               const Gromacs& gromacs);
       void init() throw();
     private:
@@ -77,30 +75,30 @@ namespace PstpFinder
       // FIXME: initialized here.
       const std::string statusBarMessages[6];
 
-      Notebook notebook;
-      DrawingArea drawResultsGraph;
-      TextView textViewData, textViewDetails;
-      ScrolledWindow scrollData, scrollDetails;
-      VBox drawResultsVBox, vboxPocketInformation, vboxMain;
-      HPaned panedMain;
-      Statusbar drawResultsStatusBar;
-      HBox hboxPocketCenter, hboxPocketStart,
+      Gtk::Notebook notebook;
+      Gtk::DrawingArea drawResultsGraph;
+      Gtk::TextView textViewData, textViewDetails;
+      Gtk::ScrolledWindow scrollData, scrollDetails;
+      Gtk::VBox drawResultsVBox, vboxPocketInformation, vboxMain;
+      Gtk::HPaned panedMain;
+      Gtk::Statusbar drawResultsStatusBar;
+      Gtk::HBox hboxPocketCenter, hboxPocketStart,
            hboxPocketEnd, hboxPocketWidth;
-      Label labelPocketCenter, labelPocketStart,
+      Gtk::Label labelPocketCenter, labelPocketStart,
             labelPocketEnd, labelPocketWidth;
-      Entry entryPocketCenter, entryPocketStart,
+      Gtk::Entry entryPocketCenter, entryPocketStart,
             entryPocketEnd, entryPocketWidth;
-      Label labelPocketResidues;
-      TextView textPocketResidues;
-      Glib::RefPtr<UIManager> uiManager;
-      Glib::RefPtr<ActionGroup> actionGroup;
+      Gtk::Label labelPocketResidues;
+      Gtk::TextView textPocketResidues;
+      Glib::RefPtr<Gtk::UIManager> uiManager;
+      Glib::RefPtr<Gtk::ActionGroup> actionGroup;
 
       Gromacs gromacs;
-      shared_ptr<Pittpi> pittpi;
+      std::shared_ptr<Pittpi> pittpi;
       NewAnalysis& parent;
-      list<PocketResidue> residues;
+      std::list<PocketResidue> residues;
       float maxPocketLength;
-      vector<Color> colors;
+      std::vector<Color> colors;
       const Pocket* selectedPocket;
       const Pocket* hoveringOnPocket;
       bool fixedSelection;

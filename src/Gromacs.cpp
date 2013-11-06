@@ -41,19 +41,17 @@
 #include <gromacs/confio.h>
 #include <gromacs/statutil.h>
 
-using namespace std;
-
 namespace PstpFinder
 {
-  static mutex nsc_dclm_pbc_mutex;
+  static std::mutex nsc_dclm_pbc_mutex;
 
   Gromacs::Gromacs(float solventSize)
   {
     init(solventSize);
   }
 
-  Gromacs::Gromacs(const string& trajectoryFileName,
-                   const string& topologyFileName, float solventSize)
+  Gromacs::Gromacs(const std::string& trajectoryFileName,
+                   const std::string& topologyFileName, float solventSize)
   {
     trjName = trajectoryFileName;
     tprName = topologyFileName;
@@ -254,15 +252,15 @@ namespace PstpFinder
   void
   Gromacs::calculateSas(Session<Stream>& session)
   {
-    operationThread = thread(
-        bind(&Gromacs::__calculateSas<Stream>, ref(*this), ref(session)));
+    operationThread = std::thread(
+        bind(&Gromacs::__calculateSas<Stream>, std::ref(*this), ref(session)));
   }
 
   void
   Gromacs::calculateAverageStructure()
   {
-    operationThread = thread(bind(&Gromacs::__calculateAverageStructure,
-                                  ref(*this)));
+    operationThread = std::thread(std::bind(&Gromacs::__calculateAverageStructure,
+                                  std::ref(*this)));
   }
 
   void
@@ -280,7 +278,7 @@ namespace PstpFinder
     real totarea, totvolume;
     int nsurfacedots;
     real *dgs_factor, *radius, *area = 0, *surfacedots = 0, dgsolv;
-    vector<atom_id> index;
+    std::vector<atom_id> index;
     gmx_rmpbc_t gpbc = nullptr;
     int nx;
 
@@ -360,7 +358,7 @@ namespace PstpFinder
 
       int nsc_dclm_pdc_result;
       {
-        unique_lock<mutex> lock(nsc_dclm_pbc_mutex);
+        std::unique_lock<std::mutex> lock(nsc_dclm_pbc_mutex);
         nsc_dclm_pdc_result = nsc_dclm_pbc(fr.x, radius, nx, 24, FLAG_ATOM_AREA,
                                            &totarea, &area, &totvolume,
                                            &surfacedots, &nsurfacedots,
@@ -422,7 +420,7 @@ namespace PstpFinder
   const Protein<>&
   Gromacs::__calculateAverageStructure()
   {
-    vector<atom_id> index;
+    std::vector<atom_id> index;
     int npdbatoms, isize, count;
     rvec xcm;
     matrix pdbbox;
@@ -446,7 +444,7 @@ namespace PstpFinder
     isize = index.size();
 
     w_rls = new real[top.atoms.nr];
-    for(vector<atom_id>::const_iterator i = index.begin(); i < index.end(); i++)
+    for(std::vector<atom_id>::const_iterator i = index.begin(); i < index.end(); i++)
       w_rls[*i] = top.atoms.atom[*i].m;
 
     xav = new double[isize * DIM]();
@@ -600,8 +598,8 @@ namespace PstpFinder
       return 0;
   }
 
-  vector<atom_id>
-  Gromacs::getGroup(const string& groupName)
+  std::vector<atom_id>
+  Gromacs::getGroup(const std::string& groupName)
   {
     if(not gotTopology and not getTopology())
       abort();
@@ -609,8 +607,8 @@ namespace PstpFinder
     return const_cast<const Gromacs&>(*this).getGroup(groupName);
   }
 
-  vector<atom_id>
-  Gromacs::getGroup(const string& groupName) const
+  std::vector<atom_id>
+  Gromacs::getGroup(const std::string& groupName) const
   {
     // The original code was simply:
     // get_index(&top.atoms, 0, 2, nx, index, grpname);
@@ -620,7 +618,7 @@ namespace PstpFinder
     if(not gotTopology)
       throw;
 
-    vector<atom_id> group;
+    std::vector<atom_id> group;
     int size;
 
     t_blocka* grps;
@@ -666,8 +664,8 @@ namespace PstpFinder
     t_inputrec ir;
     matrix topbox;
     char title[1024];
-    string extension = file_extension(tprName);
-    transform(begin(extension), end(extension), begin(extension), ::tolower);
+    std::string extension = file_extension(tprName);
+    std::transform(std::begin(extension), std::end(extension), std::begin(extension), ::tolower);
 
     if(extension == ".tpr")
     {
@@ -730,13 +728,13 @@ namespace PstpFinder
     }
   }
 
-  string
+  std::string
   Gromacs::getTrajectoryFile() const
   {
     return trjName;
   }
 
-  string
+  std::string
   Gromacs::getTopologyFile() const
   {
     return tprName;
@@ -778,8 +776,8 @@ namespace PstpFinder
       return 0;
 
     int nFrames = 0;
-    string extension = file_extension(trjName);
-    transform(begin(extension), end(extension), begin(extension), ::tolower);
+    std::string extension = file_extension(trjName);
+    transform(std::begin(extension), std::end(extension), std::begin(extension), ::tolower);
     if(extension == "pdb")
     {
       /* I use old std legacy method for pdb files */
@@ -811,14 +809,14 @@ namespace PstpFinder
     else
     {
       /* This is a workaround to obtain the f*****g number of frames... */
-      ifstream trjStream(trjName.c_str(), ios::in | ios::binary);
+      std::ifstream trjStream(trjName.c_str(), std::ios::in | std::ios::binary);
       bool gotFirst = false;
       unsigned char cTmp[4];
       int nAtoms;
       int* iTmp = (int*) cTmp;
       int step = -1;
 
-      trjStream.seekg(4, ios::beg);
+      trjStream.seekg(4, std::ios::beg);
       cTmp[3] = trjStream.get();
       cTmp[2] = trjStream.get();
       cTmp[1] = trjStream.get();
@@ -848,15 +846,15 @@ namespace PstpFinder
           gotFirst = false;
           break;
         }
-        trjStream.seekg(-3, ios::cur);
+        trjStream.seekg(-3, std::ios::cur);
       }
 
       if(step == -1)
         return 0;
 
-      trjStream.seekg(-7, ios::end);
+      trjStream.seekg(-7, std::ios::end);
 
-      while(trjStream.seekg(-5, ios::cur))
+      while(trjStream.seekg(-5, std::ios::cur))
       {
         cTmp[3] = trjStream.get();
         cTmp[2] = trjStream.get();
@@ -866,7 +864,7 @@ namespace PstpFinder
         if(nAtoms == *iTmp and not gotFirst)
         {
           gotFirst = true;
-          trjStream.seekg(-3, ios::cur);
+          trjStream.seekg(-3, std::ios::cur);
         }
         else if(nAtoms == *iTmp)
         {
@@ -897,7 +895,7 @@ namespace PstpFinder
     if(not abortFlag and operationThread.joinable()
        and getCurrentFrame() < getFramesCount())
     {
-      unique_lock<mutex> slock(operationMutex, defer_lock);
+      std::unique_lock<std::mutex> slock(operationMutex, std::defer_lock);
       wakeCondition.wait(slock);
     }
     operationMutex.unlock();
@@ -910,7 +908,7 @@ namespace PstpFinder
     while(not abortFlag and operationThread.joinable()
           and getCurrentFrame() < refFrame + 1)
     {
-      unique_lock<mutex> slock(operationMutex, defer_lock);
+      std::unique_lock<std::mutex> slock(operationMutex, std::defer_lock);
       wakeCondition.wait(slock);
     }
     operationMutex.unlock();
@@ -1035,9 +1033,9 @@ namespace PstpFinder
     return _usePBC = value;
   }
 
-  template void Gromacs::__calculateSas(Session<fstream>&);
-  template void Gromacs::__calculateSas(Session<ofstream>&);
+  template void Gromacs::__calculateSas(Session<std::fstream>&);
+  template void Gromacs::__calculateSas(Session<std::ofstream>&);
 
-  template void Gromacs::calculateSas(Session<fstream>&);
-  template void Gromacs::calculateSas(Session<ofstream>&);
+  template void Gromacs::calculateSas(Session<std::fstream>&);
+  template void Gromacs::calculateSas(Session<std::ofstream>&);
 }

@@ -24,19 +24,19 @@
 #include <algorithm>
 #include <cassert>
 
-using namespace PstpFinder;
-using namespace std;
+namespace PstpFinder
+{
 
 template<typename AtomType>
 template<template <typename> class OldResidue, typename OldAtom,
-  typename enable_if<not is_same<
-    typename remove_reference<OldResidue<OldAtom>>::type,
+  typename std::enable_if<not std::is_same<
+    typename std::remove_reference<OldResidue<OldAtom>>::type,
     Residue<AtomType>>::value>::type*>
 Residue<AtomType>&
 Residue<AtomType>::operator =(const OldResidue<OldAtom>& residue)
 {
   static_assert(
-      is_same<typename remove_reference<OldResidue<OldAtom>>::type,
+      std::is_same<typename std::remove_reference<OldResidue<OldAtom>>::type,
       Residue<OldAtom>>::value, "Argument type is not Residue");
 
   type = residue.type;
@@ -51,14 +51,14 @@ Residue<AtomType>::operator =(const OldResidue<OldAtom>& residue)
 
 template<typename AtomType>
 template<template <typename> class OldResidue, typename OldAtom,
-  typename enable_if<not is_same<
-    typename remove_reference<OldResidue<OldAtom>>::type,
+  typename std::enable_if<not std::is_same<
+    typename std::remove_reference<OldResidue<OldAtom>>::type,
     Residue<AtomType>>::value>::type*>
 Residue<AtomType>&
 Residue<AtomType>::operator =(OldResidue<OldAtom>&& residue)
 {
   static_assert(
-      is_same<typename remove_reference<OldResidue<OldAtom>>::type,
+      std::is_same<typename std::remove_reference<OldResidue<OldAtom>>::type,
       Residue<OldAtom>>::value, "Argument type is not Residue");
 
   type = move(residue.type);
@@ -73,7 +73,7 @@ Residue<AtomType>::operator =(OldResidue<OldAtom>&& residue)
 
 template<typename AtomType>
 const AtomType&
-Residue<AtomType>::getAtomByType(const string& atomType) const
+Residue<AtomType>::getAtomByType(const std::string& atomType) const
 {
   static const AtomType unknown = static_cast<AtomType>(ProteinAtom("UNK"));
   for(const AtomType& atom : atoms)
@@ -85,10 +85,10 @@ Residue<AtomType>::getAtomByType(const string& atomType) const
 
 template<typename AtomType>
 Aminoacids
-Residue<AtomType>::getTypeByName(string residueName)
+Residue<AtomType>::getTypeByName(std::string residueName)
 {
-  transform(begin(residueName), end(residueName),
-            begin(residueName), ::toupper);
+  std::transform(std::begin(residueName), std::end(residueName),
+                 std::begin(residueName), ::toupper);
 
   for(unsigned int i = 0; i < 21; i++)
   {
@@ -143,14 +143,14 @@ Protein<AtomType>::operator =(const Protein<OldAtom>& protein)
 }
 
 template<typename AtomType>
-const vector<Residue<AtomType>>&
+const std::vector<Residue<AtomType>>&
 Protein<AtomType>::residues() const
 {
   return pResidues;
 }
 
 template<typename AtomType>
-vector<Residue<AtomType>>&
+std::vector<Residue<AtomType>>&
 Protein<AtomType>::residuesRW()
 {
   locked = false;
@@ -158,7 +158,7 @@ Protein<AtomType>::residuesRW()
 }
 
 template<typename AtomType>
-vector<const AtomType*>&
+std::vector<const AtomType*>&
 Protein<AtomType>::atoms() const
 {
   if(not locked)
@@ -176,14 +176,16 @@ Protein<AtomType>::atoms() const
 template<typename AtomType>
 template<typename ResidueType>
 bool
-Protein<AtomType>::appendResidue(ResidueType&& residue,
-    typename enable_if<is_same<typename remove_reference<ResidueType>::type,
-    Residue<AtomType>>::value>::type*)
+Protein<AtomType>::appendResidue(
+    ResidueType&& residue,
+    typename std::enable_if<
+        std::is_same<typename std::remove_reference<ResidueType>::type,
+            Residue<AtomType>>::value>::type*)
 {
   if(locked)
     return false;
 
-  pResidues.push_back(forward<Residue<AtomType>>(residue));
+  pResidues.push_back(std::forward<Residue<AtomType>>(residue));
   return true;
 }
 
@@ -279,11 +281,11 @@ Protein<AtomType>::forceUnlock() const
 
 template<typename AtomType>
 template<typename NewAtomType>
-typename enable_if<not is_same<AtomType, NewAtomType>::value,
-  vector<Residue<NewAtomType>>>::type
+typename std::enable_if<not std::is_same<AtomType, NewAtomType>::value,
+  std::vector<Residue<NewAtomType>>>::type
 Protein<AtomType>::convertResidues() const
 {
-  vector<Residue<NewAtomType>> newResidues;
+  std::vector<Residue<NewAtomType>> newResidues;
   newResidues.reserve(pResidues.size());
 
   for(auto& residue : pResidues)
@@ -294,9 +296,11 @@ Protein<AtomType>::convertResidues() const
 
 template<typename AtomType>
 template<typename NewAtomType>
-typename enable_if<is_same<AtomType, NewAtomType>::value,
-  vector<Residue<NewAtomType>>>::type
+typename std::enable_if<std::is_same<AtomType, NewAtomType>::value,
+  std::vector<Residue<NewAtomType>>>::type
 Protein<AtomType>::convertResidues() const
 {
-  return vector<Residue<NewAtomType>>(pResidues);
+  return std::vector<Residue<NewAtomType>>(pResidues);
 }
+
+} /* namespace PstpFinder */
