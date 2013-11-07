@@ -194,7 +194,7 @@ namespace PstpFinder
         Base(parent)
       {
         this->analysisThread = std::thread(
-            std::bind(&Base::threadOpen, ref(*this)));
+            std::bind(&Base::threadOpen, std::ref(*this)));
       }
       virtual ~SasAnalysisThread() {}
       virtual void threadOpen() { Base::threadOpen(); }
@@ -211,7 +211,7 @@ namespace PstpFinder
         Base(parent)
       {
         this->analysisThread = std::thread(
-            std::bind(&Base::threadSave, ref(*this)));
+            std::bind(&Base::threadSave, std::ref(*this)));
       }
       virtual ~SasAnalysisThread() {}
       virtual void

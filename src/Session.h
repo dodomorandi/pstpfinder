@@ -560,7 +560,7 @@ namespace PstpFinder
                           enumStreamType::STREAMTYPE_ADJUST, metaSas.start));
 
         metaSas.stream->callbackClose = std::bind(
-              &Session_Base<T>::eventSasStreamClosing, ref(*this));
+              &Session_Base<T>::eventSasStreamClosing, std::ref(*this));
         break;
       case 1:  // SAS + PDB
       case 2:  // SAS + PDB + Pittpi
@@ -574,7 +574,7 @@ namespace PstpFinder
                             metaSas.start));
 
           metaSas.stream->callbackClose = std::bind(
-              &Session_Base<T>::eventSasStreamClosing, ref(*this));
+              &Session_Base<T>::eventSasStreamClosing, std::ref(*this));
         }
         else if(metaPdb.end == 0)
         {
@@ -587,7 +587,7 @@ namespace PstpFinder
                             metaPdb.start));
 
           metaPdb.stream->callbackClose = std::bind(
-              &Session_Base<T>::eventPdbStreamClosing, ref(*this));
+              &Session_Base<T>::eventPdbStreamClosing, std::ref(*this));
         }
         else if(version == 2 and metaPittpi.end == 0)
         {
@@ -600,7 +600,7 @@ namespace PstpFinder
                             metaPittpi.start));
 
           metaPittpi.stream->callbackClose = std::bind(
-              &Session_Base<T>::eventPittpiStreamClosing, ref(*this));
+              &Session_Base<T>::eventPittpiStreamClosing, std::ref(*this));
         }
         break;
     }
@@ -682,7 +682,7 @@ namespace PstpFinder
                         enumStreamType::STREAMTYPE_ADJUST, metaPdb.start));
 
     metaPdb.stream->callbackClose = std::bind(
-          &Session_Base<T>::eventPdbStreamClosing, ref(*this));
+          &Session_Base<T>::eventPdbStreamClosing, std::ref(*this));
   }
 
   template<typename T>
@@ -716,7 +716,7 @@ namespace PstpFinder
                           metaPittpi.start));
 
       metaPittpi.stream->callbackClose = std::bind(
-            &Session_Base<T>::eventPittpiStreamClosing, ref(*this));
+            &Session_Base<T>::eventPittpiStreamClosing, std::ref(*this));
     }
     else
       sessionFile->close();
