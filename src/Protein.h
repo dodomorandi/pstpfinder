@@ -25,6 +25,7 @@
 #include <string>
 #include <vector>
 #include <algorithm>
+#include <array>
 
 namespace PstpFinder
 {
@@ -70,32 +71,88 @@ namespace PstpFinder
 
   struct ProteinAtom : public Atom
   {
-      char type[5];
+      std::array<char, 2> name;
+      std::array<char, 2> type;
       unsigned int index;
 
       ProteinAtom() = default;
-      explicit ProteinAtom(const std::string& type)
-      {
-        if(type.size() > 4)
-          type.copy(this->type, 4);
-        else
-          type.copy(this->type, std::string::npos);
-        this->type[4] = '\0';
-      }
-
+      explicit ProteinAtom(const std::string& type) { setAtomType(type); }
       explicit ProteinAtom(int index) : index(index) {}
 
       inline bool isType(const std::string& type) const
       {
-        return type == this->type;
+        return type == std::string(std::begin(name), std::end(name)) +
+            std::string(std::begin(type), std::end(type));
       }
 
-      std::string getTrimmedType() const
+      std::string getAtomType() const
       {
-        std::string trimmedType(std::begin(type), std::end(type));
-        trimmedType.erase(remove(std::begin(trimmedType), std::end(trimmedType), ' '),
-                          std::end(trimmedType));
-        return trimmedType;
+        std::stringstream ss;
+        ss << std::setiosflags(std::ios_base::right) << std::setfill(' ');
+        ss << std::setw(2) << std::string(std::begin(name), std::end(name));
+        ss << std::resetiosflags(std::ios_base::right);
+        ss << std::string(std::begin(type), std::end(type));
+
+        return ss.str();
+      }
+
+      void setAtomType(const std::string& type, bool pdbFormat = true)
+      {
+        size_t typeSize = type.size();
+        if(pdbFormat)
+        {
+          if(typeSize > 4)
+            typeSize = 4;
+
+          if(typeSize >= 2)
+            std::copy(std::begin(type),
+                      std::min(std::begin(type) + 2, std::end(type)),
+                      std::begin(name));
+          else if(typeSize == 1)
+          {
+            name[0] = type[0];
+            name[1] = '\0';
+          }
+
+          std::copy(std::min(begin(type) + 2, std::end(type)),
+                    std::end(type), std::begin(type));
+
+          if(typeSize <= 2)
+            type[0] = '\0';
+          else if(typeSize == 3)
+            type[1] = '\0';
+        }
+        else
+        {
+          /*
+           * We don't have indications about name-chain convention.
+           * We try to evaluate atom names basing on standard atoms in proteins
+           */
+          switch(type[0])
+          {
+            case 'H':
+            case 'C':
+            case 'N':
+            case 'O':
+            case 'S':
+            case 'P':
+              name[0] = type[0];
+              name[1] = '\0';
+              std::copy(std::min(begin(type) + 1, std::end(type)),
+                        std::end(type), std::begin(type));
+
+              if(typeSize <= 2)
+                type[0] = '\0';
+              else if(typeSize == 3)
+                type[1] = '\0';
+
+              break;
+            default:
+              /* Don't know what to do. Switching to default */
+              setAtomType(type, true);
+              break;
+          }
+        }
       }
   };
 

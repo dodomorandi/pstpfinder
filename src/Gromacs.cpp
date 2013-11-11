@@ -528,7 +528,7 @@ namespace PstpFinder
         return averageStructure;
       ProteinAtom atom;
       atom.index = i + 1;
-      strncpy(atom.type, *top.atoms.atomname[index[i]], 5);
+      atom.setAtomType(*top.atoms.atomname[index[i]], false);
 
       atom.x = xcm[0] + xav[i * DIM];
       atom.y = xcm[1] + xav[i * DIM + 1];
@@ -560,6 +560,7 @@ namespace PstpFinder
         res.index = top.atoms.resinfo[resind].nr;
         res.type = Residue<>::getTypeByName(
             *top.atoms.resinfo[resind].name);
+        res.chain = 'A';
       }
       res.atoms.push_back(atom);
 

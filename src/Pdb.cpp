@@ -19,6 +19,7 @@
 
 #include "Pdb.h"
 #include "SasAtom.h"
+#include "Protein.h"
 #include <utility>
 #include <cassert>
 #include <sstream>
@@ -82,12 +83,29 @@ Pdb<AtomType>::write(Stream& stream) const
     {
       for(auto& atom : residue.atoms)
       {
-        std::string atomType(atom.type, 4);
+        std::string atomName(std::string(std::begin(atom.name),
+                                         std::end(atom.name)));
+        std::string atomType(std::string(std::begin(atom.type),
+                                         std::end(atom.type)));
+        {
+          size_t pos = atomName.find('\0');
+          if(pos != std::string::npos)
+            atomName.erase(pos);
+
+          pos = atomType.find('\0');
+          if(pos != std::string::npos)
+            atomType.erase(pos);
+        }
+
+        stream << std::resetiosflags(std::ios::adjustfield);
+        stream << std::setiosflags(std::ios::left);
         stream << "ATOM  " << std::setw(5) << atom.index << " ";
-        stream << std::setiosflags(std::ios::left) << std::setw(4) << atomType << " ";
-        stream << std::setw(3) << aminoacidTriplet[residue.type];
-        stream << " " << residue.chain;
-        stream << std::resetiosflags(std::ios::left) << std::setw(4) << residue.index;
+        stream << std::setiosflags(std::ios::right) << std::setw(2) << atomName;
+        stream << std::resetiosflags(std::ios::adjustfield) << std::setw(2);
+        stream << std::setiosflags(std::ios::left);
+        stream << atomType << " " << std::setw(3);
+        stream << aminoacidTriplet[residue.type] << " " << residue.chain;
+        stream << std::setw(4) << residue.index;
         stream << "    " << std::setiosflags(std::ios::right);
         stream << std::setiosflags(std::ios::fixed);
         stream << std::setprecision(3) << std::setw(8) << (atom.x * 10.);
@@ -100,8 +118,8 @@ Pdb<AtomType>::write(Stream& stream) const
         stream << std::setprecision(2) << std::setw(6);
         stream << ((std::get<0>(aux) >= 100) ? 99.99 : std::get<0>(aux));
         stream << std::resetiosflags(std::ios::fixed);
-        stream << "            " << std::setw(2) << atom.getTrimmedType()[0];
-        stream << std::resetiosflags(std::ios::right) << std::endl;
+        stream << "            " << std::setw(2) << atomName << std::endl;
+        stream << std::resetiosflags(std::ios::adjustfield);
       }
     }
   }
@@ -136,6 +154,7 @@ Pdb<AtomType>::readFromStream(Stream&& stream)
     if(buffer == "ATOM")
     {
       AtomType atom;
+      char atomType[5];
 
       if(protein == nullptr)
       {
@@ -149,8 +168,10 @@ Pdb<AtomType>::readFromStream(Stream&& stream)
       {
         streamLine >> std::setw(5) >> atom.index;
         streamLine.seekg(1, std::ios_base::cur); // Empty space
-        streamLine.read(atom.type, 4);
-        atom.type[4] = '\0';
+        streamLine.read(atomType, 4);
+        atomType[4] = '\0';
+        atom.setAtomType(std::string(atomType));
+
         streamLine.seekg(1, std::ios_base::cur);// Alternate location indicator
         streamLine >> std::setw(3) >> buffer;
         residueType = Residue<AtomType>::getTypeByName(buffer);

@@ -77,8 +77,10 @@ Residue<AtomType>::getAtomByType(const std::string& atomType) const
 {
   static const AtomType unknown = static_cast<AtomType>(ProteinAtom("UNK"));
   for(const AtomType& atom : atoms)
-    if(atom.getTrimmedType() == atomType)
+  {
+    if(atom.getAtomType() == atomType)
       return atom;
+  }
 
   return unknown;
 }
