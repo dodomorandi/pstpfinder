@@ -70,7 +70,7 @@ PKG_CHECK_MODULES([PYTHON], [python >= 2.6], [
 ])
 
 if test $HAVE_PYTHON -eq 1; then
-   AX_PYTHON_MODULE([sadic])
+   AX_PYTHON_MODULE([sadic], [2])
    if test "$HAVE_PYMOD_SADIC" = "yes"; then
       AC_DEFINE([HAVE_PYMOD_SADIC], [1], "Sadic Python module")
    else
@@ -83,7 +83,7 @@ fi
 BOOST_REQUIRE([1.37])
 BOOST_SYSTEM
 if test $HAVE_PYTHON -eq 1; then
-   BOOST_PYTHON
+   BOOST_PYTHON([], [2])
 fi
 LIBS="$LIBS $BOOST_SYSTEM_LIBS $BOOST_PYTHON_LIBS"
 AC_SUBST([LIBS])

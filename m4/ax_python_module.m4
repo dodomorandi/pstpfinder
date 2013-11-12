@@ -4,7 +4,7 @@
 #
 # SYNOPSIS
 #
-#   AX_PYTHON_MODULE(modname[, fatal])
+#   AX_PYTHON_MODULE(modname[, version][, fatal])
 #
 # DESCRIPTION
 #
@@ -27,7 +27,11 @@ AU_ALIAS([AC_PYTHON_MODULE], [AX_PYTHON_MODULE])
 AC_DEFUN([AX_PYTHON_MODULE],[
     if test -z $PYTHON;
     then
+      m4_ifval([$2], [dnl
+        PYTHON="python$2"
+      ], [dnl
         PYTHON="python"
+      ])dnl
     fi
     PYTHON_NAME=`basename $PYTHON`
     AC_MSG_CHECKING($PYTHON_NAME module: $1)
@@ -40,7 +44,7 @@ AC_DEFUN([AX_PYTHON_MODULE],[
 		AC_MSG_RESULT(no)
 		eval AS_TR_CPP(HAVE_PYMOD_$1)=no
 		#
-		if test -n "$2"
+		if test -n "$3"
 		then
 			AC_MSG_ERROR(failed to find required module $1)
 			exit 1

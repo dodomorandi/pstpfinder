@@ -39,6 +39,7 @@ m4_define([_BOOST_SERIAL], [m4_translit([
 # find the Boost headers of a given (optional) minimum version and it will
 # define BOOST_CPPFLAGS accordingly.  It will add an option --with-boost to
 # your configure so that users can specify non standard locations.
+      gmx_bool ok;
 # If the user's environment contains BOOST_ROOT and --with-boost was not
 # specified, --with-boost=$BOOST_ROOT is implicitly used.
 # For more README and documentation, go to http://github.com/tsuna/boost.m4
@@ -641,25 +642,43 @@ BOOST_DEFUN([Program_Options],
 
 
 
-# _BOOST_PYTHON_CONFIG(VARIABLE, FLAG)
+# _BOOST_PYTHON_CONFIG(VARIABLE, FLAG, [VERSION])
 # ------------------------------------
 # Save VARIABLE, and define it via `python-config --FLAG`.
 # Substitute BOOST_PYTHON_VARIABLE.
-m4_define([_BOOST_PYTHON_CONFIG],
-[AC_SUBST([BOOST_PYTHON_$1],
-          [`python-config --$2 2>/dev/null`])dnl
-boost_python_save_$1=$$1
-$1="$$1 $BOOST_PYTHON_$1"])
+m4_define([_BOOST_PYTHON_CONFIG], [dnl
+  m4_ifval([$3], [dnl
+    CONFIG="`python$3-config --libs 2>/dev/null`"
+    RC=$?
+    if test $RC -eq 0; then
+      AC_SUBST([BOOST_PYTHON_$1],
+                [`python$3-config --$2 2>/dev/null`])dnl
+      boost_python_save_$1=$$1
+      $1="$$1 $BOOST_PYTHON_$1"
+    else
+      VERSION="`python-config --libs |dnl
+        grep -oE -- '-lpython[[[:digit:]]]+(\.[[[:digit:]]]+)'|dnl
+        sed -e 's/-lpython//'|cut -d . -f 1`"
+      
+      if test "x$VERSION" = "$3"; then
+        _BOOST_PYTHON_CONFIG([$1], [$2])dnl
+      fi
+    fi
+  ], [dnl
+    AC_SUBST([BOOST_PYTHON_$1],
+              [`python-config --$2 2>/dev/null`])dnl
+    boost_python_save_$1=$$1
+    $1="$$1 $BOOST_PYTHON_$1"
+])])
 
-
-# BOOST_PYTHON([PREFERRED-RT-OPT])
+# BOOST_PYTHON([PREFERRED-RT-OPT], [VERSION])
 # --------------------------------
 # Look for Boost.Python.  For the documentation of PREFERRED-RT-OPT,
 # see the documentation of BOOST_FIND_LIB above.
 BOOST_DEFUN([Python],
-[_BOOST_PYTHON_CONFIG([CPPFLAGS], [includes])
-_BOOST_PYTHON_CONFIG([LDFLAGS],   [ldflags])
-_BOOST_PYTHON_CONFIG([LIBS],      [libs])
+[_BOOST_PYTHON_CONFIG([CPPFLAGS], [includes], [$2])
+_BOOST_PYTHON_CONFIG([LDFLAGS],   [ldflags], [$2])
+_BOOST_PYTHON_CONFIG([LIBS],      [libs], [$2])
 m4_pattern_allow([^BOOST_PYTHON_MODULE$])dnl
 BOOST_FIND_LIB([python], [$1],
                [boost/python.hpp],
