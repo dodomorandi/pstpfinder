@@ -25,6 +25,7 @@
 #include "Session.h"
 #include "GtkmmWrapper.h"
 #include "utils.h"
+#include "Pdb.h"
 
 #include <gtkmm.h>
 #include <glibmm.h>
@@ -32,11 +33,8 @@
 #include <fstream>
 #include <string>
 
-using namespace Gtk;
-
 namespace PstpFinder
 {
-
   NewAnalysis::NewAnalysis()
   {
     init();
@@ -60,7 +58,7 @@ namespace PstpFinder
 
     set_title("PSTP-finder");
 
-    GtkmmWrapper<FileFilter> trjFilter;
+    GtkmmWrapper<Gtk::FileFilter> trjFilter;
     trjFilter->set_name("Trajectory files");
     trjFilter->add_pattern("*.xtc");
     trjFilter->add_pattern("*.trj");
@@ -71,12 +69,12 @@ namespace PstpFinder
 
     labelTrajectory.set_label("Trajectory file:");
 
-    hboxTrajectory.pack_start(labelTrajectory, PACK_SHRINK);
+    hboxTrajectory.pack_start(labelTrajectory, Gtk::PACK_SHRINK);
     hboxTrajectory.pack_start(trjChooser);
     hboxTrajectory.set_homogeneous(false);
     hboxTrajectory.set_spacing(10);
 
-    GtkmmWrapper<FileFilter> tprFilter;
+    GtkmmWrapper<Gtk::FileFilter> tprFilter;
     tprFilter->set_name("Topology files");
     tprFilter->add_pattern("*.tpr");
     tprChooser.add_filter(tprFilter);
@@ -86,7 +84,7 @@ namespace PstpFinder
 
     labelTopology.set_label("Topology file:");
 
-    hboxTopology.pack_start(labelTopology, PACK_SHRINK);
+    hboxTopology.pack_start(labelTopology, Gtk::PACK_SHRINK);
     hboxTopology.pack_start(tprChooser);
     hboxTopology.set_homogeneous(false);
     hboxTopology.set_spacing(10);
@@ -101,9 +99,9 @@ namespace PstpFinder
     hScaleBegin.set_sensitive(false);
     spinBegin.set_sensitive(false);
     spinBegin.set_digits(3);
-    hboxBegin.pack_start(labelBegin, PACK_SHRINK);
+    hboxBegin.pack_start(labelBegin, Gtk::PACK_SHRINK);
     hboxBegin.pack_start(hScaleBegin);
-    hboxBegin.pack_start(spinBegin, PACK_SHRINK);
+    hboxBegin.pack_start(spinBegin, Gtk::PACK_SHRINK);
     hboxBegin.set_homogeneous(false);
     hboxBegin.set_spacing(10);
 
@@ -117,17 +115,17 @@ namespace PstpFinder
     hScaleEnd.set_sensitive(false);
     spinEnd.set_sensitive(false);
     spinEnd.set_digits(3);
-    hboxEnd.pack_start(labelEnd, PACK_SHRINK);
+    hboxEnd.pack_start(labelEnd, Gtk::PACK_SHRINK);
     hboxEnd.pack_start(hScaleEnd);
-    hboxEnd.pack_start(spinEnd, PACK_SHRINK);
+    hboxEnd.pack_start(spinEnd, Gtk::PACK_SHRINK);
     hboxEnd.set_homogeneous(false);
     hboxEnd.set_spacing(10);
 
     vboxFrame1.set_spacing(10);
-    vboxFrame1.pack_start(hboxTrajectory, PACK_EXPAND_PADDING);
-    vboxFrame1.pack_start(hboxTopology, PACK_EXPAND_PADDING);
-    vboxFrame1.pack_start(hboxBegin, PACK_EXPAND_PADDING);
-    vboxFrame1.pack_start(hboxEnd, PACK_EXPAND_PADDING);
+    vboxFrame1.pack_start(hboxTrajectory, Gtk::PACK_EXPAND_PADDING);
+    vboxFrame1.pack_start(hboxTopology, Gtk::PACK_EXPAND_PADDING);
+    vboxFrame1.pack_start(hboxBegin, Gtk::PACK_EXPAND_PADDING);
+    vboxFrame1.pack_start(hboxEnd, Gtk::PACK_EXPAND_PADDING);
 
     labelRadius.set_label("Pocket radius:");
     spinRadius.set_digits(1);
@@ -136,9 +134,9 @@ namespace PstpFinder
     spinRadius.set_increments(0.1, 1.0);
     labelAngstrom.set_label("Angstrom");
     hboxRadius.set_spacing(10);
-    hboxRadius.pack_start(labelRadius, PACK_SHRINK);
+    hboxRadius.pack_start(labelRadius, Gtk::PACK_SHRINK);
     hboxRadius.pack_start(spinRadius);
-    hboxRadius.pack_start(labelAngstrom, PACK_SHRINK);
+    hboxRadius.pack_start(labelAngstrom, Gtk::PACK_SHRINK);
 
     labelPocketThreshold.set_label("Pocket threshold:");
     spinPocketThreshold.set_digits(0);
@@ -147,20 +145,20 @@ namespace PstpFinder
     spinPocketThreshold.set_value(500);
     labelPs.set_label("ps");
     hboxPocketThreshold.set_spacing(10);
-    hboxPocketThreshold.pack_start(labelPocketThreshold, PACK_SHRINK);
+    hboxPocketThreshold.pack_start(labelPocketThreshold, Gtk::PACK_SHRINK);
     hboxPocketThreshold.pack_start(spinPocketThreshold);
-    hboxPocketThreshold.pack_start(labelPs, PACK_SHRINK);
+    hboxPocketThreshold.pack_start(labelPs, Gtk::PACK_SHRINK);
 
     labelSessionFile.set_label("Session file:");
     buttonBrowseFile.set_label("Browse...");
     buttonBrowseFile.signal_clicked().connect(
         sigc::mem_fun(*this, &NewAnalysis::buttonBrowseFileClicked));
-    buttonBoxBrowse.pack_start(buttonBrowseFile, PACK_SHRINK);
+    buttonBoxBrowse.pack_start(buttonBrowseFile, Gtk::PACK_SHRINK);
     hboxSession.set_spacing(10);
     hboxSession.set_homogeneous(false);
-    hboxSession.pack_start(labelSessionFile, PACK_SHRINK);
+    hboxSession.pack_start(labelSessionFile, Gtk::PACK_SHRINK);
     hboxSession.pack_start(entrySessionFile);
-    hboxSession.pack_start(buttonBoxBrowse, PACK_SHRINK);
+    hboxSession.pack_start(buttonBoxBrowse, Gtk::PACK_SHRINK);
 
     vboxFrame2.set_spacing(10);
     vboxFrame2.pack_start(hboxRadius);
@@ -170,7 +168,7 @@ namespace PstpFinder
     hboxFrame.set_spacing(10);
     hboxFrame.set_border_width(10);
     hboxFrame.pack_start(vboxFrame1);
-    hboxFrame.pack_start(vSeparator, PACK_SHRINK);
+    hboxFrame.pack_start(vSeparator, Gtk::PACK_SHRINK);
     hboxFrame.pack_start(vboxFrame2);
 
     mainFrame.set_label("Main files");
@@ -185,11 +183,11 @@ namespace PstpFinder
     buttonShowResults.set_sensitive(false);
     buttonShowResults.signal_clicked().connect(
         sigc::mem_fun(*this, &NewAnalysis::buttonShowResultsClicked));
-    buttonBoxRun.set_layout(BUTTONBOX_END);
+    buttonBoxRun.set_layout(Gtk::BUTTONBOX_END);
     buttonBoxRun.set_border_width(10);
     buttonBoxRun.set_spacing(10);
     buttonBoxRun.pack_end(buttonShowResults);
-    buttonBoxRun.pack_end(buttonRun, PACK_SHRINK);
+    buttonBoxRun.pack_end(buttonRun, Gtk::PACK_SHRINK);
 
     progressAligner.add(progress);
     progressAligner.set_border_width(10);
@@ -200,9 +198,9 @@ namespace PstpFinder
 
     vboxMain.set_homogeneous(false);
     vboxMain.pack_start(mainFrame);
-    vboxMain.pack_start(buttonBoxRun, PACK_SHRINK);
-    vboxMain.pack_start(progressAligner, PACK_SHRINK);
-    vboxMain.pack_start(statusBar, PACK_SHRINK);
+    vboxMain.pack_start(buttonBoxRun, Gtk::PACK_SHRINK);
+    vboxMain.pack_start(progressAligner, Gtk::PACK_SHRINK);
+    vboxMain.pack_start(statusBar, Gtk::PACK_SHRINK);
 
     add(vboxMain);
     abortFlag = false;
@@ -237,15 +235,15 @@ namespace PstpFinder
   }
 
   void
-  NewAnalysis::runPittpi(const string& SessionFileName, float radius,
+  NewAnalysis::runPittpi(const std::string& SessionFileName, float radius,
                          float threshold)
   {
     progress.set_fraction(0);
     progress.set_pulse_step(0.1);
-    while(Main::events_pending())
-      Main::iteration();
+    while(Gtk::Main::events_pending())
+      Gtk::Main::iteration();
 
-    pittpiPtr = shared_ptr<Pittpi>
+    pittpiPtr = std::shared_ptr<Pittpi>
       { new Pittpi(*gromacs, SessionFileName, radius, threshold) };
 
     while(not pittpiPtr->isFinished())
@@ -258,8 +256,8 @@ namespace PstpFinder
         progress.set_fraction(status);
       else
         progress.pulse();
-      while(Main::events_pending())
-        Main::iteration();
+      while(Gtk::Main::events_pending())
+        Gtk::Main::iteration();
       pittpiPtr->waitNextStatus();
     }
 
@@ -276,19 +274,21 @@ namespace PstpFinder
     Glib::ustring sessionFileName(entrySessionFile.get_text());
     if(sessionFileName.empty())
     {
-      MessageDialog msg("A valid session file is needed.", false,
-                        MessageType::MESSAGE_ERROR, ButtonsType::BUTTONS_OK);
+      Gtk::MessageDialog msg("A valid session file is needed.", false,
+                        Gtk::MessageType::MESSAGE_ERROR,
+                        Gtk::ButtonsType::BUTTONS_OK);
       msg.run();
       return;
     }
 
     if(exists(sessionFileName))
     {
-      MessageDialog question("The old session file will be overwritten. "
-                        "Are you sure?", false, MessageType::MESSAGE_QUESTION,
-                        ButtonsType::BUTTONS_YES_NO);
+      Gtk::MessageDialog question("The old session file will be overwritten. "
+                        "Are you sure?", false,
+                        Gtk::MessageType::MESSAGE_QUESTION,
+                        Gtk::ButtonsType::BUTTONS_YES_NO);
       int returnValue(question.run());
-      if(returnValue == ResponseType::RESPONSE_NO)
+      if(returnValue == Gtk::ResponseType::RESPONSE_NO)
         return;
     }
 
@@ -304,8 +304,9 @@ namespace PstpFinder
     buttonShowResults.set_sensitive(false);
     buttonRun.set_sensitive(false);
 
-    Session<ofstream> session(sessionFileName, *gromacs, spinRadius.get_value(),
-                              spinPocketThreshold.get_value());
+    Session<std::ofstream> session(sessionFileName, *gromacs,
+                                   spinRadius.get_value(),
+                                   spinPocketThreshold.get_value());
 
     calculateSas(session);
     if(abortFlag)
@@ -390,22 +391,22 @@ namespace PstpFinder
   void
   NewAnalysis::buttonBrowseFileClicked() throw()
   {
-    GtkmmWrapper<FileFilter> filter;
+    GtkmmWrapper<Gtk::FileFilter> filter;
     filter->add_pattern("*.csf");
     filter->set_name("PSTP-filter compressed session file");
 
-    FileChooserDialog chooser("Choose a saving file for this session",
-                              FILE_CHOOSER_ACTION_SAVE);
+    Gtk::FileChooserDialog chooser("Choose a saving file for this session",
+                                   Gtk::FILE_CHOOSER_ACTION_SAVE);
     chooser.add_filter(filter);
-    chooser.add_button(Stock::CANCEL, RESPONSE_CANCEL);
-    chooser.add_button(Stock::OK, RESPONSE_OK);
+    chooser.add_button(Gtk::Stock::CANCEL, Gtk::RESPONSE_CANCEL);
+    chooser.add_button(Gtk::Stock::OK, Gtk::RESPONSE_OK);
     int response = chooser.run();
 
     switch(response)
     {
-      case RESPONSE_OK:
+      case Gtk::RESPONSE_OK:
       {
-        string filename = chooser.get_filename();
+        std::string filename = chooser.get_filename();
         if(file_extension(filename) != ".csf")
           filename = change_extension(filename, ".csf");
 
@@ -425,15 +426,15 @@ namespace PstpFinder
   }
 
   void
-  NewAnalysis::openSessionFile(const string& sessionFileName)
+  NewAnalysis::openSessionFile(const std::string& sessionFileName)
   {
     double beginTime, endTime;
 
     start_spin();
-    while(Main::events_pending())
-      Main::iteration();
+    while(Gtk::Main::events_pending())
+      Gtk::Main::iteration();
 
-    Session<fstream> session(sessionFileName);
+    Session<std::fstream> session(sessionFileName);
 
     trjChooser.set_filename(session.getTrajectoryFileName());
     tprChooser.set_filename(session.getTopologyFileName());
@@ -448,8 +449,8 @@ namespace PstpFinder
     buttonShowResults.set_sensitive(false);
     buttonRun.set_sensitive(false);
     start_spin();
-    while(Main::events_pending())
-      Main::iteration();
+    while(Gtk::Main::events_pending())
+      Gtk::Main::iteration();
 
     analysisStatus = enumAnalysisStatus::ANALYSIS_ONGOING;
 
@@ -476,20 +477,20 @@ namespace PstpFinder
     }
     else
     {
-      while(Main::events_pending())
-        Main::iteration();
-      gromacs->setAverageStructure(Protein(session.getPdbStream()));
+      while(Gtk::Main::events_pending())
+        Gtk::Main::iteration();
+      gromacs->setAverageStructure(Pdb<>(session.getPdbStream()).proteins[0]);
 
       stop_spin();
-      while(Main::events_pending())
-        Main::iteration();
+      while(Gtk::Main::events_pending())
+        Gtk::Main::iteration();
     }
 
     if(not session.pittpiComplete())
     {
       progress.set_fraction(0);
-      while(Main::events_pending())
-        Main::iteration();
+      while(Gtk::Main::events_pending())
+        Gtk::Main::iteration();
 
       runPittpi(sessionFileName, spinRadius.get_value(),
                 spinPocketThreshold.get_value());
@@ -501,10 +502,10 @@ namespace PstpFinder
     else
     {
       progress.set_fraction(0);
-      while(Main::events_pending())
-        Main::iteration();
+      while(Gtk::Main::events_pending())
+        Gtk::Main::iteration();
 
-      pittpiPtr = shared_ptr<Pittpi>(
+      pittpiPtr = std::shared_ptr<Pittpi>(
           new Pittpi(*gromacs, sessionFileName, session.getRadius(),
                      session.getPocketThreshold(), false));
       pittpiPtr->load(session.getPittpiStream());
@@ -516,8 +517,8 @@ namespace PstpFinder
 
     progress.set_fraction(0);
     progress.show();
-    while(Main::events_pending())
-      Main::iteration();
+    while(Gtk::Main::events_pending())
+      Gtk::Main::iteration();
 
     resultsWindows.push_back(new Results(*this, pittpiPtr, *gromacs));
     
@@ -530,13 +531,13 @@ namespace PstpFinder
   {
     if(not mainFrame.is_sensitive())
     {
-      MessageDialog messageAbort(
+      Gtk::MessageDialog messageAbort(
           "An analysis is running. If you quit you can resume it from "
           "'Open/resume analysis' button. Abort and quit?",
-          false, MESSAGE_QUESTION, BUTTONS_YES_NO, true);
+          false, Gtk::MESSAGE_QUESTION, Gtk::BUTTONS_YES_NO, true);
 
       int response = messageAbort.run();
-      if(response == RESPONSE_YES)
+      if(response == Gtk::RESPONSE_YES)
       {
         abortFlag = true;
         if(pittpiPtr)
@@ -562,7 +563,7 @@ namespace PstpFinder
   {
     for
     (
-      vector<Results*>::iterator i = resultsWindows.begin();
+      std::vector<Results*>::iterator i = resultsWindows.begin();
       i < resultsWindows.end();
       i++
     )
@@ -580,13 +581,13 @@ namespace PstpFinder
   {
     statusBar.push("Calculating SAS using Gromacs", statusBarContext);
     progress.set_fraction(0);
-    while(Main::events_pending())
-      Main::iteration();
+    while(Gtk::Main::events_pending())
+      Gtk::Main::iteration();
 
     unsigned int currentFrame;
     unsigned int count = gromacs->getFramesCount();
-    while(Main::events_pending())
-      Main::iteration();
+    while(Gtk::Main::events_pending())
+      Gtk::Main::iteration();
 
     if(abortFlag)
       return;
@@ -600,20 +601,20 @@ namespace PstpFinder
         break;
       }
       progress.set_fraction(static_cast<float>(currentFrame) / count);
-      while(Main::events_pending())
-        Main::iteration();
+      while(Gtk::Main::events_pending())
+        Gtk::Main::iteration();
       gromacs->waitNextFrame();
     }
     if(abortFlag)
       return;
 
     gromacs->waitOperation();
-    while(Main::events_pending())
-      Main::iteration();
+    while(Gtk::Main::events_pending())
+      Gtk::Main::iteration();
 
     progress.set_fraction(1);
-    while(Main::events_pending())
-      Main::iteration();
+    while(Gtk::Main::events_pending())
+      Gtk::Main::iteration();
   }
 
   template<typename Session>
@@ -622,8 +623,8 @@ namespace PstpFinder
   {
     statusBar.push("Calculating average structure", statusBarContext);
     progress.set_fraction(0);
-    while(Main::events_pending())
-      Main::iteration();
+    while(Gtk::Main::events_pending())
+      Gtk::Main::iteration();
 
     unsigned int currentFrame;
     unsigned int count(gromacs->getFramesCount());
@@ -637,27 +638,29 @@ namespace PstpFinder
         break;
       }
       progress.set_fraction(static_cast<float>(currentFrame) / count);
-      while(Main::events_pending())
-        Main::iteration();
+      while(Gtk::Main::events_pending())
+        Gtk::Main::iteration();
       gromacs->waitNextFrame();
     }
     if(abortFlag)
       return;
 
     gromacs->waitOperation();
-    while(Main::events_pending())
-      Main::iteration();
+    while(Gtk::Main::events_pending())
+      Gtk::Main::iteration();
 
     if(abortFlag)
       return;
 
-    gromacs->getAverageStructure().dumpPdb(session.getPdbStream());
+    Pdb<> averagePdb ;
+    averagePdb.proteins.push_back(gromacs->getAverageStructure());
+    averagePdb.write(session.getPdbStream());
 
     if(abortFlag)
       return;
 
     progress.set_fraction(1);
-    while(Main::events_pending())
-      Main::iteration();
+    while(Gtk::Main::events_pending())
+      Gtk::Main::iteration();
   }
 }

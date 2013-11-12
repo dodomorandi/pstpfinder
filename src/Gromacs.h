@@ -27,7 +27,7 @@
 #include "config.h"
 #endif
 
-#include "Protein.h"
+#include "Pdb.h"
 
 #include <string>
 #include <thread>
@@ -77,15 +77,14 @@ struct gmx_residuetype
     char **  restype;
 };
 
-using namespace std;
-
 namespace PstpFinder
 {
   class Gromacs
   {
     public:
       Gromacs(float solventSize = 0.14);
-      Gromacs(const string& trajectoryFileName, const string& topologyFileName,
+      Gromacs(const std::string& trajectoryFileName,
+              const std::string& topologyFileName,
               float solventSize = 0.14);
       Gromacs(const Gromacs& gromacs);
       ~Gromacs();
@@ -94,8 +93,8 @@ namespace PstpFinder
       template<typename Stream>
       void calculateSas(Session<Stream>& session);
     
-      string getTrajectoryFile() const;
-      string getTopologyFile() const;
+      std::string getTrajectoryFile() const;
+      std::string getTopologyFile() const;
       unsigned long getAtomsCount() const;
       unsigned int getFramesCount() const;
       float getTimeStep() const; // In nsec
@@ -105,8 +104,8 @@ namespace PstpFinder
       void setBegin(float beginTime);
       float getEnd() const;
       void setEnd(float endTime);
-      vector<atom_id> getGroup(const string& groupName);
-      vector<atom_id> getGroup(const string& groupName) const;
+      std::vector<atom_id> getGroup(const std::string& groupName);
+      std::vector<atom_id> getGroup(const std::string& groupName) const;
     
       /**
        * @brief Returns the number of the current frame starting from 1
@@ -124,10 +123,10 @@ namespace PstpFinder
 
       template<typename Stream>
       void __calculateSas(Session<Stream>& session);
-      const Protein& __calculateAverageStructure();
+      const Protein<>& __calculateAverageStructure();
       void calculateAverageStructure();
-      const Protein& getAverageStructure() const;
-      void setAverageStructure(Protein structure);
+      const Protein<>& getAverageStructure() const;
+      void setAverageStructure(Protein<> structure);
       void waitOperation();
       void abort();
       bool isAborting() const;
@@ -149,18 +148,18 @@ namespace PstpFinder
       t_trxframe fr;
 
       gmx_atomprop_t aps;
-      string trjName, tprName;
+      std::string trjName, tprName;
       bool gotTrajectory, gotTopology, readyToGetX;
       float solSize;
-      string sasTarget;
+      std::string sasTarget;
       gmx_mtop_t mtop;
     
-      thread operationThread;
-      mutable mutex operationMutex;
-      mutable condition_variable wakeCondition;
+      std::thread operationThread;
+      mutable std::mutex operationMutex;
+      mutable std::condition_variable wakeCondition;
       mutable unsigned int cachedNFrames;
       unsigned int currentFrame; // index-0 based -- like always
-      Protein averageStructure;
+      Protein<> averageStructure;
       float _begin, _end;
       mutable float timeStepCached;
       bool abortFlag;

@@ -24,8 +24,6 @@
 
 #include <thread>
 
-using namespace std;
-
 namespace PstpFinder
 {
   template<typename T, typename SasClass>
@@ -42,9 +40,9 @@ namespace PstpFinder
     protected:
       SasClass* parent;
       bool isStopped;
-      thread analysisThread;
-      condition_variable wakeCondition;
-      mutex wakeMutex;
+      std::thread analysisThread;
+      std::condition_variable wakeCondition;
+      std::mutex wakeMutex;
   };
 
   template<typename T, typename SasClass>
@@ -70,7 +68,7 @@ namespace PstpFinder
 
       while(parent->bufferCount == parent->bufferMax - 1 and not isStopped)
       {
-        unique_lock<mutex> lock(wakeMutex);
+        std::unique_lock<std::mutex> lock(wakeMutex);
         parent->bufferMutex.unlock();
         wakeCondition.wait(lock);
         parent->bufferMutex.lock();
@@ -84,7 +82,7 @@ namespace PstpFinder
 
       if(parent->save())
       {
-        vector<SasAtom*>& curChunk = parent->chunks.front();
+        std::vector<SasAtom*>& curChunk = parent->chunks.front();
         for(std::vector<SasAtom*>::iterator i = curChunk.begin();
             i < curChunk.end(); i++)
           delete[] *i;
@@ -122,7 +120,7 @@ namespace PstpFinder
 
       while(parent->bufferCount == parent->bufferMax - 1 and not isStopped)
       {
-        unique_lock<mutex> lock(wakeMutex);
+        std::unique_lock<std::mutex> lock(wakeMutex);
         parent->bufferMutex.unlock();
         wakeCondition.wait(lock);
         parent->bufferMutex.lock();
@@ -185,9 +183,9 @@ namespace PstpFinder
   class SasAnalysisThread;
 
   template<typename T>
-  class SasAnalysisThread<T, typename enable_if<
-    is_base_of<base_stream(basic_istream, T), T>::value and
-    not is_base_of<base_stream(basic_ostream, T), T>::value>::type>
+  class SasAnalysisThread<T, typename std::enable_if<
+    std::is_base_of<base_stream(std::basic_istream, T), T>::value and
+    not std::is_base_of<base_stream(std::basic_ostream, T), T>::value>::type>
     : public SasAnalysisThread_Base<T, SasAnalysis_Read<T>>
   {
     public:
@@ -195,16 +193,16 @@ namespace PstpFinder
       SasAnalysisThread(SasAnalysis_Read<T>& parent) :
         Base(parent)
       {
-        this->analysisThread = thread(
-              bind(&Base::threadOpen, ref(*this)));
+        this->analysisThread = std::thread(
+            std::bind(&Base::threadOpen, std::ref(*this)));
       }
       virtual ~SasAnalysisThread() {}
       virtual void threadOpen() { Base::threadOpen(); }
   };
 
   template<typename T>
-  class SasAnalysisThread<T, typename enable_if<
-    is_base_of<base_stream(basic_ostream, T), T>::value>::type>
+  class SasAnalysisThread<T, typename std::enable_if<
+    std::is_base_of<base_stream(std::basic_ostream, T), T>::value>::type>
     : public SasAnalysisThread_Base<T, SasAnalysis_Write<T>>
   {
     public:
@@ -212,8 +210,8 @@ namespace PstpFinder
       SasAnalysisThread(SasAnalysis_Write<T>& parent):
         Base(parent)
       {
-        this->analysisThread = thread(
-            bind(&Base::threadSave, ref(*this)));
+        this->analysisThread = std::thread(
+            std::bind(&Base::threadSave, std::ref(*this)));
       }
       virtual ~SasAnalysisThread() {}
       virtual void
@@ -227,7 +225,7 @@ namespace PstpFinder
         Base::parent->bufferMutex.lock();
         while(Base::parent->bufferCount < Base::parent->bufferMax - 1 and not Base::isStopped)
         {
-          unique_lock<mutex> lock(Base::parent->bufferCountMutex);
+          std::unique_lock<std::mutex> lock(Base::parent->bufferCountMutex);
           Base::parent->bufferMutex.unlock();
           Base::parent->bufferCountCondition.wait(lock);
           Base::parent->bufferMutex.lock();

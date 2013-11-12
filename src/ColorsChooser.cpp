@@ -28,9 +28,9 @@ ColorsChooser::ColorsChooser()
   set_modal();
 
 #if GTKMM_MAJOR == 2
-  Box* mainBox(get_vbox());
+  Gtk::Box* mainBox(get_vbox());
 #else
-  Box* mainBox(get_content_area());
+  Gtk::Box* mainBox(get_content_area());
 #endif
 
   hScalePocketChooser.signal_value_changed().connect(
@@ -42,9 +42,9 @@ ColorsChooser::ColorsChooser()
   mainBox->pack_start(hScalePocketChooser, false, false);
   mainBox->pack_start(colorSelection);
 
-  add_button("Cancel", ResponseType::RESPONSE_CANCEL);
-  add_button("Ok", ResponseType::RESPONSE_OK);
-  set_default_response(ResponseType::RESPONSE_OK);
+  add_button("Cancel", Gtk::ResponseType::RESPONSE_CANCEL);
+  add_button("Ok", Gtk::ResponseType::RESPONSE_OK);
+  set_default_response(Gtk::ResponseType::RESPONSE_OK);
 }
 
 void
@@ -103,7 +103,7 @@ ColorsChooser::signalHScalePocketChooserValueChanged()
 void
 ColorsChooser::signalResponse(int responseID)
 {
-  if(responseID == ResponseType::RESPONSE_OK)
+  if(responseID == Gtk::ResponseType::RESPONSE_OK)
 #if GTKMM_MAJOR == 2
     colors[oldColorIndex] = colorSelection.get_current_color();
 #else

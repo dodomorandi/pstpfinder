@@ -21,6 +21,7 @@
 #define _SASATOM_H
 
 #include "Atom.h"
+#include "Pdb.h"
 #include "Serializer.h"
 
 extern "C"
@@ -30,6 +31,54 @@ extern "C"
 
 namespace PstpFinder
 {
+  struct SasPdbAtom : public PdbAtom
+  {
+      SasPdbAtom() : PdbAtom(), sas(0) {}
+      SasPdbAtom(const SasPdbAtom& atom) = default;
+      SasPdbAtom(SasPdbAtom&& atom) = default;
+      SasPdbAtom& operator =(const SasPdbAtom& atom) = default;
+      SasPdbAtom& operator =(SasPdbAtom&& atom) = default;
+
+      explicit SasPdbAtom(const PdbAtom& atom) : PdbAtom(atom), sas(0) {}
+      explicit SasPdbAtom(PdbAtom&& atom) : PdbAtom(std::move(atom)), sas(0) {}
+      explicit SasPdbAtom(const ProteinAtom& atom) : PdbAtom(atom), sas(0) {}
+      explicit SasPdbAtom(ProteinAtom&& atom) :
+          PdbAtom(std::move(atom)), sas(0) {}
+
+      /*
+      template<typename T,
+                typename enable_if<is_base_of<Atom,
+                    typename remove_reference<T>::type>::value and not
+                  is_same<SasPdbAtom,
+                    typename remove_reference<T>::type>::value>
+                ::type* = nullptr>
+      explicit SasPdbAtom(T&& t) : PdbAtom(forward<T>(t)), sas(0) {}
+      template<typename T,
+                typename enable_if<is_base_of<Atom,
+                    typename remove_reference<T>::type>::value and not
+                  is_same<SasPdbAtom,
+                    typename remove_reference<T>::type>::value>
+                ::type* = nullptr>
+      SasPdbAtom& operator =(T&& t)
+      {
+        ProteinAtom::operator =(forward<T>(t));
+        if(is_base_of<SasPdbAtom, typename remove_reference<T>::type>::value)
+        {
+          const SasPdbAtom& tmp = static_cast<SasPdbAtom>(t);
+          sas = tmp.sas;
+        }
+
+        return *this;
+      }
+      */
+
+
+      explicit SasPdbAtom(int index) :
+        PdbAtom(index), sas(0) {}
+
+      float sas;
+  };
+
   struct SasAtom : public Atom
   {
       real sas;

@@ -41,8 +41,7 @@ namespace PstpFinder
 #include <initializer_list>
 #include <tuple>
 #include <utility>
-
-using namespace std;
+#include <cassert>
 
 namespace PstpFinder
 {
@@ -56,37 +55,37 @@ namespace PstpFinder
     THRESHOLD
   };
 
-  // FIXME: I'd like to use a union, but std::string has non trivial
+  // FIXME: I'd like to use a union, but std::std::string has non trivial
   // constructor, copy constructor and destructor.
   struct SessionParameterValue
   {
-    string str;
+    std::string str;
     unsigned long ulong;
     double dbl;
   };
 
-  inline tuple<SessionParameter, SessionParameterValue>
-  make_sessionParameter(SessionParameter parameter, const string& value)
+  inline std::tuple<SessionParameter, SessionParameterValue>
+  make_sessionParameter(SessionParameter parameter, const std::string& value)
   {
     SessionParameterValue spv;
     spv.str = value;
-    return make_tuple(parameter, spv);
+    return std::make_tuple(parameter, spv);
   }
 
-  inline tuple<SessionParameter, SessionParameterValue>
+  inline std::tuple<SessionParameter, SessionParameterValue>
   make_sessionParameter(SessionParameter parameter, unsigned long value)
   {
     SessionParameterValue spv;
     spv.ulong = value;
-    return make_tuple(parameter, spv);
+    return std::make_tuple(parameter, spv);
   }
 
-  inline tuple<SessionParameter, SessionParameterValue>
+  inline std::tuple<SessionParameter, SessionParameterValue>
   make_sessionParameter(SessionParameter parameter, double value)
   {
     SessionParameterValue spv;
     spv.dbl = value;
-    return make_tuple(parameter, spv);
+    return std::make_tuple(parameter, spv);
   }
 
   template<typename T>
@@ -95,8 +94,8 @@ namespace PstpFinder
     public:
       typedef MetaStream<T> stream_type;
       Session_Base& operator =(const Session_Base&) = delete;
-      string getTrajectoryFileName() const;
-      string getTopologyFileName() const;
+      std::string getTrajectoryFileName() const;
+      std::string getTopologyFileName() const;
       unsigned long getBeginTime() const;
       unsigned long getEndTime() const;
       double getRadius() const;
@@ -119,18 +118,18 @@ namespace PstpFinder
 
     protected:
       friend class MetaStream<T>;
-      string trajectoryFileName;
-      string topologyFileName;
+      std::string trajectoryFileName;
+      std::string topologyFileName;
       unsigned long beginTime;
       unsigned long endTime;
       double radius;
       double pocketThreshold;
-      bitset<6> parameterSet;
+      std::bitset<6> parameterSet;
 
       Session_Base();
-      Session_Base(const string& fileName);
-      Session_Base(const string& fileName,
-          initializer_list<tuple<SessionParameter,
+      Session_Base(const std::string& fileName);
+      Session_Base(const std::string& fileName,
+          std::initializer_list<std::tuple<SessionParameter,
                                  SessionParameterValue>>&& parameters);
 
       void readSession();
@@ -143,10 +142,10 @@ namespace PstpFinder
     private:
       struct MetaData
       {
-        unique_ptr<stream_type> stream;
-        streamoff info;
-        streamoff start;
-        streamoff end;
+        std::unique_ptr<stream_type> stream;
+        std::streamoff info;
+        std::streamoff start;
+        std::streamoff end;
         bool complete;
 
         MetaData() : stream(), info(-1), start(-1), end(-1), complete(false) {};
@@ -154,9 +153,9 @@ namespace PstpFinder
 
       const bool ready;
       unsigned short version;
-      const string sessionFileName;
-      unique_ptr<T> sessionFile;
-      unique_ptr<Serializer<T>> serializer;
+      const std::string sessionFileName;
+      std::unique_ptr<T> sessionFile;
+      std::unique_ptr<Serializer<T>> serializer;
       MetaData metaPittpi;
       MetaData metaPdb;
       MetaData metaSas;
@@ -170,27 +169,27 @@ namespace PstpFinder
   }
 
   template<typename T>
-  Session_Base<T>::Session_Base(const string& fileName) :
+  Session_Base<T>::Session_Base(const std::string& fileName) :
       ready(true),
       version(0),
       sessionFileName(fileName)
   {
     assertRegularType();
 
-    if(is_base_of<base_stream(basic_istream, T), T>::value)
-      sessionFile = unique_ptr<T>(new T(fileName,
-                                        ios_base::in bitor ios_base::out bitor
-                                        ios_base::binary));
+    if(std::is_base_of<base_stream(std::basic_istream, T), T>::value)
+      sessionFile = std::unique_ptr<T>(new T(fileName,
+                                        std::ios_base::in bitor std::ios_base::out bitor
+                                        std::ios_base::binary));
     else
-      sessionFile = unique_ptr<T>(new T(fileName,
-                                        ios_base::out bitor ios_base::binary));
-    serializer = unique_ptr<Serializer<T>>(new Serializer<T>(*sessionFile));
+      sessionFile = std::unique_ptr<T>(new T(fileName,
+                                        std::ios_base::out bitor std::ios_base::binary));
+    serializer = std::unique_ptr<Serializer<T>>(new Serializer<T>(*sessionFile));
   }
 
   template<typename T>
   Session_Base<T>::Session_Base(
-        const string& fileName,
-        initializer_list<tuple<SessionParameter,
+        const std::string& fileName,
+        std::initializer_list<std::tuple<SessionParameter,
                                SessionParameterValue>>&& parameters) :
       ready(true),
       version(0),
@@ -198,41 +197,41 @@ namespace PstpFinder
   {
     assertRegularType();
 
-    if(is_base_of<base_stream(basic_istream, T), T>::value)
-      sessionFile = unique_ptr<T>(new T(fileName,
-                                        ios_base::in bitor ios_base::out bitor
-                                        ios_base::binary));
+    if(std::is_base_of<base_stream(std::basic_istream, T), T>::value)
+      sessionFile = std::unique_ptr<T>(new T(fileName,
+                                        std::ios_base::in bitor std::ios_base::out bitor
+                                        std::ios_base::binary));
     else
-      sessionFile = unique_ptr<T>(new T(fileName,
-                                        ios_base::out bitor ios_base::binary));
-    serializer = unique_ptr<Serializer<T>>(new Serializer<T>(*sessionFile));
+      sessionFile = std::unique_ptr<T>(new T(fileName,
+                                        std::ios_base::out bitor std::ios_base::binary));
+    serializer = std::unique_ptr<Serializer<T>>(new Serializer<T>(*sessionFile));
 
     for(auto& parameter : parameters)
     {
-      switch(get<0>(parameter))
+      switch(std::get<0>(parameter))
       {
         case SessionParameter::TRAJECTORY:
-          trajectoryFileName = get<1>(parameter).str;
+          trajectoryFileName = std::get<1>(parameter).str;
           parameterSet |= 1;
           break;
         case SessionParameter::TOPOLOGY:
-          topologyFileName = get<1>(parameter).str;
+          topologyFileName = std::get<1>(parameter).str;
           parameterSet |= 2;
           break;
         case SessionParameter::BEGIN:
-          beginTime = get<1>(parameter).ulong;
+          beginTime = std::get<1>(parameter).ulong;
           parameterSet |= 4;
           break;
         case SessionParameter::END:
-          endTime = get<1>(parameter).ulong;
+          endTime = std::get<1>(parameter).ulong;
           parameterSet |= 8;
           break;
         case SessionParameter::RADIUS:
-          radius = get<1>(parameter).dbl;
+          radius = std::get<1>(parameter).dbl;
           parameterSet |= 16;
           break;
         case SessionParameter::THRESHOLD:
-          pocketThreshold = get<1>(parameter).dbl;
+          pocketThreshold = std::get<1>(parameter).dbl;
           parameterSet |= 32;
           break;
       }
@@ -240,7 +239,7 @@ namespace PstpFinder
   }
 
   template<typename T>
-  string
+  std::string
   Session_Base<T>::getTrajectoryFileName() const
   {
     assert(ready);
@@ -248,7 +247,7 @@ namespace PstpFinder
   }
 
   template<typename T>
-  string
+  std::string
   Session_Base<T>::getTopologyFileName() const
   {
     assert(ready);
@@ -384,7 +383,7 @@ namespace PstpFinder
   void
   Session_Base<T>::readSession()
   {
-    streamoff offset;
+    std::streamoff offset;
     sessionFile->seekg(0);
     sessionFile->peek();
     if(sessionFile->eof())
@@ -407,30 +406,30 @@ namespace PstpFinder
     if(offset > 0)
     {
       metaSas.complete = true;
-      sessionFile->seekg(offset, ios_base::cur);
+      sessionFile->seekg(offset, std::ios_base::cur);
       metaSas.end = sessionFile->tellg();
-      metaSas.stream = unique_ptr<stream_type>(
+      metaSas.stream = std::unique_ptr<stream_type>(
         new stream_type(sessionFileName,
-                        ios_base::in | ios_base::out | ios_base::binary,
+                        std::ios_base::in | std::ios_base::out | std::ios_base::binary,
                         enumStreamType::STREAMTYPE_FIXED, metaSas.start,
                         metaSas.end));
     }
     else
     {
-      sessionFile->seekg(0, ios_base::end);
+      sessionFile->seekg(0, std::ios_base::end);
       metaSas.end = 0;
-      if(is_base_of<base_stream(basic_ostream, T), T>::value)
+      if(std::is_base_of<base_stream(std::basic_ostream, T), T>::value)
       {
-        metaSas.stream = unique_ptr<stream_type>(
+        metaSas.stream = std::unique_ptr<stream_type>(
           new stream_type(sessionFileName,
-                          ios_base::in | ios_base::out | ios_base::binary,
+                          std::ios_base::in | std::ios_base::out | std::ios_base::binary,
                           enumStreamType::STREAMTYPE_ADJUST, metaSas.start));
       }
       else
       {
-        metaSas.stream = unique_ptr<stream_type>(
+        metaSas.stream = std::unique_ptr<stream_type>(
           new stream_type(sessionFileName,
-                          ios_base::in | ios_base::out | ios_base::binary,
+                          std::ios_base::in | std::ios_base::out | std::ios_base::binary,
                           enumStreamType::STREAMTYPE_FIXED, metaSas.start,
                           metaSas.end));
       }
@@ -451,30 +450,30 @@ namespace PstpFinder
     if(offset > 0)
     {
       metaPdb.complete = true;
-      sessionFile->seekg(offset, ios_base::cur);
+      sessionFile->seekg(offset, std::ios_base::cur);
       metaPdb.end = sessionFile->tellg();
-      metaPdb.stream = unique_ptr<stream_type>(
+      metaPdb.stream = std::unique_ptr<stream_type>(
         new stream_type(sessionFileName,
-                        ios_base::in | ios_base::out | ios_base::binary,
+                        std::ios_base::in | std::ios_base::out | std::ios_base::binary,
                         enumStreamType::STREAMTYPE_FIXED, metaPdb.start,
                         metaPdb.end));
     }
     else
     {
-      sessionFile->seekg(0, ios_base::end);
+      sessionFile->seekg(0, std::ios_base::end);
       metaPdb.end = 0;
-      if(is_base_of<base_stream(basic_ostream, T), T>::value)
+      if(std::is_base_of<base_stream(std::basic_ostream, T), T>::value)
       {
-        metaPdb.stream = unique_ptr<stream_type>(
+        metaPdb.stream = std::unique_ptr<stream_type>(
           new stream_type(sessionFileName,
-                          ios_base::in | ios_base::out | ios_base::binary,
+                          std::ios_base::in | std::ios_base::out | std::ios_base::binary,
                           enumStreamType::STREAMTYPE_ADJUST, metaPdb.start));
       }
       else
       {
-          metaPdb.stream = unique_ptr<stream_type>(
+          metaPdb.stream = std::unique_ptr<stream_type>(
             new stream_type(sessionFileName,
-                ios_base::in | ios_base::out | ios_base::binary,
+                std::ios_base::in | std::ios_base::out | std::ios_base::binary,
                 enumStreamType::STREAMTYPE_FIXED, metaPdb.start, metaPdb.end));
       }
       return;
@@ -496,31 +495,31 @@ namespace PstpFinder
       if(offset > 0)
       {
         metaPittpi.complete = true;
-        sessionFile->seekg(offset, ios_base::cur);
+        sessionFile->seekg(offset, std::ios_base::cur);
         metaPittpi.end = sessionFile->tellg();
-        metaPittpi.stream = unique_ptr<stream_type>(
+        metaPittpi.stream = std::unique_ptr<stream_type>(
           new stream_type(sessionFileName,
-                          ios_base::in | ios_base::out | ios_base::binary,
+                          std::ios_base::in | std::ios_base::out | std::ios_base::binary,
                           enumStreamType::STREAMTYPE_FIXED, metaPittpi.start,
                           metaPittpi.end));
       }
       else
       {
-        sessionFile->seekg(0, ios_base::end);
+        sessionFile->seekg(0, std::ios_base::end);
         metaPittpi.end = 0;
-        if(is_base_of<base_stream(basic_ostream, T), T>::value)
+        if(std::is_base_of<base_stream(std::basic_ostream, T), T>::value)
         {
-          metaPittpi.stream = unique_ptr<stream_type>(
+          metaPittpi.stream = std::unique_ptr<stream_type>(
             new stream_type(sessionFileName,
-                            ios_base::in | ios_base::out | ios_base::binary,
+                            std::ios_base::in | std::ios_base::out | std::ios_base::binary,
                             enumStreamType::STREAMTYPE_ADJUST,
                             metaPittpi.start));
         }
         else
         {
-          metaPittpi.stream = unique_ptr<stream_type>(
+          metaPittpi.stream = std::unique_ptr<stream_type>(
             new stream_type(sessionFileName,
-                            ios_base::in | ios_base::out | ios_base::binary,
+                            std::ios_base::in | std::ios_base::out | std::ios_base::binary,
                             enumStreamType::STREAMTYPE_FIXED, metaPittpi.start,
                             metaPittpi.end));
         }
@@ -535,7 +534,7 @@ namespace PstpFinder
   {
     assert(parameterSet.all()); // Has radius and pocketThreshold set
 
-    streamoff offset;
+    std::streamoff offset;
     switch(version)
     {
       case 0:   // Session have not been read or session is empty
@@ -555,53 +554,53 @@ namespace PstpFinder
         *serializer << offset;
         metaSas.start = sessionFile->tellp();
         metaSas.complete = false;
-        metaSas.stream = unique_ptr<stream_type>(
+        metaSas.stream = std::unique_ptr<stream_type>(
           new stream_type(sessionFileName,
-                          ios_base::in | ios_base::out | ios_base::binary,
+                          std::ios_base::in | std::ios_base::out | std::ios_base::binary,
                           enumStreamType::STREAMTYPE_ADJUST, metaSas.start));
 
-        metaSas.stream->callbackClose = bind(
-              &Session_Base<T>::eventSasStreamClosing, ref(*this));
+        metaSas.stream->callbackClose = std::bind(
+              &Session_Base<T>::eventSasStreamClosing, std::ref(*this));
         break;
       case 1:  // SAS + PDB
       case 2:  // SAS + PDB + Pittpi
         if(metaSas.end == 0)
         {
           metaSas.complete = false;
-          metaSas.stream = unique_ptr<stream_type>(
+          metaSas.stream = std::unique_ptr<stream_type>(
             new stream_type(sessionFileName,
-                            ios_base::in | ios_base::out | ios_base::binary,
+                            std::ios_base::in | std::ios_base::out | std::ios_base::binary,
                             enumStreamType::STREAMTYPE_ADJUST,
                             metaSas.start));
 
-          metaSas.stream->callbackClose = bind(
-              &Session_Base<T>::eventSasStreamClosing, ref(*this));
+          metaSas.stream->callbackClose = std::bind(
+              &Session_Base<T>::eventSasStreamClosing, std::ref(*this));
         }
         else if(metaPdb.end == 0)
         {
           metaSas.complete = true;
           metaPdb.complete = false;
-          metaPdb.stream = unique_ptr<stream_type>(
+          metaPdb.stream = std::unique_ptr<stream_type>(
             new stream_type(sessionFileName,
-                            ios_base::in | ios_base::out | ios_base::binary,
+                            std::ios_base::in | std::ios_base::out | std::ios_base::binary,
                             enumStreamType::STREAMTYPE_ADJUST,
                             metaPdb.start));
 
-          metaPdb.stream->callbackClose = bind(
-              &Session_Base<T>::eventPdbStreamClosing, ref(*this));
+          metaPdb.stream->callbackClose = std::bind(
+              &Session_Base<T>::eventPdbStreamClosing, std::ref(*this));
         }
         else if(version == 2 and metaPittpi.end == 0)
         {
           metaSas.complete = true;
           metaPdb.complete = true;
-          metaPittpi.stream = unique_ptr<stream_type>(
+          metaPittpi.stream = std::unique_ptr<stream_type>(
             new stream_type(sessionFileName,
-                            ios_base::in | ios_base::out | ios_base::binary,
+                            std::ios_base::in | std::ios_base::out | std::ios_base::binary,
                             enumStreamType::STREAMTYPE_ADJUST,
                             metaPittpi.start));
 
-          metaPittpi.stream->callbackClose = bind(
-              &Session_Base<T>::eventPittpiStreamClosing, ref(*this));
+          metaPittpi.stream->callbackClose = std::bind(
+              &Session_Base<T>::eventPittpiStreamClosing, std::ref(*this));
         }
         break;
     }
@@ -614,45 +613,45 @@ namespace PstpFinder
   Session_Base<T>::abort()
   {
     if(metaSas.stream and metaSas.stream->callbackClose)
-      metaSas.stream->callbackClose = function<void()>();
+      metaSas.stream->callbackClose = std::function<void()>();
     if(metaPdb.stream and metaPdb.stream->callbackClose)
-      metaPdb.stream->callbackClose = function<void()>();
+      metaPdb.stream->callbackClose = std::function<void()>();
     if(metaPittpi.stream and metaPittpi.stream->callbackClose)
-      metaPittpi.stream->callbackClose = function<void()>();
+      metaPittpi.stream->callbackClose = std::function<void()>();
   }
 
   template<typename T>
   inline void
   Session_Base<T>::assertRegularType() const
   {
-    static_assert(is_base_of<base_stream(basic_istream, T), T>::value or
-                  is_base_of<base_stream(basic_ostream, T), T>::value,
-                  "T must have basic_istream or basic_ostream as base class");
+    static_assert(std::is_base_of<base_stream(std::basic_istream, T), T>::value or
+                  std::is_base_of<base_stream(std::basic_ostream, T), T>::value,
+                  "T must have std::basic_istream or std::basic_ostream as base class");
   }
 
   template<typename T>
   inline void
   Session_Base<T>::assertBaseIStream() const
   {
-    static_assert(is_base_of<base_stream(basic_istream, T), T>::value,
-                  "T must have basic_istream as base class");
+    static_assert(std::is_base_of<base_stream(std::basic_istream, T), T>::value,
+                  "T must have std::basic_istream as base class");
   }
 
   template<typename T>
   inline void
   Session_Base<T>::assertBaseOStream() const
   {
-    static_assert(is_base_of<base_stream(basic_ostream, T), T>::value,
-                  "T must have basic_ostream as base class");
+    static_assert(std::is_base_of<base_stream(std::basic_ostream, T), T>::value,
+                  "T must have std::basic_ostream as base class");
   }
 
   template<typename T>
   inline void
   Session_Base<T>::assertBaseIOStream() const
   {
-    static_assert(is_base_of<base_stream(basic_istream, T), T>::value and
-                  is_base_of<base_stream(basic_ostream, T), T>::value,
-                  "T must have basic_istream and basic_ostream as base class");
+    static_assert(std::is_base_of<base_stream(std::basic_istream, T), T>::value and
+                  std::is_base_of<base_stream(std::basic_ostream, T), T>::value,
+                  "T must have std::basic_istream and std::basic_ostream as base class");
   }
 
   template<typename T>
@@ -662,12 +661,12 @@ namespace PstpFinder
     if(not metaSas.stream or not metaSas.stream->is_open())
       return;
 
-    metaSas.stream->seekp(0, ios_base::end);
-    streamoff endOfSas(metaSas.stream->tellp());
+    metaSas.stream->seekp(0, std::ios_base::end);
+    std::streamoff endOfSas(metaSas.stream->tellp());
     metaSas.end = metaSas.start + endOfSas;
     metaSas.complete = true;
     sessionFile->seekp(metaSas.info);
-    streamoff offset = endOfSas;
+    std::streamoff offset = endOfSas;
     *serializer << offset;
     metaSas.stream->flush();
 
@@ -677,13 +676,13 @@ namespace PstpFinder
     *serializer << offset;
     metaPdb.complete = false;
     metaPdb.start = sessionFile->tellp();
-    metaPdb.stream = unique_ptr<stream_type>(
+    metaPdb.stream = std::unique_ptr<stream_type>(
         new stream_type(sessionFileName,
-                        ios_base::in | ios_base::out | ios_base::binary,
+                        std::ios_base::in | std::ios_base::out | std::ios_base::binary,
                         enumStreamType::STREAMTYPE_ADJUST, metaPdb.start));
 
-    metaPdb.stream->callbackClose = bind(
-          &Session_Base<T>::eventPdbStreamClosing, ref(*this));
+    metaPdb.stream->callbackClose = std::bind(
+          &Session_Base<T>::eventPdbStreamClosing, std::ref(*this));
   }
 
   template<typename T>
@@ -693,12 +692,12 @@ namespace PstpFinder
     if(not metaPdb.stream or not metaPdb.stream->is_open())
       return;
 
-    metaPdb.stream->seekp(0, ios_base::end);
-    streamoff endOfPdb(metaPdb.stream->tellp());
+    metaPdb.stream->seekp(0, std::ios_base::end);
+    std::streamoff endOfPdb(metaPdb.stream->tellp());
     metaPdb.end = metaPdb.start + endOfPdb;
     metaPdb.complete = true;
     sessionFile->seekp(metaPdb.info);
-    streamoff offset = endOfPdb;
+    std::streamoff offset = endOfPdb;
     *serializer << offset;
     metaPdb.stream->flush();
 
@@ -710,14 +709,14 @@ namespace PstpFinder
       *serializer << offset;
       metaPittpi.complete = false;
       metaPittpi.start = sessionFile->tellp();
-      metaPittpi.stream = unique_ptr<stream_type>(
+      metaPittpi.stream = std::unique_ptr<stream_type>(
           new stream_type(sessionFileName,
-                          ios_base::in | ios_base::out | ios_base::binary,
+                          std::ios_base::in | std::ios_base::out | std::ios_base::binary,
                           enumStreamType::STREAMTYPE_ADJUST,
                           metaPittpi.start));
 
-      metaPittpi.stream->callbackClose = bind(
-            &Session_Base<T>::eventPittpiStreamClosing, ref(*this));
+      metaPittpi.stream->callbackClose = std::bind(
+            &Session_Base<T>::eventPittpiStreamClosing, std::ref(*this));
     }
     else
       sessionFile->close();
@@ -731,8 +730,8 @@ namespace PstpFinder
     if(not metaPittpi.stream or not metaPittpi.stream->is_open())
       return;
 
-    metaPittpi.stream->seekp(0, ios_base::end);
-    streamoff endOfPittpi = metaPittpi.stream->tellp();
+    metaPittpi.stream->seekp(0, std::ios_base::end);
+    std::streamoff endOfPittpi = metaPittpi.stream->tellp();
     metaPittpi.end = metaPittpi.start + endOfPittpi;
     metaPittpi.complete = true;
     sessionFile->seekp(metaPittpi.info);
@@ -743,14 +742,14 @@ namespace PstpFinder
   }
 
   template<typename T>
-  class Session<T, typename enable_if<
-          is_base_of<base_stream(basic_istream, T), T>::value and
-          not is_base_of<base_stream(basic_ostream, T), T>::value>::type>
+  class Session<T, typename std::enable_if<
+          std::is_base_of<base_stream(std::basic_istream, T), T>::value and
+          not std::is_base_of<base_stream(std::basic_ostream, T), T>::value>::type>
       : public Session_Base<T>
   {
     public:
       Session() : Base() {}
-      Session(const string& fileName) : Base(fileName)
+      Session(const std::string& fileName) : Base(fileName)
       {
         Base::assertBaseIStream();
         Base::readSession();
@@ -761,14 +760,14 @@ namespace PstpFinder
   };
 
   template<typename T>
-  class Session<T, typename enable_if<
-          not is_base_of<base_stream(basic_istream, T), T>::value and
-          is_base_of<base_stream(basic_ostream, T), T>::value>::type>
+  class Session<T, typename std::enable_if<
+          not std::is_base_of<base_stream(std::basic_istream, T), T>::value and
+          std::is_base_of<base_stream(std::basic_ostream, T), T>::value>::type>
       : public Session_Base<T>
   {
     public:
       Session() : Base() {}
-      Session(const string& fileName, Gromacs& gromacs, double radius,
+      Session(const std::string& fileName, Gromacs& gromacs, double radius,
               double pocketThreshold) :
           Base(fileName,
                 { make_sessionParameter(SessionParameter::TRAJECTORY,
@@ -794,14 +793,14 @@ namespace PstpFinder
   };
 
   template<typename T>
-  class Session<T, typename enable_if<
-          is_base_of<base_stream(basic_istream, T), T>::value and
-          is_base_of<base_stream(basic_ostream, T), T>::value>::type>
+  class Session<T, typename std::enable_if<
+          std::is_base_of<base_stream(std::basic_istream, T), T>::value and
+          std::is_base_of<base_stream(std::basic_ostream, T), T>::value>::type>
       : public Session_Base<T>
   {
     public:
       Session() : Base() {}
-      Session(const string& fileName) : Base(fileName)
+      Session(const std::string& fileName) : Base(fileName)
       {
         Base::assertBaseIOStream();
         Base::readSession();

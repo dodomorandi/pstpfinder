@@ -36,16 +36,14 @@
 #include <vector>
 #include <sstream>
 
-using namespace std;
-
 namespace PstpFinder
 {
   template<typename Type, typename = void>
-  struct has_serialize_member_function : false_type {};
+  struct has_serialize_member_function : std::false_type {};
 
   template<typename Type>
   class has_serialize_member_function<Type,
-    typename enable_if<is_class<Type>::value>::type>
+    typename std::enable_if<std::is_class<Type>::value>::type>
   {
       class yes { char m;};
       class no { yes m[2];};
@@ -72,8 +70,8 @@ namespace PstpFinder
       template<typename Serializable>
       static size_t getSerializedSize(Serializable serializable)
       {
-        stringstream buffer;
-        Serializer<stringstream> serializer(buffer);
+        std::stringstream buffer;
+        Serializer<std::stringstream> serializer(buffer);
         serializer << serializable;
 
         return static_cast<const size_t>(buffer.tellp());
@@ -87,18 +85,19 @@ namespace PstpFinder
         stream(stream) {}
 
       template<typename Serializable>
-      typename enable_if<is_arithmetic<Serializable>::value,
+      typename std::enable_if<std::is_arithmetic<Serializable>::value,
         const SerializerHelper&>::type
       serializeData(Serializable serializable) const
       {
-        array<char_type, sizeof(Serializable)> buffer;
+        std::array<char_type, sizeof(Serializable)> buffer;
         char_type* pointer((char_type*)&serializable);
 
-        for(auto byte(begin(buffer)); byte < end(buffer); byte++, pointer++)
+        for(auto byte(std::begin(buffer)); byte < std::end(buffer);
+            byte++, pointer++)
           *byte = *pointer;
 
 #ifdef PSTPFINDER_BIG_ENDIAN // Default little endian
-        reverse(begin(buffer), end(buffer));
+        reverse(std::begin(buffer), std::end(buffer));
 #endif
         stream.write(buffer.data(), sizeof(Serializable));
 
@@ -106,7 +105,7 @@ namespace PstpFinder
       }
 
       template<typename Serializable>
-      typename enable_if<is_same<Serializable, string>::value,
+      typename std::enable_if<std::is_same<Serializable, std::string>::value,
         const SerializerHelper&>::type
       serializeData(const Serializable& serializable) const
       {
@@ -117,7 +116,7 @@ namespace PstpFinder
       }
 
       template<typename Serializable>
-      typename enable_if<has_serialize_member_function<Serializable>::value,
+      typename std::enable_if<has_serialize_member_function<Serializable>::value,
         const SerializerHelper&>::type
       serializeData(Serializable& serializable) const
       {
@@ -126,7 +125,7 @@ namespace PstpFinder
       }
 
       template<typename Serializable>
-      typename enable_if<is_std_container<Serializable>::value,
+      typename std::enable_if<std::is_std_container<Serializable>::value,
         const SerializerHelper&>::type
       serializeData(Serializable& serializableVector) const
       {
@@ -136,26 +135,27 @@ namespace PstpFinder
       }
 
       template<typename Serializable>
-      typename enable_if<is_arithmetic<Serializable>::value,
+      typename std::enable_if<std::is_arithmetic<Serializable>::value,
         const SerializerHelper&>::type
       deserializeData(Serializable& serializable) const
       {
-        array<char_type, sizeof(Serializable)> buffer;
+        std::array<char_type, sizeof(Serializable)> buffer;
         stream.read(buffer.data(), sizeof(Serializable));
         char_type* pointer((char_type*)&serializable);
 
 #ifdef PSTPFINDER_BIG_ENDIAN // Default little endian
-        reverse(begin(buffer), end(buffer));
+        reverse(std::begin(buffer), std::end(buffer));
 #endif
 
-        for(auto byte(begin(buffer)); byte < end(buffer); byte++, pointer++)
+        for(auto byte(std::begin(buffer)); byte < std::end(buffer);
+            byte++, pointer++)
           *pointer = *byte;
 
         return *this;
       }
 
       template<typename Serializable>
-      typename enable_if<is_same<Serializable, string>::value,
+      typename std::enable_if<std::is_same<Serializable, std::string>::value,
         const SerializerHelper&>::type
       deserializeData(Serializable& serializable) const
       {
@@ -170,7 +170,7 @@ namespace PstpFinder
       }
 
       template<typename Serializable>
-      typename enable_if<has_serialize_member_function<Serializable>::value,
+      typename std::enable_if<has_serialize_member_function<Serializable>::value,
         const SerializerHelper&>::type
       deserializeData(Serializable& serializable) const
       {
@@ -180,7 +180,7 @@ namespace PstpFinder
       }
 
       template<typename Serializable>
-      typename enable_if<is_std_container<Serializable>::value,
+      typename std::enable_if<std::is_std_container<Serializable>::value,
         const SerializerHelper&>::type
       deserializeData(Serializable& serializableVector) const
       {
@@ -212,7 +212,7 @@ namespace PstpFinder
         {
           containerType serializable;
           deserializeData(serializable);
-          container.push_back(move(serializable));
+          container.push_back(std::move(serializable));
         }
       }
   };
@@ -220,9 +220,9 @@ namespace PstpFinder
   template<typename Stream>
   class Serializer<
       Stream,
-      typename enable_if<
-          is_base_of<base_stream(basic_istream, Stream), Stream>::value and
-          not is_base_of<base_stream(basic_ostream, Stream), Stream>::value>
+      typename std::enable_if<
+          std::is_base_of<base_stream(std::basic_istream, Stream), Stream>::value and
+          not std::is_base_of<base_stream(std::basic_ostream, Stream), Stream>::value>
         ::type> : public SerializerHelper<Stream>
   {
     public:
@@ -231,7 +231,7 @@ namespace PstpFinder
         SerializerHelper<Stream>(stream) {}
 
       template<typename Serializable>
-      typename enable_if<is_arithmetic<Serializable>::value, const Serializer&>::type
+      typename std::enable_if<std::is_arithmetic<Serializable>::value, const Serializer&>::type
       operator &(Serializable& serializable) const
       {
         SerializerHelper<Stream>::deserializeData(serializable);
@@ -239,7 +239,7 @@ namespace PstpFinder
       }
 
       template<typename Serializable>
-      typename enable_if<is_class<Serializable>::value, const Serializer&>::type
+      typename std::enable_if<std::is_class<Serializable>::value, const Serializer&>::type
       operator &(Serializable& serializable) const
       {
         SerializerHelper<Stream>::deserializeData(serializable);
@@ -247,7 +247,7 @@ namespace PstpFinder
       }
 
       template<typename Output>
-      typename enable_if<
+      typename std::enable_if<
             has_serialize_member_function<Output>::value,
             const Serializer&>::type
       operator >>(Output& output) const
@@ -257,7 +257,7 @@ namespace PstpFinder
       }
 
       template<typename Output>
-      typename enable_if<
+      typename std::enable_if<
             not has_serialize_member_function<Output>::value,
             const Serializer&>::type
       operator >>(Output& output) const
@@ -270,9 +270,9 @@ namespace PstpFinder
   template<typename Stream>
   class Serializer<
       Stream,
-      typename enable_if<
-          not is_base_of<base_stream(basic_istream, Stream), Stream>::value and
-          is_base_of<base_stream(basic_ostream, Stream), Stream>::value>
+      typename std::enable_if<
+          not std::is_base_of<base_stream(std::basic_istream, Stream), Stream>::value and
+          std::is_base_of<base_stream(std::basic_ostream, Stream), Stream>::value>
         ::type> : public SerializerHelper<Stream>
   {
     public:
@@ -281,7 +281,7 @@ namespace PstpFinder
         SerializerHelper<Stream>(stream) {}
 
       template<typename Serializable>
-      typename enable_if<is_arithmetic<Serializable>::value,
+      typename std::enable_if<std::is_arithmetic<Serializable>::value,
         const Serializer&>::type
       operator &(Serializable serializable) const
       {
@@ -290,7 +290,7 @@ namespace PstpFinder
       }
 
       template<typename Serializable>
-      typename enable_if<is_class<Serializable>::value,
+      typename std::enable_if<std::is_class<Serializable>::value,
         const Serializer&>::type
       operator &(Serializable serializable) const
       {
@@ -299,7 +299,7 @@ namespace PstpFinder
       }
 
       template<typename Input>
-      typename enable_if<
+      typename std::enable_if<
           has_serialize_member_function<Input>::value,
           const Serializer&>::type
       operator <<(Input input) const
@@ -309,7 +309,7 @@ namespace PstpFinder
       }
 
       template<typename Input>
-      typename enable_if<
+      typename std::enable_if<
           not has_serialize_member_function<Input>::value,
           const Serializer&>::type
       operator <<(Input input) const
@@ -320,23 +320,24 @@ namespace PstpFinder
   };
 
   template<typename Stream>
-  class Serializer<
-      Stream,
-      typename enable_if<
-          is_base_of<base_stream(basic_istream, Stream), Stream>::value and
-          is_base_of<base_stream(basic_ostream, Stream), Stream>::value>
-        ::type> : public SerializerHelper<Stream>
+  class Serializer<Stream,
+      typename std::enable_if<
+          std::is_base_of<base_stream(std::basic_istream, Stream),Stream>::value and
+        std::is_base_of<base_stream(std::basic_ostream, Stream), Stream>::value>
+      ::type> : public SerializerHelper<Stream>
   {
     public:
       typedef typename Stream::char_type char_type;
+      typedef Serializer<Stream> _Self;
+
       Serializer(Stream& stream) :
         SerializerHelper<Stream>(stream) {}
 
       template<typename Serializable>
-      typename enable_if<is_arithmetic<Serializable>::value, const Serializer&>::type
+      typename std::enable_if<std::is_arithmetic<Serializable>::value, const Serializer&>::type
       operator &(Serializable& serializable) const
       {
-        if(mode == Mode::INPUT)
+        if(mode == _Self::Mode::INPUT)
           SerializerHelper<Stream>::deserializeData(serializable);
         else
           SerializerHelper<Stream>::serializeData(serializable);
@@ -344,10 +345,11 @@ namespace PstpFinder
       }
 
       template<typename Serializable>
-      typename enable_if<is_class<Serializable>::value, const Serializer&>::type
+      typename std::enable_if<std::is_class<Serializable>::value,
+        const Serializer&>::type
       operator &(Serializable& serializable) const
       {
-        if(mode == Mode::INPUT)
+        if(mode == _Self::Mode::INPUT)
           SerializerHelper<Stream>::deserializeData(serializable);
         else
           SerializerHelper<Stream>::serializeData(serializable);
@@ -355,45 +357,45 @@ namespace PstpFinder
       }
 
       template<typename Input>
-      typename enable_if<
+      typename std::enable_if<
           has_serialize_member_function<Input>::value,
           const Serializer&>::type
       operator <<(Input input) const
       {
-        mode = Mode::OUTPUT;
+        mode = _Self::Mode::OUTPUT;
         input.serialize(*this);
         return *this;
       }
 
       template<typename Input>
-      typename enable_if<
+      typename std::enable_if<
           not has_serialize_member_function<Input>::value,
           const Serializer&>::type
       operator <<(Input input) const
       {
-        mode = Mode::OUTPUT;
+        mode = _Self::Mode::OUTPUT;
         *this & input;
         return *this;
       }
 
       template<typename Output>
-      typename enable_if<
+      typename std::enable_if<
             has_serialize_member_function<Output>::value,
             const Serializer&>::type
       operator >>(Output& output) const
       {
-        mode = Mode::INPUT;
+        mode = _Self::Mode::INPUT;
         output.serialize(*this);
         return *this;
       }
 
       template<typename Output>
-      typename enable_if<
+      typename std::enable_if<
             not has_serialize_member_function<Output>::value,
             const Serializer&>::type
       operator >>(Output& output) const
       {
-        mode = Mode::INPUT;
+        mode = _Self::Mode::INPUT;
         *this & output;
         return *this;
       }

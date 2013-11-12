@@ -24,11 +24,9 @@
 
 #include "NewAnalysis.h"
 
-using namespace Gtk;
-
 namespace PstpFinder
 {
-  class MainWindow : public Window
+  class MainWindow : public Gtk::Window
   {
     public:
       MainWindow();
@@ -40,8 +38,8 @@ namespace PstpFinder
       bool
       onDeleteEvent(GdkEventAny* event);
     protected:
-      HButtonBox buttonBox;
-      Button buttonNew, buttonOpen;
+      Gtk::HButtonBox buttonBox;
+      Gtk::Button buttonNew, buttonOpen;
     private:
       NewAnalysis* newAnalysis;
       void

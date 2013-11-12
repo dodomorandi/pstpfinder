@@ -21,16 +21,39 @@
 #define UTILS_H_
 
 #include <string>
-
-using namespace std;
+#include <type_traits>
 
 namespace PstpFinder
 {
   #define base_stream(stream, T) stream<typename T::char_type, \
                                       typename T::traits_type>
 
-  bool exists(const string& filename);
-  string file_extension(const string& filename);
-  string change_extension(string filename, const string& new_extension);
+  template<typename T>
+  using remove_all = typename std::remove_cv<
+      typename std::remove_reference<typename std::remove_pointer<
+        typename std::remove_all_extents<T>::type>::type>::type>::type;
+
+  template<template<typename, typename> class Stream, typename T,
+            bool = std::is_base_of<std::ios_base, remove_all<T>>::value>
+    struct is_stream_base_of_helper : public std::false_type {};
+
+  template<template<typename, typename> class Stream,
+            typename T>
+  struct is_stream_base_of_helper<Stream, T, true>
+  {
+      typedef remove_all<T> __T;
+      typedef typename std::is_base_of<Stream<typename __T::char_type,
+                                           typename __T::traits_type>,
+                                    __T>::type type;
+      static constexpr bool value = type::value;
+  };
+
+  template<template<typename, typename> class Stream, typename T>
+  struct is_stream_base_of : public is_stream_base_of_helper<Stream, T> {};
+
+  bool exists(const std::string& filename);
+  std::string file_extension(const std::string& filename);
+  std::string change_extension(std::string filename,
+                               const std::string& new_extension);
 }
 #endif /* UTILS_H_ */

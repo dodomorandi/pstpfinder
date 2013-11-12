@@ -112,7 +112,7 @@ Results::init() throw()
 
   labelPocketResidues.set_text("Involved residues:");
   labelPocketResidues.set_alignment(0, 0.5);
-  textPocketResidues.set_wrap_mode(WrapMode::WRAP_WORD);
+  textPocketResidues.set_wrap_mode(Gtk::WrapMode::WRAP_WORD);
   textPocketResidues.set_editable(false);
   textPocketResidues.set_border_width(1);
 #if GTKMM_MAJOR == 3
@@ -162,14 +162,9 @@ Results::init() throw()
                         << aminoacidTriplet[i->residue->type]
                         << i->residue->index << ":";
 
-        const vector<const Residue*>& residuesRef = (*j)->group->getResidues();
-        for
-        (
-          vector<const Residue*>::const_iterator k = residuesRef.begin();
-          k < residuesRef.end();
-          k++
-        )
-          streamDetails << " " << (*k)->index;
+        auto& residuesRef = (*j)->group->getResidues();
+        for(auto& residueRef : residuesRef)
+          streamDetails << " " << residueRef->index;
         streamDetails << endl << endl;
 
         streamDetails << setfill(' ') << setw(11) << left << "start";
@@ -201,7 +196,8 @@ Results::init() throw()
 
     if(bestPocket != i->pockets.end())
     {
-      const Residue& centralRes = (*bestPocket)->group->getCentralRes();
+      const Residue<SasPdbAtom>& centralRes = (*bestPocket)->group
+          ->getCentralRes();
       stringstream aaRef;
       aaRef << aminoacidTriplet[centralRes.type] << centralRes.index;
 
@@ -215,15 +211,8 @@ Results::init() throw()
       streamData << setfill('0') << setw(7) << right << (int)(*bestPocket)->width
                 << "   ";
 
-      const vector<const Residue*>& pocketResidues =
-        (*bestPocket)->group->getResidues();
-      for
-      (
-        vector<const Residue*>::const_iterator k = pocketResidues.begin();
-        k < pocketResidues.end();
-        k++
-      )
-        streamData << " " << (*k)->index;
+      for(auto& pocketResidue : (*bestPocket)->group->getResidues())
+        streamData << " " << pocketResidue->index;
 
       streamData << endl;
     }
@@ -712,7 +701,7 @@ Results::fillResidues()
   for(auto& pocket : pockets)
   {
     bool exists = false;
-    const Residue& currentRes = pocket.group->getCentralRes();
+    const Residue<SasPdbAtom>& currentRes = pocket.group->getCentralRes();
 
     for(auto& residue : residues)
     {
@@ -837,7 +826,7 @@ Results::updateInformation()
   if(pocket)
   {
     stringstream ss;
-    const Residue centralRes(pocket->group->getCentralRes());
+    const Residue<SasPdbAtom> centralRes(pocket->group->getCentralRes());
     ss << centralRes.index << aminoacidTriplet[centralRes.type];
     entryPocketCenter.set_text(ss.str());
     ss.str("");
@@ -903,14 +892,14 @@ Results::buildMenu()
       "  </menubar>"
       "</ui>";
 
-  actionGroup = ActionGroup::create();
-  actionGroup->add(Action::create("graphMenu", "_Graph"));
+  actionGroup = Gtk::ActionGroup::create();
+  actionGroup->add(Gtk::Action::create("graphMenu", "_Graph"));
   actionGroup->add(
-      Action::create("changeColors", "_Change colors",
+      Gtk::Action::create("changeColors", "_Change colors",
                      "Change default colors for every bar"),
       sigc::mem_fun(*this, &Results::runColorsChooserDialog));
 
-  uiManager = UIManager::create();
+  uiManager = Gtk::UIManager::create();
   uiManager->insert_action_group(actionGroup);
   uiManager->add_ui_from_string(menuString);
 }
@@ -920,7 +909,7 @@ Results::runColorsChooserDialog()
 {
   ColorsChooser colorsChooser;
   colorsChooser.set_colors(colors);
-  if(colorsChooser.run() != ResponseType::RESPONSE_OK)
+  if(colorsChooser.run() != Gtk::ResponseType::RESPONSE_OK)
     return;
 
   colors = colorsChooser.get_colors();
