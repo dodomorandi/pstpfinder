@@ -98,15 +98,16 @@ Pdb<AtomType>::write(Stream& stream) const
         }
 
         stream << std::resetiosflags(std::ios::adjustfield);
-        stream << std::setiosflags(std::ios::left);
+        stream << std::setiosflags(std::ios::right);
         stream << "ATOM  " << std::setw(5) << atom.index << " ";
-        stream << std::setiosflags(std::ios::right) << std::setw(2) << atomName;
+        stream << std::setw(2) << atomName;
         stream << std::resetiosflags(std::ios::adjustfield) << std::setw(2);
         stream << std::setiosflags(std::ios::left);
         stream << atomType << " " << std::setw(3);
         stream << aminoacidTriplet[residue.type] << " " << residue.chain;
-        stream << std::setw(4) << residue.index;
-        stream << "    " << std::setiosflags(std::ios::right);
+        stream << std::resetiosflags(std::ios::adjustfield);
+        stream << std::setiosflags(std::ios::right);
+        stream << std::setw(4) << residue.index << "    ";
         stream << std::setiosflags(std::ios::fixed);
         stream << std::setprecision(3) << std::setw(8) << (atom.x * 10.);
         stream << std::setprecision(3) << std::setw(8) << (atom.y * 10.);
@@ -118,7 +119,10 @@ Pdb<AtomType>::write(Stream& stream) const
         stream << std::setprecision(2) << std::setw(6);
         stream << ((std::get<0>(aux) >= 100) ? 99.99 : std::get<0>(aux));
         stream << std::resetiosflags(std::ios::fixed);
-        stream << "            " << std::setw(2) << atomName << std::endl;
+        stream << std::resetiosflags(std::ios::adjustfield);
+        stream << std::setiosflags(std::ios::right);
+        stream << "          " << std::setw(2) << atomName;
+        stream << "  " <<  std::endl; /* Atom charge */
         stream << std::resetiosflags(std::ios::adjustfield);
       }
     }

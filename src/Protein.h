@@ -142,13 +142,15 @@ namespace PstpFinder
             case 'P':
               name[0] = type[0];
               name[1] = '\0';
-              std::copy(std::min(begin(type) + 1, std::end(type)),
-                        std::end(type), std::begin(this->type));
+              {
+                auto endIter = std::copy_if(
+                    std::min(begin(type) + 1, std::end(type)), std::end(type),
+                    std::begin(this->type),
+                    [](char a) { return a != ' '; });
 
-              if(typeSize <= 2)
-                this->type[0] = '\0';
-              else if(typeSize == 3)
-                this->type[1] = '\0';
+                if(endIter < std::end(this->type))
+                  *endIter = '\0';
+              }
 
               break;
             default:

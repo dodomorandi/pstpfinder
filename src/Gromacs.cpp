@@ -21,6 +21,7 @@
 #include "SasAtom.h"
 #include "SasAnalysis.h"
 #include "utils.h"
+#include "Protein.h"
 
 #include <string>
 #include <iostream>
@@ -436,7 +437,7 @@ namespace PstpFinder
             *top.atoms.resinfo[resind].name);
         res.chain = 'A';
       }
-      res.atoms.push_back(atom);
+      res.atoms.push_back(std::move(atom));
 
       operationMutex.lock();
       currentFrame = (float) getFramesCount() / isize * i;
