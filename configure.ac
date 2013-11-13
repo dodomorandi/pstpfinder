@@ -65,8 +65,19 @@ PKG_CHECK_MODULES([PYTHON], [python >= 2.6], [
    AC_DEFINE([HAVE_PYTHON], [1], "Python")
    HAVE_PYTHON=1
 ], [
-   AC_DEFINE([HAVE_PYTHON], [0], "Python")
-   HAVE_PYTHON=0
+   PKG_CHECK_MODULES([PYTHON], [python2 >= 2.6], [
+      CFLAGS="$CFLAGS $PYTHON_CFLAGS"
+      CXXFLAGS="$CXXFLAGS $PYTHON_CFLAGS"
+      LIBS="$LIBS $PYTHON_LIBS"
+      AC_SUBST([CFLAGS])
+      AC_SUBST([CXXFLAGS])
+      AC_SUBST([LIBS])
+      AC_DEFINE([HAVE_PYTHON], [1], "Python")
+      HAVE_PYTHON=1
+   ], [ 
+      AC_DEFINE([HAVE_PYTHON], [0], "Python")
+      HAVE_PYTHON=0
+   ])
 ])
 
 if test $HAVE_PYTHON -eq 1; then
