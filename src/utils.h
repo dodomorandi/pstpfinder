@@ -21,6 +21,8 @@
 #define UTILS_H_
 
 #include <string>
+#include <sstream>
+#include <array>
 #include <type_traits>
 
 namespace PstpFinder
@@ -55,5 +57,21 @@ namespace PstpFinder
   std::string file_extension(const std::string& filename);
   std::string change_extension(std::string filename,
                                const std::string& new_extension);
+
+
+  template<std::size_t N>
+  std::string
+  array2string(const std::array<char, N> arr)
+  {
+    std::string str;
+    str.reserve(N);
+    for(const char& c : arr)
+      if(c != '\0')
+        str.push_back(c);
+
+    str.shrink_to_fit();
+    return str;
+  }
 }
+
 #endif /* UTILS_H_ */

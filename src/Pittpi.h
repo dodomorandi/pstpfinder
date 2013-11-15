@@ -46,7 +46,6 @@ namespace PstpFinder
       const std::vector<const Residue<SasPdbAtom>*>& getResidues() const;
       const SasPdbAtom& getCentralH() const;
       const Residue<SasPdbAtom>& getCentralRes() const;
-      static bool sortByZeros(const Group& a, const Group& b);
 
       std::vector<float> sas;
       unsigned int zeros;

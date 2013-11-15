@@ -155,12 +155,6 @@ namespace PstpFinder
     }
   }
 
-  bool
-  Group::sortByZeros(const Group& a, const Group& b)
-  {
-    return (a.zeros > b.zeros);
-  }
-
   Pittpi::Pittpi(Gromacs& gromacs, const std::string& sessionFileName,
                  float radius, unsigned long threshold, bool runPittpi) :
       gromacs(gromacs),
@@ -302,7 +296,8 @@ namespace PstpFinder
     fillGroups(sessionFileName, frameStep);
     if(abortFlag) return;
 
-    sort(groups.begin(), groups.end(), Group::sortByZeros);
+    sort(groups.begin(), groups.end(),
+         [](const Group& a, const Group& b) { return a.zeros > b.zeros; });
 
     unsigned int noZeroPass = threshold / PS_PER_SAS;
     if(noZeroPass < 20)
@@ -451,7 +446,8 @@ namespace PstpFinder
       Atom center(0);
       const vector<SasPdbAtom>& atoms = i->atoms;
 
-      if(not i->getAtomByType("H1").isType("UNK") or i->type == AA_PRO)
+      if(i->getAtomByType("H1").getTrimmedAtomType() != "UNK" or
+          i->type == AA_PRO)
       {
         centers.push_back(center);
         continue;
@@ -464,9 +460,9 @@ namespace PstpFinder
       unsigned int count = 0;
       for(auto& atom : atoms)
       {
-        if(not atom.isType("N") != 0 and not atom.isType("CA") and
-           not atom.isType("H") and not atom.isType("C") and
-           not atom.isType("O") and not atom.isType("HA"))
+        string atomType = atom.getTrimmedAtomType();
+        if(atomType != "N" and atomType != "CA" and atomType != "H"
+           and atomType != "C" and atomType != "O" and atomType != "HA")
         {
           center += atom;
           count++;
@@ -541,7 +537,7 @@ namespace PstpFinder
       if(abortFlag) return vector<Group>();
       const SasPdbAtom& hAtom = i->getAtomByType("H");
 
-      if(hAtom.isType("UNK"))
+      if(hAtom.getTrimmedAtomType() == "UNK")
         continue;
       /*
        * NOTE:
@@ -574,11 +570,12 @@ namespace PstpFinder
         resIterator++, refIterator++)
     {
       if(abortFlag) return vector<Group>();
-      if(resIterator->getAtomByType("H").isType("UNK"))
+      if(resIterator->getAtomByType("H").getTrimmedAtomType() == "UNK")
       {
         refIterator--;
         continue;
       }
+
       Group group(*resIterator);
       group << makeGroupByDistance(centers, *refIterator, radius);
       groups.push_back(move(group));
@@ -597,7 +594,7 @@ namespace PstpFinder
     auto& residues = averageStructure.residues();
     Group group(atom);
 
-    if(atom.isType("UNK"))
+    if(atom.getTrimmedAtomType() == "UNK")
       return group;
 
     for(vector<Atom>::const_iterator j = begin(centers); j < end(centers);
@@ -737,7 +734,7 @@ namespace PstpFinder
           {
             if(abortFlag) return;
             const SasPdbAtom& atomH = (*j)->getAtomByType("H");
-            if(atomH.isType("UNK"))
+            if(atomH.getTrimmedAtomType() == "UNK")
               continue;
 
             if(meanSas[atomH.index - 1] != 0)
@@ -783,7 +780,7 @@ namespace PstpFinder
         {
           if(abortFlag) return;
           const SasPdbAtom& atomH = (*j)->getAtomByType("H");
-          if(atomH.isType("UNK"))
+          if(atomH.getTrimmedAtomType() == "UNK")
             continue;
 
           if(meanSas[atomH.index - 1] != 0)

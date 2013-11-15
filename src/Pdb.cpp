@@ -83,10 +83,8 @@ Pdb<AtomType>::write(Stream& stream) const
     {
       for(auto& atom : residue.atoms)
       {
-        std::string atomName(std::string(std::begin(atom.name),
-                                         std::end(atom.name)));
-        std::string atomType(std::string(std::begin(atom.type),
-                                         std::end(atom.type)));
+        std::string atomName(array2string(atom.name));
+        std::string atomType(array2string(atom.type));
         {
           size_t pos = atomName.find('\0');
           if(pos != std::string::npos)

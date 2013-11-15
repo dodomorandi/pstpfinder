@@ -79,21 +79,19 @@ namespace PstpFinder
       explicit ProteinAtom(const std::string& type) { setAtomType(type); }
       explicit ProteinAtom(int index) : index(index) {}
 
-      inline bool isType(const std::string& type) const
-      {
-        return type == std::string(std::begin(name), std::end(name)) +
-            std::string(std::begin(type), std::end(type));
-      }
-
       std::string getAtomType() const
       {
         std::stringstream ss;
         ss << std::setiosflags(std::ios_base::right) << std::setfill(' ');
-        ss << std::setw(2) << std::string(std::begin(name), std::end(name));
-        ss << std::resetiosflags(std::ios_base::right);
-        ss << std::string(std::begin(type), std::end(type));
+        ss << std::setw(2) << array2string(name);
+        ss << std::resetiosflags(std::ios_base::right) << array2string(type);
 
         return ss.str();
+      }
+
+      std::string getTrimmedAtomType() const
+      {
+        return array2string(name) + array2string(type);
       }
 
       void setAtomType(const std::string& type, bool pdbFormat = true)
@@ -272,7 +270,7 @@ namespace PstpFinder
       template<typename OldAtom>
         Protein(const Protein<OldAtom>& protein);
       template<typename OldAtom>
-        Protein& operator =(const Protein<OldAtom>& proteinr);
+        Protein& operator =(const Protein<OldAtom>& protein);
 
       const std::vector<Residue<AtomType>>& residues() const;
       std::vector<Residue<AtomType>>& residuesRW();
