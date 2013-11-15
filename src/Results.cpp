@@ -269,7 +269,7 @@ bool
 Results::drawResultsGraphDrawEvent(
     const Cairo::RefPtr<Cairo::Context>& context) throw ()
 #else
-Results::drawResultsGraphExposeEvent(GdkEventExpose* event) throw()
+Results::drawResultsGraphExposeEvent(GdkEventExpose*) throw()
 #endif
 {
 #if GTKMM_MAJOR == 2
