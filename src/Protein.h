@@ -63,8 +63,10 @@ namespace PstpFinder
       "PRO", "TYR", "TRP", "PHE", "HIS", "ARG", "LYS", "GLU", "ASP", "GLN",
       "ASN" };
   const std::string aminoacidUncommonTranslator[] =
-    { "CYP", "CYS", "CYD", "CYS", "HID", "HIS", "HIE", "HIS", "HIP", "HIS",
-      "LYP", "LYS", "LYD", "LYS", "LYN", "LYS", "ASH", "ASP", "GLH", "GLU" };
+    { "CYP", "CYS", "CYD", "CYS", "CYS2", "CYS", "HID", "HIS", "HIE", "HIS",
+      "HIP", "HIS", "LYP", "LYS", "LYD", "LYS", "LYN", "LYS", "LYSN", "LYS",
+      "ASH", "ASP", "ASPH", "ASP", "GLH", "GLU", "GLUH", "GLU", "QLN", "GLN",
+      "ARGN", "ARG" };
   const unsigned int aminoacidUncommonTranslatorSize =
       sizeof(aminoacidUncommonTranslator)
           / sizeof(*aminoacidUncommonTranslator);
