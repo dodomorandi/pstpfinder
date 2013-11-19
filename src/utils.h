@@ -68,6 +68,8 @@ namespace PstpFinder
     for(const char& c : arr)
       if(c != '\0')
         str.push_back(c);
+      else
+        break;
 
     str.shrink_to_fit();
     return str;
