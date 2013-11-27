@@ -1,3 +1,338 @@
+commit c0c86d5e8426786640742e3e0e8852b274c9d682
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue Nov 19 13:36:41 2013 +0100
+
+    Added some Gromacs residue names
+
+commit 416ff6226dd961771610d3d0c8912bf1bc403a97
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue Nov 19 12:14:59 2013 +0100
+
+    Fixed ANOTHER problem with PDB atom name handling
+    
+    Forgot to handle the '\0' as a string terminator -- I was just ignoring it.
+
+commit 8ba83c504a070db2c5368e3217572ef78b20f2a8
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri Nov 15 15:33:07 2013 +0100
+
+    Removed an annoying warning
+
+commit 07c7c38d63686b2dc12a4f5b9459f57a10f0298a
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri Nov 15 15:25:55 2013 +0100
+
+    Fixed other problem with PDB handling
+    
+    Also:
+    * Replaced a short method with a simple lambda
+    * Removed ProteinAtom::isType to avoid problems between element/type/pdb-type-with-spaces
+
+commit ae300266bec4e4d13d8bafd57dce61fe822379f3
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Nov 13 14:10:37 2013 +0100
+
+    Fixed PDB format handling... again!
+    
+    Also added a little optimization (move instead of copy)
+
+commit b38f9bcf2e3f0cff5a2f9b1121a92a0289257bfc
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Nov 13 01:29:07 2013 +0100
+
+    Python package could be called python2
+    
+    Fixed problem in autoconf script
+
+commit 8644f12d41a3e4c1e3da09968ba817967a8d5a4c
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue Nov 12 20:32:11 2013 +0100
+
+    Fixed autotools for multiple python versions
+    
+    Now it should work everything fine even if a distro has python 2 and 3 installed
+
+commit 09853c2998d7b7c1637eb82e17b52f046471a831
+Merge: fa43816 9d4c254
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue Nov 12 15:17:39 2013 +0100
+
+    Merge branch 'full_pdb'
+    
+    Conflicts:
+    	src/Gromacs.cpp
+    	src/Serializer.h
+    
+    Also fixed a couple of bugs related do PDB read/write
+
+commit 9d4c2547a7846057490992b0c8676a736fdcefd6
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Mon Nov 11 15:44:56 2013 +0100
+
+    Fixed PDB atom name handling
+
+commit 353c12cbaba355ba31d866427153bf854d877e1c
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Thu Nov 7 14:19:54 2013 +0100
+
+    Missed a couple of namespace problems
+    
+    Don't know why the compiler didn't said anything about them.
+
+commit 16863ff17311d4c6086e957b0746bf240783043c
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Nov 6 16:49:30 2013 +0100
+
+    Lots namespace and include refactory
+    
+    There were lots of problem about namespaces inside headers. I committed this inside this branch simply because I'm going to merge with the master branch very soon.
+
+commit fa438168d89f8fd3a71ac7527330ed8d51523376
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Oct 30 13:54:26 2013 +0100
+
+    Fixed problem with concatenated trajectories
+    
+    A very huge bug still exists, but for now I have no idea how to solve it.
+    When trajectories are concatenated it is possible to change the frame "time parameter" to transform two dynamics 1-10;1-6 in one dynamic 1-16. This commit allows to analyse these kind of concatenated dynamics if the timestep is constant. If not so, or if the time parameter is left unchanged I have no idea how to distinguish this kind of trajectory from a "normal" one. And the program hangs.
+
+commit f223239ed022c1ab4767949f516fb85d460fc0a4
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Oct 23 16:23:28 2013 +0200
+
+    Using a (quite hidden) Gromacs function...
+    
+    ...for calculating number of steps. It also fixed a problem with trajectories with dropped frames.
+
+commit 52d7aef19781d6b4fa537bc321800ac8be4ecfaf
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Oct 16 12:43:00 2013 +0200
+
+    Fixed problem regarding gtkmm version
+    
+    Bar colors went crazy
+
+commit c41096bc6bb52b1a9434184c0be0a230ab057fb0
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Mon Oct 14 11:51:25 2013 +0200
+
+    Fixed major bug introduced previously
+    
+    Bug introduced in commit b63d29a7e3f8953f3dbad28ec336b204a7547c1c because of the output of read_first_frame, which is a boolean and not the number of atoms read.
+
+commit 04ae2a846de5750f6d7947337222038322812d81
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Thu Mar 7 18:30:41 2013 +0100
+
+    Missing include
+
+commit d3a510c14ea0dcd4a36be32b2226b31b5bcc8e63
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue Mar 5 19:50:51 2013 +0100
+
+    Changed Gromacs "copy" constructor
+    
+    In fact is not possible to really copy the object: a possible open stream could lead to mutex deadlock. It is safer to rebuild everything and copy only "static" data like filenames and others.
+
+commit c9310f9e6410a580debaf610f956b2b4393b5431
+Merge: b4b5b46 2d56c63
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue Feb 19 18:11:28 2013 +0100
+
+    Merge branch 'full_pdb' of dodomorandi.no-ip.biz:/git/pstpfinder into full_pdb
+
+commit b4b5b4688407201dba9d46f325465c4d83c7df6f
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Jan 23 13:45:22 2013 +0100
+
+    Added support to chainId in Pdb
+
+commit 012cb84ce92566a62faacf5743c7e934ecb28258
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Jan 23 13:30:07 2013 +0100
+
+    Fixed forwarding bug
+
+commit fff36d0434f0894d45c6ad81a1e564ed916ee1a9
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Jan 16 17:21:31 2013 +0100
+
+    Fixed "type" problems -- again
+
+commit 7920dc28f204d5ed4b8f29cf4c4e5ceb69284ea4
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Jan 16 16:39:09 2013 +0100
+
+    Missing Protein copy parameter for Pdb constructor
+
+commit 5d4e7a769271b0184370e4f6645a2040e5ab5b72
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue Jan 15 17:06:51 2013 +0100
+
+    Fixed some bugs
+    
+    * Handling pdb files in a different way inside Gromacs.cpp
+    * Fixed some problems with Pdb parsing
+    * Deleted useless commented piece of code
+    * Protein::getAtomByIndex loops inside pResidues instead of pAtoms. Should avoid possible memory crashes
+    * I made a conceptual error lots of time ago: Protein::type should be char[4] instead of char[5] null teminated. Leaving as it is (for now), however copies from/to string must consider this.
+
+commit 5e7a7744c868dd0b97ae50b25580139c98a580df
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri Dec 7 18:24:41 2012 +0100
+
+    Huge rewrite to implement correctly PDB files
+
+commit 70b88189efebddc0aacf2a1991b689769669fca7
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue Feb 19 18:04:14 2013 +0100
+
+    Wrong condition_variable used
+
+commit 2d56c639b904037150880002e8237e287a041a95
+Merge: 9c3d44e a860bed
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue Feb 19 17:42:56 2013 +0100
+
+    Merge branch 'full_pdb' of dodomorandi.no-ip.biz:/git/pstpfinder into full_pdb
+
+commit 9c3d44e35d19634092c70555017ec00f4ef5b3f4
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Jan 23 13:45:22 2013 +0100
+
+    Added support to chainId in Pdb
+
+commit 9cee6c777adf2aa1a105186d6015ff0dedbcd0c0
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Jan 23 13:30:07 2013 +0100
+
+    Fixed forwarding bug
+
+commit 191da17be0f880b888e2ce0f91bead96f79f8779
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Jan 16 17:21:31 2013 +0100
+
+    Fixed "type" problems -- again
+
+commit e0de38b678af22faad5ee8ef38a57d25837fc9ee
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Jan 16 16:39:09 2013 +0100
+
+    Missing Protein copy parameter for Pdb constructor
+
+commit 2edfa470a0cbc80039020981ba7a15a4d08c747b
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue Jan 15 17:06:51 2013 +0100
+
+    Fixed some bugs
+    
+    * Handling pdb files in a different way inside Gromacs.cpp
+    * Fixed some problems with Pdb parsing
+    * Deleted useless commented piece of code
+    * Protein::getAtomByIndex loops inside pResidues instead of pAtoms. Should avoid possible memory crashes
+    * I made a conceptual error lots of time ago: Protein::type should be char[4] instead of char[5] null teminated. Leaving as it is (for now), however copies from/to string must consider this.
+
+commit 5f607e7eb95b06176b833f86098471f3a8a68b2a
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri Dec 7 18:24:41 2012 +0100
+
+    Huge rewrite to implement correctly PDB files
+
+commit fa1edc90514dcb55d47ede636cd19169ddcbb5cf
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue Feb 19 17:41:21 2013 +0100
+
+    Fixed an off-by-one
+
+commit a860bed463a2b3af09e0e76820aafa010b844e3d
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Jan 23 13:45:22 2013 +0100
+
+    Added support to chainId in Pdb
+
+commit cd9b69186902151513b7703ea84a898af507d48c
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Jan 23 13:30:07 2013 +0100
+
+    Fixed forwarding bug
+
+commit 767612074cf561792a63a4755a31426462cd437c
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Jan 16 17:21:31 2013 +0100
+
+    Fixed "type" problems -- again
+
+commit 0220339a81495724be8699e5bd5af2449b987ac0
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Jan 16 16:39:09 2013 +0100
+
+    Missing Protein copy parameter for Pdb constructor
+
+commit fa09e5540f31f28de97a264a3a542c0b3613dba2
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue Jan 15 17:06:51 2013 +0100
+
+    Fixed some bugs
+    
+    * Handling pdb files in a different way inside Gromacs.cpp
+    * Fixed some problems with Pdb parsing
+    * Deleted useless commented piece of code
+    * Protein::getAtomByIndex loops inside pResidues instead of pAtoms. Should avoid possible memory crashes
+    * I made a conceptual error lots of time ago: Protein::type should be char[4] instead of char[5] null teminated. Leaving as it is (for now), however copies from/to string must consider this.
+
+commit 721d4525b9945136edb54e7218c1843e93483c92
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Fri Dec 7 18:24:41 2012 +0100
+
+    Huge rewrite to implement correctly PDB files
+
+commit 20e39784da01c5eef3b2232fd58b3c74deda1db4
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue Feb 19 17:21:23 2013 +0100
+
+    Fixed problem with closing trajectories
+
+commit 61f606e68ace919f31dd9a13228af635fd47aa8d
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Mon Feb 18 16:40:42 2013 +0100
+
+    Fixed some warning (and added some notes)
+
+commit b63d29a7e3f8953f3dbad28ec336b204a7547c1c
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Mon Feb 18 16:32:23 2013 +0100
+
+    Fixed lots of memory leaks
+
+commit 007932f9f5e62f83f222056a77b0638fcdc7fdf7
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue Feb 12 18:22:59 2013 +0100
+
+    Added mutex for nsc_dclm_pdc
+    
+    There's a possible double free exception inside gromacs/src/tools/nsc.c, due to some static pointers not correctly handled.
+
+commit a30569fd7ae2ac30c4a48618baf50955f84b13ed
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Tue Feb 12 17:21:03 2013 +0100
+
+    Fixed a couple of bugs
+    
+    * Correct order for Session members initialization
+    * Need to close Gromacs trajectories
+
+commit adb084a5e21fcc01230138326e570207d2adcc1c
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Feb 6 10:07:34 2013 +0100
+
+    Added possibility to avoid PBC
+
+commit 40eedd8f8f1fccb7748e1a3dd8d3efb1179ef88b
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Feb 6 10:06:22 2013 +0100
+
+    Updated changelog
+
 commit bda66b3f7f2bc52d7615a8628578732e4eb9538c
 Author: Edoardo Morandi <morandidodo@gmail.com>
 Date:   Wed Jan 16 13:36:15 2013 +0100
