@@ -1,3 +1,19 @@
+commit ff145dc014075aeed0eb1af01c4d17780b4b54dd
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Mon Feb 3 10:22:23 2014 +0100
+
+    Fixed a couple of major bugs
+    
+    These were related to session resuming. Now SasAnalysisThread must be explicitly stopped from SasAnalysis instead of auto-killing itself if Gromacs is in "stopping" mode. This avoids very strange situations inside SasAnalysis.
+
+commit 00f74571fc67f3f2b3f0b3bce40ae4df2470ab0d
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Nov 27 12:10:50 2013 +0100
+
+    Updated changelog (with git log)
+    
+    For version 0.4.3
+
 commit c0c86d5e8426786640742e3e0e8852b274c9d682
 Author: Edoardo Morandi <morandidodo@gmail.com>
 Date:   Tue Nov 19 13:36:41 2013 +0100
