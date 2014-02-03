@@ -74,7 +74,7 @@ namespace PstpFinder
         parent->bufferMutex.lock();
       }
 
-      if(isStopped or (parent->gromacs and parent->gromacs->isAborting()))
+      if(isStopped)
       {
         parent->bufferMutex.unlock();
         break;
@@ -95,9 +95,6 @@ namespace PstpFinder
 
       parent->bufferMutex.unlock();
     }
-
-    if(parent->gromacs and parent->gromacs->isAborting())
-      return;
 
     parent->bufferMutex.lock();
     while(parent->bufferCount < parent->bufferMax - 1)
@@ -133,12 +130,6 @@ namespace PstpFinder
           parent->bufferCount++;
           parent->bufferCountCondition.notify_all();
         }
-        parent->bufferMutex.unlock();
-        break;
-      }
-
-      if(parent->gromacs and parent->gromacs->isAborting())
-      {
         parent->bufferMutex.unlock();
         break;
       }
@@ -229,12 +220,6 @@ namespace PstpFinder
           Base::parent->bufferMutex.unlock();
           Base::parent->bufferCountCondition.wait(lock);
           Base::parent->bufferMutex.lock();
-
-          if(Base::parent->gromacs and Base::parent->gromacs->isAborting())
-          {
-            Base::parent->bufferMutex.unlock();
-            break;
-          }
         }
         Base::parent->bufferMutex.unlock();
       }

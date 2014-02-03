@@ -321,9 +321,26 @@ namespace PstpFinder
     if(Base::changeable)
       return;
 
-    if(Base::frames.size() != 0)
+    /* Do not save the last chunk if we are aborting! */
+    if(not Base::gromacs or Base::gromacs->isAborting())
+    {
+      Base::bufferMutex.lock();
+      Base::frames.clear();
+      Base::bufferMutex.unlock();
+    }
+    else if(Base::frames.size() != 0)
       flush();
-    Base::analysisThread->waitForFlush();
+
+    Base::bufferMutex.lock();
+    while(Base::bufferCount != Base::bufferMax - 1)
+    {
+      std::unique_lock<std::mutex> bufferCountLock(Base::bufferCountMutex);
+      Base::bufferMutex.unlock();
+      Base::bufferCountCondition.wait(bufferCountLock);
+      Base::bufferMutex.lock();
+    }
+    Base::bufferMutex.unlock();
+
     Base::analysisThread->stop();
     delete Base::analysisThread;
 
