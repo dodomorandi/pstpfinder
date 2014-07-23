@@ -1,3 +1,29 @@
+commit 18fb123bb04dbe81c718d00745fcb0d141ca416a
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Jul 23 13:03:09 2014 +0200
+
+    .trj files are not supported
+
+commit d66840821d3c6e8b0f8a55416b02c050245b89ee
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Jul 23 13:01:47 2014 +0200
+
+    Fixed bug on results graph
+
+commit e19756515022b8502d11bb502e581843bb1bdbea
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Wed Jul 23 13:01:19 2014 +0200
+
+    Fixed error message in configure.ac
+
+commit 04638354250b29b577ed8bfa3a9fca6f441e5492
+Author: Edoardo Morandi <morandidodo@gmail.com>
+Date:   Mon Feb 3 10:50:15 2014 +0100
+
+    Updated changelog (with git log)
+    
+    For version 0.4.3.1
+
 commit ff145dc014075aeed0eb1af01c4d17780b4b54dd
 Author: Edoardo Morandi <morandidodo@gmail.com>
 Date:   Mon Feb 3 10:22:23 2014 +0100
