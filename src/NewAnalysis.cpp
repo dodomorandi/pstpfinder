@@ -61,7 +61,6 @@ namespace PstpFinder
     GtkmmWrapper<Gtk::FileFilter> trjFilter;
     trjFilter->set_name("Trajectory files");
     trjFilter->add_pattern("*.xtc");
-    trjFilter->add_pattern("*.trj");
     trjChooser.add_filter(trjFilter);
     trjChooser.signal_file_set().connect(
         sigc::mem_fun(*this, &NewAnalysis::chooserTrajectoryClicked));
