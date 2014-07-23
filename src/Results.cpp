@@ -294,7 +294,6 @@ Results::drawResultsGraphExposeEvent(GdkEventExpose*) throw()
                             Cairo::FONT_WEIGHT_NORMAL);
 
   float graphLabelXSize, graphLabelYSize;
-  context->set_identity_matrix();
   context->save();
   {
     Cairo::TextExtents extents;
@@ -493,7 +492,6 @@ Results::drawResultsGraphExposeEvent(GdkEventExpose*) throw()
   context->save();
   {
     Cairo::TextExtents extents;
-    context->set_identity_matrix();
     context->rotate(-3.1415 / 2);
     context->set_font_size(graphLabelYSize * (1. - labelYMultiplier));
     if(graphModifier == enumModifier::LABEL_Y)
