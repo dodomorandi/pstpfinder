@@ -30,7 +30,7 @@ if test $CXX_SUPPORTS_CXX11 -eq 1; then
 elif test $CXX_SUPPORTS_CXX0X -eq 1; then
    CXXFLAGS="$CXXFLAGS -std=c++0x"
 else
-   AC_ERROR([cannot compile PSTP-Finder. A compiler compatible with C++11 features is required.])
+   AC_MSG_ERROR([cannot compile PSTP-Finder. A compiler compatible with C++11 features is required.])
 fi
 
 # Checks for libraries.
@@ -43,7 +43,7 @@ PKG_CHECK_MODULES([GTKMM30], [gtkmm-3.0], [
    AC_SUBST([CFLAGS])
    AC_SUBST([CXXFLAGS])
    AC_SUBST([LIBS])
-   AC_DEFINE([GTKMM_MAJOR], [3], "GtkMM major version")
+   AC_DEFINE([GTKMM_MAJOR], [3], [GtkMM major version])
 ], [PKG_CHECK_MODULES([GTKMM24], [gtkmm-2.4], [
       CFLAGS="$CFLAGS $GTKMM24_CFLAGS"
       CXXFLAGS="$CXXFLAGS $GTKMM24_CFLAGS"
@@ -51,7 +51,7 @@ PKG_CHECK_MODULES([GTKMM30], [gtkmm-3.0], [
       AC_SUBST([CFLAGS])
       AC_SUBST([CXXFLAGS])
       AC_SUBST([LIBS])
-      AC_DEFINE([GTKMM_MAJOR], [2], "GtkMM major version")
+      AC_DEFINE([GTKMM_MAJOR], [2], [GtkMM major version])
    ])
 ])
 
