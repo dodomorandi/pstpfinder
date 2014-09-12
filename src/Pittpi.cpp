@@ -20,15 +20,15 @@
 #include "Pittpi.h"
 #include "SasAtom.h"
 #include "SasAnalysis.h"
+
 #include <utility>
 #include <cassert>
+#include <future>
 
-#ifdef HAVE_BOOST_PYTHON_HPP
-#include <boost/python.hpp>
-#include <boost/python/stl_iterator.hpp>
-
-namespace py = boost::python;
-#endif /* HAVE_BOOST_PYTHON_HPP */
+#ifdef HAVE_PYMOD_SADIC
+#include <Python.h>
+#include <PyIter.h>
+#endif
 
 using namespace std;
 
@@ -801,7 +801,6 @@ namespace PstpFinder
   }
 
 #ifdef HAVE_PYMOD_SADIC
-#if HAVE_PYMOD_SADIC == 1
   Protein<SasPdbAtom>
   Pittpi::runSadic(const Protein<SasPdbAtom>& structure) const
   {
@@ -809,127 +808,53 @@ namespace PstpFinder
     Pdb<SasPdbAtom> pdb;
     pdb.proteins.push_back(structure);
 
+    setStatusDescription("Running Sadic");
+    setStatus(-1);
     Py_Initialize();
+    PyObject* oSadicRunner = PyImport_ImportModule("sadic.runner");
+    PyObject* oSadicCmdline = PyImport_ImportModule("sadic.cmdline");
+    PyObject* oSadicIos = PyImport_ImportModule("sadic.ios");
+    PyObject* oSadicViewer = PyImport_ImportModule("sadic.viewer");
 
-    {
-      setStatusDescription("Running Sadic");
-      setStatus(-1);
-      py::object sadic = py::import("sadic");
-      py::object setting = py::import("sadic.setting");
-      py::object viewer = py::import("sadic.viewer");
-      py::object cmdline = py::import("sadic.cmdline");
-      py::stl_input_iterator<py::object> iterObjEnd;
+    pdb.write("/tmp/sadic_in.pdb");
 
-      viewer.attr("load_plugin")();
-      py::list queries;
+    PyObject* oSettings = PyObject_CallMethod(oSadicCmdline, "parse_command_line", "[ssss]", "--all-atoms", "-f", "pdb", "/tmp/sadic_in.pdb");
+    PyObject* oOutput = PyObject_CallMethod(oSadicIos, "get_output", "O", oSettings);
+    PyObject* oKeywords = Py_BuildValue("{s:O}", "settings", oSettings);
+    PyObject* emptyTuple = PyTuple_New(0);
+    python_iterable iterModels {PyObject_Call(PyObject_GetAttrString(oSadicRunner, "iter_models"), emptyTuple, oKeywords)};
+    Py_DECREF(emptyTuple);
 
-      pdb.write("/tmp/sadic_in.pdb");
-
-      py::list argv;
-      argv.append("/tmp/sadic_in.pdb");
-      py::object settings = cmdline.attr("parse_command_line")(argv);
-      settings.attr("entity_spec") = "/tmp/sadic_in.pdb";
-      settings.attr("all_atoms") = true;
-      settings.attr("file_out") = "/tmp/sadic_out.pdb";
-      settings.attr("output_format") = sadic.attr("consts").attr("OUTPUT_PDB");
-      settings.attr("quiet") = true;
-      settings.attr("atom_name") = py::object();
-
-      py::object out = sadic.attr("get_output")(settings);
-      py::object reader = sadic.attr("get_reader")(settings);
-      py::object scheme = sadic.attr("get_sampling_scheme")(settings);
-
-      py::list models_viewers;
-
-      py::object file = sadic.attr("iter_files")(settings).attr("next")();
-
-      py::object models = reader.attr("get_models")(file);
-      unsigned int imodel = 0;
-      for(py::stl_input_iterator<py::object> model(models); model != iterObjEnd;
-          model++, imodel++)
-      {
-        if(abortFlag) return sadicProtein;
-
+    static const std::function<PyObject*(python_iterable&)> getFirst {[](python_iterable& iter){return *std::begin(iter);}};
+    std::future<PyObject*> firstModel = std::async(std::launch::async, getFirst, std::ref(iterModels));
+    while(firstModel.wait_for(std::chrono::milliseconds(80)) != std::future_status::ready)
         setStatus(-1);
-        py::object query = sadic.attr("get_query")(settings, *model);
-        py::object prot = sadic.attr("Protein")();
-        prot.attr("add_atoms")(*model);
 
-        py::object viewers = viewer.attr("create_viewers")(settings, query);
-        models_viewers.append(viewers);
+    PyObject* oViewers = PyTuple_GetItem(firstModel.get(), 1);
 
-        if(imodel == 0)
-        {
-          for(;;)
-          {
-            if(abortFlag) return sadicProtein;
-            setStatus(-1);
-            query.attr("sample")(prot, scheme);
-
-            if(settings.attr("radius")
-               != sadic.attr("consts").attr("RADIUS_NO_INSIDE"))
-              break;
-
-            py::stl_input_iterator<py::object> i(query);
-            for(; i != iterObjEnd; i++)
-            {
-              if(abortFlag) return sadicProtein;
-              setStatus(-1);
-              if(static_cast<bool>(i->attr("all_inside")))
-                break;
-            }
-            if(i == iterObjEnd)
-              break;
-
-            float step = py::extract<float>(settings.attr("step"));
-            scheme.attr("grow")(step);
-          }
-        }
-        else
-          query.attr("sample")(prot, scheme);
-
-        out.attr("output")(viewers);
-        queries.append(query);
-      }
-
-      file.attr("close")();
-      setStatus(-1);
-
-      py::object total_viewers = viewer.attr("create_total_viewers")(
-          settings, models_viewers);
-      for(py::stl_input_iterator<py::object> viewers(total_viewers);
-          viewers != iterObjEnd; viewers++)
-      {
-        out.attr("output")(*viewers);
+    Py_DECREF(PyObject_CallMethod(oOutput, "output", "O", oViewers));
+    python_iterable viewers {oViewers};
+    std::future<PyObject*> firstViewer = std::async(std::launch::async, getFirst, std::ref(viewers));
+    while(firstViewer.wait_for(std::chrono::milliseconds(80)) != std::future_status::ready)
         setStatus(-1);
-      }
+    
+    PyObject* oFilename = PyObject_CallMethod(oOutput, "mangle_file_name", "O", firstViewer.get());
+    Py_UCS1* filename = PyUnicode_1BYTE_DATA(oFilename);
+    sadicProtein = move(Pdb<SasPdbAtom>(reinterpret_cast<const char*>(filename)).proteins[0]);
 
-      if(py::len(models_viewers) == 0)
-      {
-        Py_Finalize();
-        throw bad_exception();
-      }
+    Py_DECREF(oOutput);
+    Py_DECREF(oKeywords);
+    Py_DECREF(oSettings);
 
-      for(py::stl_input_iterator<py::object> model_viewer(models_viewers);
-          model_viewer != iterObjEnd; model_viewer++)
-      {
-        for(py::stl_input_iterator<py::object> curViewer(*model_viewer);
-            curViewer != iterObjEnd; curViewer++)
-        {
-          if(abortFlag) return sadicProtein;
-          string fileName = py::extract<string>(
-              out.attr("mangle_file_name")(*curViewer));
-          sadicProtein = move(Pdb<SasPdbAtom>(fileName).proteins[0]);
-          break;
-        }
-        break; // Just the first protein of the first file... for now!
-      }
-    }
+    Py_DECREF(oSadicViewer);
+    Py_DECREF(oSadicIos);
+    Py_DECREF(oSadicCmdline);
+    Py_DECREF(oSadicRunner);
+
     Py_Finalize();
 
     return sadicProtein;
   }
-#endif /* HAVE_PYMOD_SADIC == 1 */
 #endif /* HAVE_PYMOD_SADIC */
 
   void

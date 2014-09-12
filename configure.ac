@@ -55,54 +55,44 @@ PKG_CHECK_MODULES([GTKMM30], [gtkmm-3.0], [
    ])
 ])
 
-PKG_CHECK_MODULES([PYTHON], [python >= 2.6], [
-   CFLAGS="$CFLAGS $PYTHON_CFLAGS"
-   CXXFLAGS="$CXXFLAGS $PYTHON_CFLAGS"
-   LIBS="$LIBS $PYTHON_LIBS"
-   AC_SUBST([CFLAGS])
-   AC_SUBST([CXXFLAGS])
-   AC_SUBST([LIBS])
-   AC_DEFINE([HAVE_PYTHON], [1], "Python")
-   HAVE_PYTHON=1
+PKG_CHECK_MODULES([PYTHON2], [python2 >= 2.6], [
+   AC_DEFINE([HAVE_PYTHON2], [1], "Python2")
+   HAVE_PYTHON2=1
 ], [
-   PKG_CHECK_MODULES([PYTHON], [python2 >= 2.6], [
-      CFLAGS="$CFLAGS $PYTHON_CFLAGS"
-      CXXFLAGS="$CXXFLAGS $PYTHON_CFLAGS"
-      LIBS="$LIBS $PYTHON_LIBS"
+   HAVE_PYTHON2=0
+])
+
+PKG_CHECK_MODULES([PYTHON3], [python3 >= 3.0], [
+   AC_DEFINE([HAVE_PYTHON3], [1], "Python3")
+   HAVE_PYTHON3=1
+], [ 
+   AC_DEFINE([HAVE_PYTHON3], [0], "Python3")
+   HAVE_PYTHON3=0
+])
+
+if test $HAVE_PYTHON3 -eq 1; then
+   AX_PYTHON_MODULE([sadic], [3])
+   if test "$HAVE_PYMOD_SADIC" = "yes"; then
+      CFLAGS="$CFLAGS $PYTHON3_CFLAGS"
+      CXXFLAGS="$CXXFLAGS $PYTHON3_CFLAGS"
+      LIBS="$LIBS $PYTHON3_LIBS"
       AC_SUBST([CFLAGS])
       AC_SUBST([CXXFLAGS])
       AC_SUBST([LIBS])
-      AC_DEFINE([HAVE_PYTHON], [1], "Python")
-      HAVE_PYTHON=1
-   ], [ 
-      AC_DEFINE([HAVE_PYTHON], [0], "Python")
-      HAVE_PYTHON=0
-   ])
-])
-
-if test $HAVE_PYTHON -eq 1; then
+      AC_DEFINE([HAVE_PYMOD_SADIC], [1], "Sadic Python3 module")
+   fi
+elif test $HAVE_PYTHON2 -eq 1; then
    AX_PYTHON_MODULE([sadic], [2])
    if test "$HAVE_PYMOD_SADIC" = "yes"; then
-      AC_DEFINE([HAVE_PYMOD_SADIC], [1], "Sadic Python module")
-   else
-      AC_DEFINE([HAVE_PYMOD_SADIC], [0], "Sadic Python module")
+      CFLAGS="$CFLAGS $PYTHON2_CFLAGS"
+      CXXFLAGS="$CXXFLAGS $PYTHON2_CFLAGS"
+      LIBS="$LIBS $PYTHON2_LIBS"
+      AC_SUBST([CFLAGS])
+      AC_SUBST([CXXFLAGS])
+      AC_SUBST([LIBS])
+      AC_DEFINE([HAVE_PYMOD_SADIC], [1], "Sadic Python2 module")
    fi
-else
-   AC_DEFINE([HAVE_PYMOD_SADIC], [0], "Sadic Python module")
 fi
-
-BOOST_REQUIRE([1.37])
-BOOST_SYSTEM
-if test $HAVE_PYTHON -eq 1; then
-   BOOST_PYTHON([], [2])
-fi
-LIBS="$LIBS $BOOST_SYSTEM_LIBS $BOOST_PYTHON_LIBS"
-AC_SUBST([LIBS])
-
-# Checks for header files.
-
-CPPFLAGS="$CPPFLAGS $BOOST_CPPFLAGS"
-AC_SUBST([CPPFLAGS])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AX_CONF_ARGS
@@ -117,23 +107,16 @@ AC_OUTPUT
 # Write out status
 echo
 echo -n "Python support: "
-if test $HAVE_PYTHON -eq 1; then
+if test $HAVE_PYTHON2 -eq 1 -o $HAVE_PYTHON3 -eq 1; then
    echo "yes"
-   
-   echo -n "Boost Python support: "
-   if test "x$BOOST_PYTHON_LIBS" != "x"; then
-      echo "yes"
-   else
-      echo "no. Sadic support won't be built."
-   fi
 else
    echo "no. Sadic support can't be checked and it won't be built."
 fi
 
 echo -n "Sadic support: "
-if test $HAVE_PYTHON -eq 1 -a "x$BOOST_PYTHON_LIBS" != "x" -a "$HAVE_PYMOD_SADIC" = "yes"; then
+if test "$HAVE_PYMOD_SADIC" = "yes"; then
    echo "yes"
-elif test $HAVE_PYTHON -eq 1 -a "x$BOOST_PYTHON_LIBS" != "x"; then
+elif test $HAVE_PYTHON2 -eq 1 -o $HAVE_PYTHON3 -eq 1; then
    echo "no"
    echo
    echo "You can download Sadic sources from http://www.sbl.unisi.it/?pg=download-software"

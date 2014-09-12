@@ -235,9 +235,7 @@ namespace PstpFinder
           void pittpiRun();
           void clone(const Pittpi& pittpi); // Deprecated. Waiting for delegators...
 #ifdef HAVE_PYMOD_SADIC
-#if HAVE_PYMOD_SADIC == 1
           Protein<SasPdbAtom> runSadic(const Protein<SasPdbAtom>& structure) const;
-#endif
 #endif
 
           template<typename, typename> friend class Serializer;
