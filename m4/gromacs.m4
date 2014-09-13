@@ -36,15 +36,25 @@ OLD_LDFLAGS=$LDFLAGS
 path_found=0
 for LIBRARY_PATH in $GROMACS_LIBRARY_PATH ${GROMACS_PATH}/lib ${GROMACS_PATH}/lib64 ${GROMACS_PATH}/lib32 ""; do
    if test x$LIBRARY_PATH != x; then
-      LDFLAGS="-L$LIBRARY_PATH -Wl,-rpath,$LIBRARY_PATH -Wl,-rpath-link,$LIBRARY_PATH $LDFLAGS"
+      LDFLAGS="$OLD_LDFLAGS -L$LIBRARY_PATH -Wl,-rpath,$LIBRARY_PATH -Wl,-rpath-link,$LIBRARY_PATH"
    fi
    
-   if test $gmx_ver -eq 45; then
+   if test $gmx_ver -le 45; then
       unset ac_cv_lib_gmx_read_tpx
-      AC_CHECK_LIB([gmx],[read_tpx],[path_found=1; break])
+      AC_CHECK_LIB([gmx],[read_tpx],[
+         path_found=1
+         LIBS="-lgmx $LIBS"
+         AC_DEFINE([HAVE_LIBGMX],[1],"Have gmx library")
+         break
+      ])
    else
       unset ac_cv_lib_gromacs_read_tpx
-      AC_CHECK_LIB([gromacs],[read_tpx],[path_found=1; break])
+      AC_CHECK_LIB([gromacs],[read_tpx],[
+         path_found=1
+         LIBS="-lgromacs $LIBS"
+         AC_DEFINE([HAVE_LIBGROMACS],[1], "Have gromacs library")
+         break
+      ])
    fi
 done
 
@@ -53,18 +63,10 @@ if test $path_found -eq 0; then
      [Install it or set the environment variable GROMACS_PATH or GROMACS_LIBRARY_PATH]])
 fi
 
-ax_cv_gromacs=ax_cv_gromacs
+if test $gmx_ver -le 45; then
+   AC_CHECK_LIB([gmxana], [nsc_dclm_pbc],, AC_MSG_FAILURE([Missing GROMACS Analaysis library libgmxana. Is everything alright with your compilation?]))
+fi
 
 AC_SUBST([CPPFLAGS])
 AC_SUBST([LDFLAGS])
-])
-
-AC_DEFUN([AX_GROMACS_ANALYSIS],[
-if test x$ax_cv_gromacs = x; then
-   AX_GROMACS()
-fi
-
-if test $gmx_ver -eq 45; then
-   AC_CHECK_LIB([gmxana], [nsc_dclm_pbc],, AC_MSG_FAILURE([Missing GROMACS Analaysis library libgmxana. Is everything alright with your compilation?]))
-fi
 ])
