@@ -34,6 +34,7 @@
 #include <mutex>
 #include <condition_variable>
 
+#if GMXVER <= 45
 /* Workaround - is not defined as "C", let's include it before others */
 extern "C"
 {
@@ -76,6 +77,7 @@ struct gmx_residuetype
     char **  resname;
     char **  restype;
 };
+#endif /* GMXVER <= 45 */
 
 namespace PstpFinder
 {
@@ -134,10 +136,10 @@ namespace PstpFinder
       bool usePBC(bool value) noexcept;
 
     private:
-#ifdef GMX45
+#if GMXVER == 45
       output_env_t oenv;
       t_trxstatus *status;
-#else
+#elif GMXVER < 45
       t_commrec *cr;
       int status, step;
       real lambda;

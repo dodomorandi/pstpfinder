@@ -79,7 +79,7 @@ namespace PstpFinder
   void
   Gromacs::init(float solventSize)
   {
-#ifndef GMX45
+#if GMXVER < 45
     // FIXME: Test versions until 4.5
     static const char* argv[] =
     { "gromacs"};
@@ -110,7 +110,7 @@ namespace PstpFinder
   {
     if(operationThread.joinable())
       operationThread.join();
-#ifdef GMX45
+#if GMXVER == 45
     if(gotTrajectory)
     {
       output_env_done(oenv);
@@ -545,9 +545,9 @@ namespace PstpFinder
 
     if(extension == ".tpr")
     {
-#ifdef GMX45
+#if GMXVER == 45
     read_tpx(tprName.c_str(), &ir, fr.box, &natoms, 0, 0, 0, &mtop);
-#else
+#elif GMXVER < 45
     read_tpx( tprName.c_str(), &step, &t, &lambda, &ir, box, &natoms,
         0, 0, 0, &mtop);
 #endif
@@ -572,7 +572,7 @@ namespace PstpFinder
   bool
   Gromacs::getTrajectory()
   {
-#ifdef GMX45
+#if GMXVER == 45
     if(not gotTrajectory)
     {
       snew(oenv, 1);
@@ -587,7 +587,7 @@ namespace PstpFinder
 
     if(not read_first_frame(oenv, &status, trjName.c_str(), &fr,
                                   TRX_NEED_X))
-#else
+#elif GMXVER < 45
     if((natoms =
             read_first_x(&status, trjName.c_str(), &t, &x, box)) == 0)
 #endif
@@ -598,7 +598,7 @@ namespace PstpFinder
     }
     else
     {
-#ifdef GMX45
+#if GMXVER == 45
       natoms = fr.natoms;
 #endif
       readyToGetX = true;
@@ -627,9 +627,9 @@ namespace PstpFinder
       if(not getTrajectory())
         throw;
 
-#ifdef GMX45
+#if GMXVER == 45
     out = read_next_frame(oenv, status, &fr);
-#else
+#elif GMXVER < 45
     out = read_next_x(status, &t, natoms, x, box);
 #endif
 
