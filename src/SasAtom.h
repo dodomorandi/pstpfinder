@@ -20,14 +20,22 @@
 #ifndef _SASATOM_H
 #define _SASATOM_H
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "Atom.h"
 #include "Pdb.h"
 #include "Serializer.h"
 
+#if GMXVER < 50
 extern "C"
 {
 #include <gromacs/typedefs.h>
 }
+#else
+#include <gromacs/legacyheaders/typedefs.h>
+#endif
 
 namespace PstpFinder
 {

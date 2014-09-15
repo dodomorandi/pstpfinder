@@ -20,12 +20,20 @@
 #ifndef _PSTPFINDER_ATOM_H
 #define _PSTPFINDER_ATOM_H
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <cmath>
 
+#if GMXVER < 50
 extern "C"
 {
 #include <gromacs/typedefs.h>
 }
+#else
+#include <gromacs/legacyheaders/typedefs.h>
+#endif
 
 namespace PstpFinder
 {

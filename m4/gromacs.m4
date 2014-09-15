@@ -14,7 +14,13 @@ for INCLUDE_PATH in $GROMACS_INCLUDE_PATH $GROMACS_PATH/include "" /usr/local/in
    unset ac_cv_header_gromacs_fileio_trnio_h
    AC_CHECK_HEADER([gromacs/trnio.h],[path_found=1; gmx_ver=45; break])   
 
-   AC_CHECK_HEADER([gromacs/fileio/trnio.h],[path_found=1; gmx_ver=50; break])
+   AC_CHECK_HEADER([gromacs/fileio/trnio.h],[
+      path_found=1;
+      gmx_ver=50;
+      gromacs_path=$(realpath $INCLUDE_PATH/..)
+      AC_DEFINE_UNQUOTED([GROMACS_PATH],["$gromacs_path"],[Gromacs tree base path])
+      break
+   ])
 done
 
 if test $path_found -eq 0; then
@@ -66,6 +72,8 @@ fi
 if test $gmx_ver -le 45; then
    AC_CHECK_LIB([gmxana], [nsc_dclm_pbc],, AC_MSG_FAILURE([Missing GROMACS Analaysis library libgmxana. Is everything alright with your compilation?]))
 fi
+
+AM_CONDITIONAL([GMXVER50], [test $gmx_ver -eq 50])
 
 AC_SUBST([CPPFLAGS])
 AC_SUBST([LDFLAGS])

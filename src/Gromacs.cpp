@@ -29,6 +29,7 @@
 #include <cstring>
 #include <mutex>
 
+#if GMXVER < 50
 #include <gromacs/tpxio.h>
 #include <gromacs/mtop_util.h>
 #include <gromacs/main.h>
@@ -42,6 +43,18 @@
 #include <gromacs/statutil.h>
 #include <gromacs/xdrf.h>
 #include <gromacs/confio.h>
+
+#else
+#include <gromacs/utility/smalloc.h>
+#include <gromacs/math/do_fit.h>
+#include <gromacs/fileio/confio.h>
+#include <gromacs/fileio/tpxio.h>
+
+#include <gromacs/legacyheaders/rmpbc.h>
+#include <gromacs/legacyheaders/gmx_fatal.h>
+#include <gromacs/legacyheaders/vec.h>
+#include <gromacs/legacyheaders/princ.h>
+#endif
 
 namespace PstpFinder
 {
@@ -87,6 +100,10 @@ namespace PstpFinder
     cr = init_par(&argc, &argv);
 #endif
 
+#if GMXVER == 50
+    gmx::setProgramContext(&programContext);
+#endif 
+
     solSize = solventSize;
     sasTarget = "Protein";
     gotTopology = false;
@@ -110,7 +127,7 @@ namespace PstpFinder
   {
     if(operationThread.joinable())
       operationThread.join();
-#if GMXVER == 45
+#if GMXVER >= 45
     if(gotTrajectory)
     {
       output_env_done(oenv);
@@ -204,7 +221,11 @@ namespace PstpFinder
     }
 
     if(_usePBC)
+#if GMXVER < 50
       gpbc = gmx_rmpbc_init(&top.idef, ePBC, natoms, fr.box);
+#else
+      gpbc = gmx_rmpbc_init(&top.idef, ePBC, natoms);
+#endif
 
     SasAnalysis<Stream> sasAnalysis(nx, *this, session);
     {
@@ -234,11 +255,9 @@ namespace PstpFinder
       int nsc_dclm_pdc_result;
       {
         std::unique_lock<std::mutex> lock(nsc_dclm_pbc_mutex);
-        nsc_dclm_pdc_result = nsc_dclm_pbc(fr.x, radius, nx, 24, FLAG_ATOM_AREA,
-                                           &totarea, &area, &totvolume,
-                                           &surfacedots, &nsurfacedots,
-                                           index.data(), ePBC,
-                                           _usePBC ? fr.box : nullptr);
+        nsc_dclm_pdc_result = gmx_legacy::nsc_dclm_pbc(fr.x, radius, nx, 24,
+                FLAG_ATOM_AREA, &totarea, &area, &totvolume, &surfacedots,
+                &nsurfacedots, index.data(), ePBC, _usePBC ? fr.box : nullptr);
       }
       if(nsc_dclm_pdc_result != 0)
         gmx_fatal(FARGS, "Something wrong in nsc_dclm_pbc");
@@ -334,7 +353,11 @@ namespace PstpFinder
 
     sub_xcm(xtop, isize, index.data(), top.atoms.atom, xcm, FALSE);
     if(_usePBC)
+#if GMXVER < 50
       gpbc = gmx_rmpbc_init(&top.idef, ePBC, natoms, fr.box);
+#else
+      gpbc = gmx_rmpbc_init(&top.idef, ePBC, natoms);
+#endif
 
     count = 0;
     do
@@ -545,7 +568,7 @@ namespace PstpFinder
 
     if(extension == ".tpr")
     {
-#if GMXVER == 45
+#if GMXVER >= 45
     read_tpx(tprName.c_str(), &ir, fr.box, &natoms, 0, 0, 0, &mtop);
 #elif GMXVER < 45
     read_tpx( tprName.c_str(), &step, &t, &lambda, &ir, box, &natoms,
@@ -572,11 +595,15 @@ namespace PstpFinder
   bool
   Gromacs::getTrajectory()
   {
-#if GMXVER == 45
+#if GMXVER >= 45
     if(not gotTrajectory)
     {
+#if GMXVER == 45
       snew(oenv, 1);
       output_env_init_default(oenv);
+#else
+      output_env_init_default(&oenv);
+#endif
     }
     else
       close_trx(status);
@@ -598,7 +625,7 @@ namespace PstpFinder
     }
     else
     {
-#if GMXVER == 45
+#if GMXVER >= 45
       natoms = fr.natoms;
 #endif
       readyToGetX = true;
@@ -627,7 +654,7 @@ namespace PstpFinder
       if(not getTrajectory())
         throw;
 
-#if GMXVER == 45
+#if GMXVER >= 45
     out = read_next_frame(oenv, status, &fr);
 #elif GMXVER < 45
     out = read_next_x(status, &t, natoms, x, box);
@@ -662,10 +689,14 @@ namespace PstpFinder
       output_env_t _oenv;
       t_trxstatus *_status;
       t_trxframe _fr;
-  
+
+#if GMXVER < 50 
       snew(_oenv, 1);
       output_env_init_default(_oenv);
-  
+#else
+      output_env_init_default(&_oenv);
+#endif
+
       if(not read_first_frame(_oenv, &_status, trjName.c_str(), &_fr, 0))
       {
         output_env_done(_oenv);
@@ -729,8 +760,12 @@ namespace PstpFinder
     t_fileio *fio;
     gmx_bool ok;
 
+#if GMXVER < 50
     snew(_oenv, 1);
     output_env_init_default(_oenv);
+#else
+    output_env_init_default(&_oenv);
+#endif
 
     if(not read_first_frame(_oenv, &_status, trjName.c_str(), &_fr, 0))
     {
@@ -739,9 +774,8 @@ namespace PstpFinder
     }
 
     fio = trx_get_fileio(_status);
-    float lastTime = xdr_xtc_get_last_frame_time(gmx_fio_getfp(fio),
-                                                 gmx_fio_getxdr(fio),
-                                                 _fr.natoms, &ok);
+    float lastTime = gmx_legacy::xdr_xtc_get_last_frame_time(gmx_fio_getfp(fio),
+            gmx_legacy::gmx_fio_getxdr(fio), _fr.natoms, &ok);
 
     close_trx(_status);
     output_env_done(_oenv);
@@ -765,8 +799,12 @@ namespace PstpFinder
     t_trxframe _fr;
     float time1, time2;
 
+#if GMXVER < 50
     snew(_oenv, 1);
     output_env_init_default(_oenv);
+#else
+    output_env_init_default(&_oenv);
+#endif
 
     if(not read_first_frame(_oenv, &_status, trjName.c_str(), &_fr, 0))
     {
@@ -795,8 +833,12 @@ namespace PstpFinder
     t_trxstatus *_status;
     t_trxframe _fr;
 
+#if GMXVER < 50
     snew(_oenv, 1);
     output_env_init_default(_oenv);
+#else
+    output_env_init_default(&_oenv);
+#endif
 
     if(read_first_frame(_oenv, &_status, trjName.c_str(), &_fr, 0))
     {
@@ -823,7 +865,7 @@ namespace PstpFinder
   Gromacs::setBegin(float beginTime)
   {
     _begin = beginTime;
-    setTimeValue(TBEGIN, beginTime);
+    setTimeValue(gmx_legacy::TBEGIN, beginTime);
   }
 
   float
@@ -836,7 +878,7 @@ namespace PstpFinder
   Gromacs::setEnd(float endTime)
   {
     _end = endTime;
-    setTimeValue(TEND, endTime);
+    setTimeValue(gmx_legacy::TEND, endTime);
   }
 
   void
