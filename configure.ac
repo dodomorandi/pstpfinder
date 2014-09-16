@@ -54,19 +54,19 @@ PKG_CHECK_MODULES([GTKMM30], [gtkmm-3.0], [
    ])
 ])
 
-PKG_CHECK_MODULES([PYTHON2], [python2 >= 2.6], [
-   AC_DEFINE([HAVE_PYTHON2], [1], "Python2")
-   HAVE_PYTHON2=1
-], [
-   HAVE_PYTHON2=0
-])
-
 PKG_CHECK_MODULES([PYTHON3], [python3 >= 3.0], [
    AC_DEFINE([HAVE_PYTHON3], [1], "Python3")
    HAVE_PYTHON3=1
 ], [ 
    AC_DEFINE([HAVE_PYTHON3], [0], "Python3")
    HAVE_PYTHON3=0
+])
+
+PKG_CHECK_MODULES([PYTHON2], [python2 >= 2.6], [
+   AC_DEFINE([HAVE_PYTHON2], [1], "Python2")
+   HAVE_PYTHON2=1
+], [
+   HAVE_PYTHON2=0
 ])
 
 if test $HAVE_PYTHON3 -eq 1; then
@@ -80,8 +80,10 @@ if test $HAVE_PYTHON3 -eq 1; then
       AC_SUBST([LIBS])
       AC_DEFINE([HAVE_PYMOD_SADIC], [1], "Sadic Python3 module")
    fi
-elif test $HAVE_PYTHON2 -eq 1; then
-   AX_PYTHON_MODULE([sadic], [2])
+fi
+
+if test "x$HAVE_PYMOD_SADIC" != "xyes" -a $HAVE_PYTHON2 -eq 1; then
+   AX_PYTHON_MODULE([sadic], 2)
    if test "$HAVE_PYMOD_SADIC" = "yes"; then
       CFLAGS="$CFLAGS $PYTHON2_CFLAGS"
       CXXFLAGS="$CXXFLAGS $PYTHON2_CFLAGS"

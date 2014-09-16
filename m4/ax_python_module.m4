@@ -25,14 +25,11 @@
 
 AU_ALIAS([AC_PYTHON_MODULE], [AX_PYTHON_MODULE])
 AC_DEFUN([AX_PYTHON_MODULE],[
-    if test -z $PYTHON;
-    then
-      m4_ifval([$2], [dnl
-        PYTHON="python$2"
-      ], [dnl
-        PYTHON="python"
-      ])dnl
-    fi
+    m4_ifval([$2], [dnl
+      PYTHON="python$2"
+    ], [dnl
+      PYTHON="python"
+    ])dnl
     PYTHON_NAME=`basename $PYTHON`
     AC_MSG_CHECKING($PYTHON_NAME module: $1)
 	$PYTHON -c "import $1" 2>/dev/null
