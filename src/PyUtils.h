@@ -32,13 +32,14 @@ namespace PstpFinder
 {
 namespace py
 {
+    template<typename... Args>
     inline PyObject*
-    callMethod(PyObject* obj, const char* method, const char* args...)
+    callMethod(PyObject* obj, const char* method, const char* arg1, Args&&... args)
     {
 #if HAVE_PYTHON >= 3
         return PyObject_CallMethod(obj, method, args);
 #else
-        return PyObject_CallMethod(obj, const_cast<char*>(method), const_cast<char*>(args));
+        return PyObject_CallMethod(obj, const_cast<char*>(method), const_cast<char*>(arg1), std::forward<Args>(args)...);
 #endif
     }
 
