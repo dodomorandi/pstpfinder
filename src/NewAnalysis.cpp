@@ -32,6 +32,7 @@
 #include <gdkmm.h>
 #include <fstream>
 #include <string>
+#include <future>
 
 namespace PstpFinder
 {
@@ -259,9 +260,12 @@ namespace PstpFinder
         progress.set_fraction(status);
       else
         progress.pulse();
-      while(Gtk::Main::events_pending())
-        Gtk::Main::iteration();
-      pittpiPtr->waitNextStatus();
+      std::future<void> nextStatus = std::async(std::launch::async, &Pittpi::waitNextStatus, *pittpiPtr);
+      do
+      {
+        while(Gtk::Main::events_pending())
+          Gtk::Main::iteration();
+      } while(nextStatus.wait_for(std::chrono::milliseconds(300)) != std::future_status::ready);
     }
 
     if(not abortFlag)
@@ -604,9 +608,12 @@ namespace PstpFinder
         break;
       }
       progress.set_fraction(static_cast<float>(currentFrame) / count);
-      while(Gtk::Main::events_pending())
-        Gtk::Main::iteration();
-      gromacs->waitNextFrame();
+      std::future<void> nextFrame = std::async(std::launch::async, std::mem_fn<void() const>(&Gromacs::waitNextFrame), *gromacs);
+      do
+      {
+        while(Gtk::Main::events_pending())
+          Gtk::Main::iteration();
+      } while(nextFrame.wait_for(std::chrono::milliseconds(300)) != std::future_status::ready);
     }
     if(abortFlag)
       return;
@@ -641,9 +648,13 @@ namespace PstpFinder
         break;
       }
       progress.set_fraction(static_cast<float>(currentFrame) / count);
-      while(Gtk::Main::events_pending())
-        Gtk::Main::iteration();
-      gromacs->waitNextFrame();
+
+      std::future<void> nextFrame = std::async(std::launch::async, std::mem_fn<void() const>(&Gromacs::waitNextFrame), *gromacs);
+      do
+      {
+        while(Gtk::Main::events_pending())
+          Gtk::Main::iteration();
+      } while(nextFrame.wait_for(std::chrono::milliseconds(300)) != std::future_status::ready);
     }
     if(abortFlag)
       return;
