@@ -260,7 +260,7 @@ namespace PstpFinder
         progress.set_fraction(status);
       else
         progress.pulse();
-      std::future<void> nextStatus = std::async(std::launch::async, &Pittpi::waitNextStatus, *pittpiPtr);
+      std::future<void> nextStatus = std::async(std::launch::async, &Pittpi::waitNextStatus, &*pittpiPtr);
       do
       {
         while(Gtk::Main::events_pending())
@@ -608,7 +608,7 @@ namespace PstpFinder
         break;
       }
       progress.set_fraction(static_cast<float>(currentFrame) / count);
-      std::future<void> nextFrame = std::async(std::launch::async, std::mem_fn<void() const>(&Gromacs::waitNextFrame), *gromacs);
+      std::future<void> nextFrame = std::async(std::launch::async, std::mem_fn<void() const>(&Gromacs::waitNextFrame), &*gromacs);
       do
       {
         while(Gtk::Main::events_pending())
@@ -649,7 +649,7 @@ namespace PstpFinder
       }
       progress.set_fraction(static_cast<float>(currentFrame) / count);
 
-      std::future<void> nextFrame = std::async(std::launch::async, std::mem_fn<void() const>(&Gromacs::waitNextFrame), *gromacs);
+      std::future<void> nextFrame = std::async(std::launch::async, std::mem_fn<void() const>(&Gromacs::waitNextFrame), &*gromacs);
       do
       {
         while(Gtk::Main::events_pending())
