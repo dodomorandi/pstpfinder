@@ -78,6 +78,7 @@ if test $HAVE_PYTHON3 -eq 1; then
       AC_SUBST([CFLAGS])
       AC_SUBST([CXXFLAGS])
       AC_SUBST([LIBS])
+      AC_DEFINE([HAVE_PYTHON], [3], "Using Python3 support")
       AC_DEFINE([HAVE_PYMOD_SADIC], [1], "Sadic Python3 module")
    fi
 fi
@@ -91,6 +92,7 @@ if test "x$HAVE_PYMOD_SADIC" != "xyes" -a $HAVE_PYTHON2 -eq 1; then
       AC_SUBST([CFLAGS])
       AC_SUBST([CXXFLAGS])
       AC_SUBST([LIBS])
+      AC_DEFINE([HAVE_PYTHON], [2], "Using Python2 support")
       AC_DEFINE([HAVE_PYMOD_SADIC], [1], "Sadic Python2 module")
    fi
 fi

@@ -26,8 +26,9 @@
 #include <future>
 
 #ifdef HAVE_PYMOD_SADIC
+#include "PyIter.h"
+#include "PyUtils.h"
 #include <Python.h>
-#include <PyIter.h>
 #endif
 
 using namespace std;
@@ -479,7 +480,6 @@ namespace PstpFinder
     groups = makeGroupsByDistance(centers, radius);
 
 #ifdef HAVE_PYMOD_SADIC
-#if HAVE_PYMOD_SADIC == 1
     Protein<SasPdbAtom> sadicStructure = runSadic(averageStructure);
     vector<SasPdbAtom> newCenters;
 
@@ -522,7 +522,6 @@ namespace PstpFinder
           static_cast<float>(distance(groups.begin(), i) + 1) / groups.size());
     }
     groups = makeGroupsByDistance(centers, radius, newCenters);
-#endif
 #endif
   }
 
@@ -818,8 +817,8 @@ namespace PstpFinder
 
     pdb.write("/tmp/sadic_in.pdb");
 
-    PyObject* oSettings = PyObject_CallMethod(oSadicCmdline, "parse_command_line", "[ssss]", "--all-atoms", "-f", "pdb", "/tmp/sadic_in.pdb");
-    PyObject* oOutput = PyObject_CallMethod(oSadicIos, "get_output", "O", oSettings);
+    PyObject* oSettings = py::callMethod(oSadicCmdline, "parse_command_line", "[ssss]", "--all-atoms", "-f", "pdb", "/tmp/sadic_in.pdb");
+    PyObject* oOutput = py::callMethod(oSadicIos, "get_output", "O", oSettings);
     PyObject* oKeywords = Py_BuildValue("{s:O}", "settings", oSettings);
     PyObject* emptyTuple = PyTuple_New(0);
     python_iterable iterModels {PyObject_Call(PyObject_GetAttrString(oSadicRunner, "iter_models"), emptyTuple, oKeywords)};
@@ -832,15 +831,14 @@ namespace PstpFinder
 
     PyObject* oViewers = PyTuple_GetItem(firstModel.get(), 1);
 
-    Py_DECREF(PyObject_CallMethod(oOutput, "output", "O", oViewers));
+    Py_DECREF(py::callMethod(oOutput, "output", "O", oViewers));
     python_iterable viewers {oViewers};
     std::future<PyObject*> firstViewer = std::async(std::launch::async, getFirst, std::ref(viewers));
     while(firstViewer.wait_for(std::chrono::milliseconds(80)) != std::future_status::ready)
         setStatus(-1);
     
-    PyObject* oFilename = PyObject_CallMethod(oOutput, "mangle_file_name", "O", firstViewer.get());
-    Py_UCS1* filename = PyUnicode_1BYTE_DATA(oFilename);
-    sadicProtein = move(Pdb<SasPdbAtom>(reinterpret_cast<const char*>(filename)).proteins[0]);
+    PyObject* oFilename = py::callMethod(oOutput, "mangle_file_name", "O", firstViewer.get());
+    sadicProtein = move(Pdb<SasPdbAtom>(py::toCString(oFilename)).proteins[0]);
 
     Py_DECREF(oOutput);
     Py_DECREF(oKeywords);
