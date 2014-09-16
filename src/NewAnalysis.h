@@ -20,6 +20,10 @@
 #ifndef _NEWANALYSIS_H
 #define _NEWANALYSIS_H
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "Gromacs.h"
 #include "Pittpi.h"
 #include "Results.h"
@@ -27,6 +31,10 @@
 #include <vector>
 #include <gtkmm.h>
 #include <glibmm.h>
+
+#if GMXVER >= 50
+#include "ProgramContext.h"
+#endif
 
 namespace PstpFinder
 {
@@ -81,6 +89,9 @@ namespace PstpFinder
       float __timeStep;
       std::vector<Results*> resultsWindows;
       bool abortFlag;
+#if GMXVER == 50
+      ProgramContext programContext;
+#endif
 
       void init();
       void runAnalysis() throw();

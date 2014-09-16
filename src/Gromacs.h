@@ -45,7 +45,6 @@ extern "C"
 #include <gromacs/statutil.h>
 
 #else
-#include "ProgramContext.h"
 #include <gromacs/legacyheaders/atomprop.h>
 #include <gromacs/fileio/trxio.h>
 #endif /* GMXVER <= 45 */
@@ -208,10 +207,6 @@ namespace PstpFinder
       t_commrec *cr;
       int status, step;
       real lambda;
-#endif
-
-#if GMXVER == 50
-      ProgramContext programContext;
 #endif
 
       rvec *xtop;

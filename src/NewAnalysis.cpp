@@ -207,6 +207,10 @@ namespace PstpFinder
 
     signal_delete_event().connect(
         sigc::mem_fun(*this, &NewAnalysis::close_window));
+
+#if GMXVER == 50
+    gmx::setProgramContext(&programContext);
+#endif 
   }
 
   void

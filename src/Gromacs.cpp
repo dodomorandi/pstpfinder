@@ -100,10 +100,6 @@ namespace PstpFinder
     cr = init_par(&argc, &argv);
 #endif
 
-#if GMXVER == 50
-    gmx::setProgramContext(&programContext);
-#endif 
-
     solSize = solventSize;
     sasTarget = "Protein";
     gotTopology = false;
