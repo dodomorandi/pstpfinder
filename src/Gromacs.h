@@ -131,6 +131,8 @@ struct XDR
     int   x_handy;      /* extra private word */
 };
 
+#endif /* GMXVER == 50 */
+
 /* Taken from src/gromacs/fileio/xdrf.h, Gromacs 5.0.1 */
 extern "C" float xdr_xtc_get_last_frame_time(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK);
 extern "C" XDR *gmx_fio_getxdr(struct t_fileio *fio);
@@ -139,8 +141,9 @@ extern "C" XDR *gmx_fio_getxdr(struct t_fileio *fio);
 enum {
     TBEGIN, TEND, TDELTA, TNR
 };
+
 extern "C" void setTimeValue(int tcontrol, real value);
-#endif /* GMXVER == 50 */
+
 } /* namespace gmx_legacy */
 
 namespace PstpFinder
