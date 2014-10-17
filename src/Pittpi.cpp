@@ -531,10 +531,11 @@ namespace PstpFinder
     vector<Group> groups;
     auto& residues = averageStructure.residues();
 
-    for(auto i = begin(residues); i < end(residues); i++)
+    unsigned residueCounter = 0;
+    for(auto& residue : residues)
     {
       if(abortFlag) return vector<Group>();
-      const SasPdbAtom& hAtom = i->getAtomByType("H");
+      const SasPdbAtom& hAtom = residue.getAtomByType("H");
 
       if(hAtom.getTrimmedAtomType() == "UNK")
         continue;
@@ -546,11 +547,11 @@ namespace PstpFinder
        * because operator << doesn't change reference residue and/or atom
        */
 
-      Group group(*i);
+      Group group(residue);
       group << makeGroupByDistance(centers, hAtom, radius);
       groups.push_back(move(group));
       setStatus(
-          static_cast<float>(distance(begin(residues), i) + 1)
+          static_cast<float>(++residueCounter)
           / residues.size());
     }
 
