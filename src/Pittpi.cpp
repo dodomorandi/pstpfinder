@@ -441,21 +441,22 @@ namespace PstpFinder
     setStatusDescription("Building atom groups");
     setStatus(0);
     centers.reserve(residues.size());
-    for(auto i = residues.begin(); i < residues.end(); i++)
+    unsigned residueCounter = 0;
+    for(auto& residue : residues)
     {
       if(abortFlag) return;
       Atom center(0);
-      const vector<SasPdbAtom>& atoms = i->atoms;
+      const vector<SasPdbAtom>& atoms = residue.atoms;
 
-      if(i->getAtomByType("H1").getTrimmedAtomType() != "UNK" or
-          i->type == AA_PRO)
+      if(residue.getAtomByType("H1").getTrimmedAtomType() != "UNK" or
+          residue.type == AA_PRO)
       {
         centers.push_back(center);
         continue;
       }
-      else if(i->type == AA_GLY)
+      else if(residue.type == AA_GLY)
       {
-        centers.push_back(i->getAtomByType("CA"));
+        centers.push_back(residue.getAtomByType("CA"));
         continue;
       }
       unsigned int count = 0;
@@ -473,8 +474,7 @@ namespace PstpFinder
 
       centers.push_back(center);
       setStatus(
-          static_cast<float>(distance(residues.begin(), i) + 1)
-          / residues.size());
+          static_cast<float>(++residueCounter) / residues.size());
     }
 
     groups = makeGroupsByDistance(centers, radius);
@@ -485,11 +485,12 @@ namespace PstpFinder
 
     setStatusDescription("Recalibrating using depth index");
     setStatus(0);
-    for(vector<Group>::iterator i = groups.begin(); i < groups.end(); i++)
+    unsigned groupsCounter = 0;
+    for(auto& group : groups)
     {
       if(abortFlag) return;
-      const vector<const Residue<SasPdbAtom>*>& groupRes = i->getResidues();
-      SasPdbAtom center = i->getCentralH();
+      const vector<const Residue<SasPdbAtom>*>& groupRes = group.getResidues();
+      SasPdbAtom center = group.getCentralH();
       center.x = 0;
       center.y = 0;
       center.z = 0;
@@ -518,8 +519,7 @@ namespace PstpFinder
 
       center /= totalDepth;
       newCenters.push_back(center);
-      setStatus(
-          static_cast<float>(distance(groups.begin(), i) + 1) / groups.size());
+      setStatus(static_cast<float>(groupsCounter) / groups.size());
     }
     groups = makeGroupsByDistance(centers, radius, newCenters);
 #endif
