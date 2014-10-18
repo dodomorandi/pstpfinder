@@ -31,5 +31,5 @@ AC_DEFUN([AX_CXX_CHECK_STD], [
     AC_SUBST([CXX_SUPPORTS_CXX0X], [0])
   ])
   AC_LANG_POP([C++])
-  CPPFLAGS=ax_is_cxx1_save_CPPFLAGS
+  CPPFLAGS=ax_is_cxx11_save_CPPFLAGS
 ])
