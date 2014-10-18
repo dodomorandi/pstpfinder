@@ -617,54 +617,47 @@ namespace PstpFinder
   Pittpi::fillGroups(const string& sessionFileName, unsigned int timeStep)
   {
     float* sas;
-    float* meanSas;
-    float* fIndex;
+    //float* meanSas;
+    //float* fIndex;
     SasAtom* sasAtoms = 0;
-    SasAnalysis<ifstream>* sasAnalysis;
     unsigned int counter = 0;
 
     const float frames = gromacs.getFramesCount();
     vector<int> protein = gromacs.getGroup("Protein");
     const int nAtoms = protein.size();
 
-    meanSas = new float[nAtoms]();
-    unsigned int* notZero = new unsigned int[nAtoms]();
+    vector<float> meanSas(nAtoms);
 
     /* First of all we need to calculate SAS means */
     setStatusDescription("Calculating SAS means");
     setStatus(0);
-    sasAnalysis = new SasAnalysis<ifstream>(gromacs, sessionFileName);
-    (*sasAnalysis) >> sasAtoms;
-    while(sasAtoms != 0)
     {
-      if(abortFlag) return;
-
-      fIndex = meanSas;
-      SasAtom* m_end = sasAtoms + nAtoms;
-      unsigned int* ptr;
-      SasAtom* atom;
-
-      for(atom = sasAtoms, ptr = notZero; atom < m_end; atom++, fIndex++, ptr++)
-        *fIndex += atom->sas;
-
-      counter++;
-      setStatus(static_cast<float>(counter) / gromacs.getFramesCount());
+      auto sasAnalysis = unique_ptr<SasAnalysis<ifstream>>(
+              new SasAnalysis<ifstream>(gromacs, sessionFileName));
       (*sasAnalysis) >> sasAtoms;
-    }
+      while(sasAtoms != 0)
+      {
+        if(abortFlag) return;
 
-    {
-      unsigned int* ptr;
-      for(fIndex = meanSas, ptr = notZero; fIndex < meanSas + nAtoms;
-          fIndex++, ptr++)
-        *fIndex /= counter;
-    }
+        auto fIndex = begin(meanSas);
+        SasAtom* m_end = sasAtoms + nAtoms;
+        SasAtom* atom;
 
-    delete[] notZero;
-    delete sasAnalysis;
+        for(atom = sasAtoms; atom < m_end; atom++, ++fIndex)
+          *fIndex += atom->sas;
+
+        counter++;
+        setStatus(static_cast<float>(counter) / gromacs.getFramesCount());
+        (*sasAnalysis) >> sasAtoms;
+      }
+
+      for(float& sas : meanSas)
+        sas /= counter;
+    }
 
     /* Let's prepare groups sas vectors */
-    for(vector<Group>::iterator i = begin(groups); i < end(groups); i++)
-      i->sas.reserve(frames);
+    for(Group& group : groups)
+      group.sas.reserve(frames);
 
     /* Now we have to normalize values and store results per group */
     sas = new float[protein.size()];
@@ -672,87 +665,90 @@ namespace PstpFinder
     setStatusDescription("Searching for zeros and normalizing SAS");
     setStatus(0);
     counter = 0;
-    sasAnalysis = new SasAnalysis<ifstream>(gromacs, sessionFileName);
-    (*sasAnalysis) >> sasAtoms;
-    while(sasAtoms != 0)
     {
-      if(abortFlag) return;
-
-      /*
-       * This part is a "legacy" method. It have been implemented in perl time ago
-       * and needs refactoring. The main problem is math related, because we have to
-       * find a good solution to take "consecutively opened pocket" above a certain
-       * threshold. With every frame (and every SAS value) it could be not so easy
-       * to develop a GOOD algorithm. For now we implement only the old method used
-       * until now.
-       *
-       * 28 sep 2011: Only now I understand that I need data binning to obtain the
-       * same results as the original algorithm. This must be done BEFORE
-       * normalization!
-       * -- Edoardo Morandi
-       */
-
-      if(counter % timeStep == 0)
+      auto sasAnalysis = unique_ptr<SasAnalysis<ifstream>>(
+          new SasAnalysis<ifstream>(gromacs, sessionFileName));
+      (*sasAnalysis) >> sasAtoms;
+      while(sasAtoms)
       {
-        for(float* i = sasCounter; i < sasCounter + protein.size(); i++)
-          *i = 0.0;
-      }
-
-      fIndex = sas;
-      for(SasAtom* atom = sasAtoms; atom < sasAtoms + protein.size();
-          atom++, fIndex++)
-        *fIndex = atom->sas;
-
-      {
-        float* i;
-        float* j;
-        for(i = sasCounter, j = sas; i < sasCounter + protein.size(); i++, j++)
-          *i += *j;
-      }
-
-      if((counter + 1) % timeStep == 0)
-      {
-        for(float* i = sasCounter; i < sasCounter + protein.size(); i++)
-          *i /= timeStep;
-
         if(abortFlag) return;
 
-        for(vector<Group>::iterator i = groups.begin(); i < groups.end(); i++)
+        /*
+         * This part is a "legacy" method. It have been implemented in perl time ago
+         * and needs refactoring. The main problem is math related, because we have to
+         * find a good solution to take "consecutively opened pocket" above a certain
+         * threshold. With every frame (and every SAS value) it could be not so easy
+         * to develop a GOOD algorithm. For now we implement only the old method used
+         * until now.
+         *
+         * 28 sep 2011: Only now I understand that I need data binning to obtain the
+         * same results as the original algorithm. This must be done BEFORE
+         * normalization!
+         * -- Edoardo Morandi
+         */
+
+        if(counter % timeStep == 0)
         {
+          for(float* i = sasCounter; i < sasCounter + protein.size(); i++)
+            *i = 0.0;
+        }
+
+        float* fIndex = sas;
+        for(SasAtom* atom = sasAtoms; atom < sasAtoms + protein.size();
+            atom++, fIndex++)
+          *fIndex = atom->sas;
+
+        {
+          float* i;
+          float* j;
+          for(i = sasCounter, j = sas; i < sasCounter + protein.size(); i++, j++)
+            *i += *j;
+        }
+
+        if((counter + 1) % timeStep == 0)
+        {
+          for(float* i = sasCounter; i < sasCounter + protein.size(); i++)
+            *i /= timeStep;
+
           if(abortFlag) return;
-          i->sas.push_back(0);
-          float& curFrame = i->sas.back();
 
-          if(sasCounter[i->getCentralH().index - 1] < 0.000001)
-          {
-            i->zeros++;
-            continue;
-          }
-
-          const vector<const Residue<SasPdbAtom>*>& residues = i->getResidues();
-          for(auto j = begin(residues); j < end(residues); j++)
+          for(Group& group : groups)
           {
             if(abortFlag) return;
-            const SasPdbAtom& atomH = (*j)->getAtomByType("H");
-            if(atomH.getTrimmedAtomType() == "UNK")
+            group.sas.push_back(0);
+            float& curFrame = group.sas.back();
+
+            if(sasCounter[group.getCentralH().index - 1] < 0.000001)
+            {
+              group.zeros++;
               continue;
+            }
 
-            if(meanSas[atomH.index - 1] != 0)
-              curFrame += sasCounter[atomH.index - 1]
-                          / meanSas[atomH.index - 1];
+            const vector<const Residue<SasPdbAtom>*>& residues = group.getResidues();
+            for(const Residue<SasPdbAtom>* const& residuePtr : residues)
+            {
+              if(abortFlag) return;
+              const SasPdbAtom& atomH = residuePtr->getAtomByType("H");
+              if(atomH.getTrimmedAtomType() == "UNK")
+                continue;
+
+              if(meanSas[atomH.index - 1] != 0)
+                curFrame += sasCounter[atomH.index - 1]
+                            / meanSas[atomH.index - 1];
+            }
+
+            curFrame /= group.getResidues().size();
+
+            if(curFrame < 0.000001)
+              group.zeros++;
+
           }
-
-          curFrame /= i->getResidues().size();
-
-          if(curFrame < 0.000001)
-            i->zeros++;
-
         }
-      }
 
-      counter++;
-      setStatus(static_cast<float>(counter) / gromacs.getFramesCount());
-      (*sasAnalysis) >> sasAtoms;
+        counter++;
+        setStatus(static_cast<float>(counter) / gromacs.getFramesCount());
+        (*sasAnalysis) >> sasAtoms;
+      }
     }
 
     if(counter % timeStep != 0)
@@ -762,24 +758,23 @@ namespace PstpFinder
 
       if(abortFlag) return;
 
-      for(vector<Group>::iterator i = groups.begin(); i < groups.end(); i++)
+      for(Group& group : groups)
       {
         if(abortFlag) return;
-        i->sas.push_back(0);
-        float& curFrame = i->sas.back();
+        group.sas.push_back(0);
+        float& curFrame = group.sas.back();
 
-        if(sasCounter[i->getCentralH().index - 1] < 0.000001)
+        if(sasCounter[group.getCentralH().index - 1] < 0.000001)
         {
-          i->zeros++;
+          group.zeros++;
           continue;
         }
 
-        const vector<const Residue<SasPdbAtom>*>& residues = i->getResidues();
-        for(vector<const Residue<SasPdbAtom>*>::const_iterator j = residues.begin();
-            j < residues.end(); j++)
+        const vector<const Residue<SasPdbAtom>*>& residues = group.getResidues();
+        for(const Residue<SasPdbAtom>* const& residuePtr : residues)
         {
           if(abortFlag) return;
-          const SasPdbAtom& atomH = (*j)->getAtomByType("H");
+          const SasPdbAtom& atomH = residuePtr->getAtomByType("H");
           if(atomH.getTrimmedAtomType() == "UNK")
             continue;
 
@@ -787,16 +782,14 @@ namespace PstpFinder
             curFrame += sasCounter[atomH.index - 1] / meanSas[atomH.index - 1];
         }
 
-        curFrame /= i->getResidues().size();
+        curFrame /= group.getResidues().size();
 
         if(curFrame < 0.000001)
-          i->zeros++;
+          group.zeros++;
       }
     }
 
     delete[] sasCounter;
-    delete sasAnalysis;
-    delete[] meanSas;
     delete[] sas;
   }
 
