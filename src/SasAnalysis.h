@@ -102,7 +102,7 @@ namespace PstpFinder
       SasAnalysis_Read(const Gromacs& gromacs, Session<T>& sessionFile) :
           Base(gromacs, sessionFile) { updateChunks(); }
       virtual ~SasAnalysis_Read();
-      virtual SasAnalysis_Read& operator >>(SasAtom*& sasAtom);
+      virtual bool read(std::vector<SasAtom>& sasAtom);
 
     private:
       typedef SasAnalysis_Base<T> Base;
@@ -130,7 +130,7 @@ namespace PstpFinder
       SasAnalysis_Write(const Gromacs& gromacs, Session<T>& sessionFile) :
           Base(gromacs, sessionFile), readFrames(0) { updateChunks(); }
       virtual ~SasAnalysis_Write();
-      virtual const SasAnalysis_Write& operator <<(SasAtom* sasAtoms);
+      virtual void write(const std::vector<SasAtom>& sasAtoms);
       unsigned int getReadFrames() const;
 
     protected:
@@ -355,9 +355,10 @@ namespace PstpFinder
   }
 
   template<typename T>
-  const SasAnalysis_Write<T>&
-  SasAnalysis_Write<T>::operator <<(SasAtom* sasAtoms)
+  void
+  SasAnalysis_Write<T>::write(const std::vector<SasAtom>& sasAtoms)
   {
+    assert(sasAtoms.size() == Base::nAtoms);
     SasAtom* tmpFrame = new SasAtom[Base::nAtoms];
     if(Base::changeable)
     {
@@ -367,7 +368,7 @@ namespace PstpFinder
       Base::analysisThread = new SasAnalysisThreadType(*this);
     }
 
-    std::copy(sasAtoms, sasAtoms + Base::nAtoms, tmpFrame);
+    std::copy(std::begin(sasAtoms), std::end(sasAtoms), tmpFrame);
     Base::bufferMutex.lock();
     Base::frames.push_back(tmpFrame);
 
@@ -376,12 +377,11 @@ namespace PstpFinder
 
     if(cond)
       flush();
-    return *this;
   }
 
   template<typename T>
-  SasAnalysis_Read<T>&
-  SasAnalysis_Read<T>::operator >>(SasAtom*& sasAtom)
+  bool
+  SasAnalysis_Read<T>::read(std::vector<SasAtom>& sasAtom)
   {
     static std::vector<SasAtom*>::const_iterator i;
 
@@ -432,8 +432,8 @@ namespace PstpFinder
       if(Base::chunks.size() == 0)
       {
         Base::bufferMutex.unlock();
-        sasAtom = 0;
-        return *this;
+        sasAtom.clear();
+        return false;
       }
 
       Base::frames = Base::chunks.front();
@@ -443,9 +443,15 @@ namespace PstpFinder
       Base::bufferMutex.unlock();
     }
 
-    sasAtom = *(i++);
+    if(sasAtom.size() != Base::nAtoms)
+    {
+      sasAtom.clear();
+      sasAtom.reserve(Base::nAtoms);
+    } 
+    std::copy_n(*i, Base::nAtoms, std::begin(sasAtom));
+    ++i;
 
-    return *this;
+    return true;
   }
 
   template<typename T>

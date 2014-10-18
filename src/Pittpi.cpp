@@ -616,10 +616,8 @@ namespace PstpFinder
   void
   Pittpi::fillGroups(const string& sessionFileName, unsigned int timeStep)
   {
-    float* sas;
-    //float* meanSas;
-    //float* fIndex;
-    SasAtom* sasAtoms = 0;
+    //float* sas;
+    std::vector<SasAtom> sasAtoms;
     unsigned int counter = 0;
 
     const float frames = gromacs.getFramesCount();
@@ -632,23 +630,20 @@ namespace PstpFinder
     setStatusDescription("Calculating SAS means");
     setStatus(0);
     {
-      auto sasAnalysis = unique_ptr<SasAnalysis<ifstream>>(
-              new SasAnalysis<ifstream>(gromacs, sessionFileName));
-      (*sasAnalysis) >> sasAtoms;
-      while(sasAtoms != 0)
+      SasAnalysis<ifstream> sasAnalysis(gromacs, sessionFileName);
+      while(sasAnalysis.read(sasAtoms))
       {
         if(abortFlag) return;
 
-        auto fIndex = begin(meanSas);
-        SasAtom* m_end = sasAtoms + nAtoms;
-        SasAtom* atom;
-
-        for(atom = sasAtoms; atom < m_end; atom++, ++fIndex)
-          *fIndex += atom->sas;
+        std::transform(std::begin(sasAtoms), std::end(sasAtoms),
+            std::begin(meanSas), std::begin(meanSas),
+            [](const SasAtom& a, float b){return a.sas + b;});
+        //auto fIndex = begin(meanSas);
+        //for(auto& sasAtom : sasAtoms)
+        //  *fIndex++ += sasAtom.sas;
 
         counter++;
         setStatus(static_cast<float>(counter) / gromacs.getFramesCount());
-        (*sasAnalysis) >> sasAtoms;
       }
 
       for(float& sas : meanSas)
@@ -660,16 +655,15 @@ namespace PstpFinder
       group.sas.reserve(frames);
 
     /* Now we have to normalize values and store results per group */
-    sas = new float[protein.size()];
-    float* sasCounter = new float[protein.size()];
+    std::vector<float> sas_(protein.size());
+    std::vector<float> sasCounters_(protein.size());
+    //float* sasCounter = new float[protein.size()];
     setStatusDescription("Searching for zeros and normalizing SAS");
     setStatus(0);
     counter = 0;
     {
-      auto sasAnalysis = unique_ptr<SasAnalysis<ifstream>>(
-          new SasAnalysis<ifstream>(gromacs, sessionFileName));
-      (*sasAnalysis) >> sasAtoms;
-      while(sasAtoms)
+      SasAnalysis<ifstream> sasAnalysis(gromacs, sessionFileName);
+      while(sasAnalysis.read(sasAtoms))
       {
         if(abortFlag) return;
 
@@ -688,27 +682,33 @@ namespace PstpFinder
          */
 
         if(counter % timeStep == 0)
-        {
-          for(float* i = sasCounter; i < sasCounter + protein.size(); i++)
-            *i = 0.0;
-        }
+          std::fill(std::begin(sasCounters_), std::end(sasCounters_), 0.);
 
-        float* fIndex = sas;
-        for(SasAtom* atom = sasAtoms; atom < sasAtoms + protein.size();
-            atom++, fIndex++)
-          *fIndex = atom->sas;
+        std::transform(std::begin(sasAtoms), std::end(sasAtoms),
+            std::begin(sas_), std::begin(sas_),
+            [](const SasAtom& a, float){return a.sas;});
+        //float* fIndex = sas;
+        //for(SasAtom* atom = sasAtoms; atom < sasAtoms + protein.size();
+        //    atom++, fIndex++)
+        //  *fIndex = atom->sas;
 
+        std::transform(std::begin(sasCounters_), std::end(sasCounters_),
+            std::begin(sas_), std::begin(sasCounters_), std::plus<float>());
+        /*
         {
           float* i;
           float* j;
           for(i = sasCounter, j = sas; i < sasCounter + protein.size(); i++, j++)
             *i += *j;
         }
+        */
 
         if((counter + 1) % timeStep == 0)
         {
-          for(float* i = sasCounter; i < sasCounter + protein.size(); i++)
-            *i /= timeStep;
+          for(auto& sasCounter : sasCounters_)
+            sasCounter /= timeStep;
+          //for(float* i = sasCounter; i < sasCounter + protein.size(); i++)
+          //  *i /= timeStep;
 
           if(abortFlag) return;
 
@@ -718,7 +718,7 @@ namespace PstpFinder
             group.sas.push_back(0);
             float& curFrame = group.sas.back();
 
-            if(sasCounter[group.getCentralH().index - 1] < 0.000001)
+            if(sasCounters_[group.getCentralH().index - 1] < 0.000001)
             {
               group.zeros++;
               continue;
@@ -733,7 +733,7 @@ namespace PstpFinder
                 continue;
 
               if(meanSas[atomH.index - 1] != 0)
-                curFrame += sasCounter[atomH.index - 1]
+                curFrame += sasCounters_[atomH.index - 1]
                             / meanSas[atomH.index - 1];
             }
 
@@ -747,14 +747,17 @@ namespace PstpFinder
 
         counter++;
         setStatus(static_cast<float>(counter) / gromacs.getFramesCount());
-        (*sasAnalysis) >> sasAtoms;
       }
     }
 
     if(counter % timeStep != 0)
     {
+      /*
       for(float* i = sasCounter; i < sasCounter + protein.size(); i++)
         *i /= (counter % timeStep);
+      */
+      for(auto& sasCounter : sasCounters_)
+        sasCounter /= (counter % timeStep);
 
       if(abortFlag) return;
 
@@ -764,7 +767,7 @@ namespace PstpFinder
         group.sas.push_back(0);
         float& curFrame = group.sas.back();
 
-        if(sasCounter[group.getCentralH().index - 1] < 0.000001)
+        if(sasCounters_[group.getCentralH().index - 1] < 0.000001)
         {
           group.zeros++;
           continue;
@@ -779,7 +782,7 @@ namespace PstpFinder
             continue;
 
           if(meanSas[atomH.index - 1] != 0)
-            curFrame += sasCounter[atomH.index - 1] / meanSas[atomH.index - 1];
+            curFrame += sasCounters_[atomH.index - 1] / meanSas[atomH.index - 1];
         }
 
         curFrame /= group.getResidues().size();
@@ -788,9 +791,6 @@ namespace PstpFinder
           group.zeros++;
       }
     }
-
-    delete[] sasCounter;
-    delete[] sas;
   }
 
 #ifdef HAVE_PYMOD_SADIC
