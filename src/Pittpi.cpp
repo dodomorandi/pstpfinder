@@ -616,7 +616,6 @@ namespace PstpFinder
   void
   Pittpi::fillGroups(const string& sessionFileName, unsigned int timeStep)
   {
-    //float* sas;
     std::vector<SasAtom> sasAtoms;
     unsigned int counter = 0;
 
@@ -638,9 +637,6 @@ namespace PstpFinder
         std::transform(std::begin(sasAtoms), std::end(sasAtoms),
             std::begin(meanSas), std::begin(meanSas),
             [](const SasAtom& a, float b){return a.sas + b;});
-        //auto fIndex = begin(meanSas);
-        //for(auto& sasAtom : sasAtoms)
-        //  *fIndex++ += sasAtom.sas;
 
         counter++;
         setStatus(static_cast<float>(counter) / gromacs.getFramesCount());
@@ -655,9 +651,8 @@ namespace PstpFinder
       group.sas.reserve(frames);
 
     /* Now we have to normalize values and store results per group */
-    std::vector<float> sas_(protein.size());
-    std::vector<float> sasCounters_(protein.size());
-    //float* sasCounter = new float[protein.size()];
+    std::vector<float> sas(protein.size());
+    std::vector<float> sasCounters(protein.size());
     setStatusDescription("Searching for zeros and normalizing SAS");
     setStatus(0);
     counter = 0;
@@ -682,33 +677,19 @@ namespace PstpFinder
          */
 
         if(counter % timeStep == 0)
-          std::fill(std::begin(sasCounters_), std::end(sasCounters_), 0.);
+          std::fill(std::begin(sasCounters), std::end(sasCounters), 0.);
 
         std::transform(std::begin(sasAtoms), std::end(sasAtoms),
-            std::begin(sas_), std::begin(sas_),
+            std::begin(sas), std::begin(sas),
             [](const SasAtom& a, float){return a.sas;});
-        //float* fIndex = sas;
-        //for(SasAtom* atom = sasAtoms; atom < sasAtoms + protein.size();
-        //    atom++, fIndex++)
-        //  *fIndex = atom->sas;
 
-        std::transform(std::begin(sasCounters_), std::end(sasCounters_),
-            std::begin(sas_), std::begin(sasCounters_), std::plus<float>());
-        /*
-        {
-          float* i;
-          float* j;
-          for(i = sasCounter, j = sas; i < sasCounter + protein.size(); i++, j++)
-            *i += *j;
-        }
-        */
+        std::transform(std::begin(sasCounters), std::end(sasCounters),
+            std::begin(sas), std::begin(sasCounters), std::plus<float>());
 
         if((counter + 1) % timeStep == 0)
         {
-          for(auto& sasCounter : sasCounters_)
+          for(auto& sasCounter : sasCounters)
             sasCounter /= timeStep;
-          //for(float* i = sasCounter; i < sasCounter + protein.size(); i++)
-          //  *i /= timeStep;
 
           if(abortFlag) return;
 
@@ -718,7 +699,7 @@ namespace PstpFinder
             group.sas.push_back(0);
             float& curFrame = group.sas.back();
 
-            if(sasCounters_[group.getCentralH().index - 1] < 0.000001)
+            if(sasCounters[group.getCentralH().index - 1] < 0.000001)
             {
               group.zeros++;
               continue;
@@ -733,7 +714,7 @@ namespace PstpFinder
                 continue;
 
               if(meanSas[atomH.index - 1] != 0)
-                curFrame += sasCounters_[atomH.index - 1]
+                curFrame += sasCounters[atomH.index - 1]
                             / meanSas[atomH.index - 1];
             }
 
@@ -752,11 +733,7 @@ namespace PstpFinder
 
     if(counter % timeStep != 0)
     {
-      /*
-      for(float* i = sasCounter; i < sasCounter + protein.size(); i++)
-        *i /= (counter % timeStep);
-      */
-      for(auto& sasCounter : sasCounters_)
+      for(auto& sasCounter : sasCounters)
         sasCounter /= (counter % timeStep);
 
       if(abortFlag) return;
@@ -767,7 +744,7 @@ namespace PstpFinder
         group.sas.push_back(0);
         float& curFrame = group.sas.back();
 
-        if(sasCounters_[group.getCentralH().index - 1] < 0.000001)
+        if(sasCounters[group.getCentralH().index - 1] < 0.000001)
         {
           group.zeros++;
           continue;
@@ -782,7 +759,7 @@ namespace PstpFinder
             continue;
 
           if(meanSas[atomH.index - 1] != 0)
-            curFrame += sasCounters_[atomH.index - 1] / meanSas[atomH.index - 1];
+            curFrame += sasCounters[atomH.index - 1] / meanSas[atomH.index - 1];
         }
 
         curFrame /= group.getResidues().size();
