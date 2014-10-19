@@ -312,90 +312,90 @@ namespace PstpFinder
 
     setStatusDescription("Searching for pockets");
     setStatus(0);
-    for(vector<Group>::iterator i = groups.begin(); i < groups.end(); i++)
+    unsigned groupCounter = 0;
+    for(const Group& group : groups)
     {
       if(abortFlag) return;
-      vector<float>::iterator startPocket = i->sas.end();
+      vector<float>::const_iterator startPocket = end(group.sas);
+      vector<float>::const_iterator maxFrame = end(group.sas);
       unsigned int notOpenCounter = 0;
-      float* maxFrame = 0;
       float mean = 0;
 
-      for(vector<float>::iterator j = i->sas.begin(); j < i->sas.end(); j++)
+      for(auto sasIter = begin(group.sas); sasIter < end(group.sas); ++sasIter)
       {
+        const float& sas = *sasIter;
         if(abortFlag) return;
-        if(startPocket == i->sas.end() and *j > 1)
+        if(startPocket == end(group.sas) and sas > 1)
         {
-          startPocket = j;
-          maxFrame = &(*j);
-          mean = *j;
+          startPocket = sasIter;
+          maxFrame = sasIter;
+          mean = sas;
         }
-        else if(startPocket != i->sas.end() and *j < 1)
+        else if(startPocket != end(group.sas) and sas < 1)
         {
           if(notOpenCounter < noZeroPass)
           {
             notOpenCounter++;
-            mean += *j;
+            mean += sas;
           }
           else
           {
-            if(static_cast<float>(distance(startPocket, j - noZeroPass))
+            if(static_cast<float>(distance(startPocket, sasIter - noZeroPass))
                * PS_PER_SAS
                >= threshold)
             {
-              Pocket pocket(*i);
-              pocket.startFrame = distance(i->sas.begin(), startPocket)
+              Pocket pocket(group);
+              pocket.startFrame = distance(begin(group.sas), startPocket)
                                   * frameStep
                                   + 1;
-              pocket.startPs = distance(i->sas.begin(),
+              pocket.startPs = distance(begin(group.sas),
                                         startPocket) * PS_PER_SAS;
-              pocket.endFrame = (distance(i->sas.begin(), j) - notOpenCounter
+              pocket.endFrame = (distance(begin(group.sas), sasIter) - notOpenCounter
                                  - 1)
                                 * frameStep
                                 + 1;
-              pocket.endPs = (distance(i->sas.begin(), j) - notOpenCounter - 1)
+              pocket.endPs = (distance(begin(group.sas), sasIter) - notOpenCounter - 1)
                              * PS_PER_SAS;
               pocket.width = pocket.endPs - pocket.startPs;
-              pocket.maxAreaFrame = static_cast<int>(maxFrame
-                                                     - &(*i->sas.begin()))
+              pocket.maxAreaFrame = distance(begin(group.sas), maxFrame)
                                     * frameStep
                                     + 1;
-              pocket.maxAreaPs = static_cast<float>(maxFrame
-                                                    - &(*i->sas.begin()))
+              pocket.maxAreaPs = distance(begin(group.sas), maxFrame)
                                  * PS_PER_SAS;
               pocket.openingFraction = static_cast<float>(distance(startPocket,
-                                                                   j)
+                                                                   sasIter)
                                                           - notOpenCounter
                                                           - 1)
-                                       / (i->sas.size() - i->zeros);
+                                       / (group.sas.size() - group.zeros);
 
-              mean /= distance(startPocket, j);
-              vector<float>::iterator nearToAverage = startPocket;
-              for(vector<float>::iterator k = startPocket + 1; k < j; k++)
-                if(abs(mean - *nearToAverage) > abs(mean - *k))
-                  nearToAverage = k;
+              mean /= distance(startPocket, sasIter);
+              vector<float>::const_iterator nearToAverage = startPocket;
+              for(auto otherSasIter = startPocket + 1; otherSasIter < sasIter; ++otherSasIter)
+                if(abs(mean - *nearToAverage) > abs(mean - *otherSasIter))
+                  nearToAverage = otherSasIter;
               if(abortFlag) return;
-              pocket.averageNearFrame = distance(i->sas.begin(), nearToAverage)
+              pocket.averageNearFrame = distance(begin(group.sas), nearToAverage)
                                         * frameStep
                                         + 1;
-              pocket.averageNearPs = distance(i->sas.begin(),
-                                              nearToAverage) * PS_PER_SAS;
+              pocket.averageNearPs = static_cast<float>(distance(begin(group.sas),
+                                              nearToAverage)) * PS_PER_SAS;
 
               pockets.push_back(move(pocket));
             }
-            startPocket = i->sas.end();
+            startPocket = end(group.sas);
             notOpenCounter = 0;
           }
         }
         else
         {
-          if(maxFrame == 0 or *j > *maxFrame)
-            maxFrame = &(*j);
-          mean += *j;
+          if(maxFrame == end(group.sas) or *sasIter > *maxFrame)
+            maxFrame = sasIter;
+          mean += *sasIter;
         }
       }
 
       setStatus(
-          static_cast<float>(distance(groups.begin(), i) + 1) / groups.size());
+          static_cast<float>(++groupCounter) / groups.size());
     }
 
     sort(pockets.begin(), pockets.end(),
