@@ -141,7 +141,7 @@ namespace PstpFinder
   Gromacs::calculateSas(Session<Stream>& session)
   {
     operationThread = std::thread(
-        bind(&Gromacs::__calculateSas<Stream>, std::ref(*this), std::ref(session)));
+       std::bind(&Gromacs::__calculateSas<Stream>, std::ref(*this), std::ref(session)));
   }
 
   void
