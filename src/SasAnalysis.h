@@ -533,14 +533,13 @@ namespace PstpFinder
     unsigned int size = chunk.size();
     out << size;
 
-    for(std::vector<SasAtom*>::const_iterator i = chunk.begin();
-        i < chunk.end(); i++)
+    for(const SasAtom* frame : chunk)
     {
       if(Base::gromacs and Base::gromacs->isAborting())
         break;
-      const SasAtom* end = *i + Base::nAtoms;
-      for(SasAtom* j = *i; j < end; j++)
-        out << *j;
+      const SasAtom* end = frame + Base::nAtoms;
+      for(const SasAtom* atom = frame; atom < end; ++atom)
+        out << *atom;
     }
   }
 
