@@ -83,9 +83,8 @@ namespace PstpFinder
       if(parent->save())
       {
         std::vector<SasAtom*>& curChunk = parent->chunks.front();
-        for(std::vector<SasAtom*>::iterator i = curChunk.begin();
-            i < curChunk.end(); i++)
-          delete[] *i;
+        for(SasAtom* frame : curChunk)
+          delete[] frame;
         curChunk.clear();
 
         parent->chunks.pop_front();
