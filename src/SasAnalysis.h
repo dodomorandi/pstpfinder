@@ -383,7 +383,7 @@ namespace PstpFinder
   bool
   SasAnalysis_Read<T>::read(std::vector<SasAtom>& sasAtom)
   {
-    static std::vector<SasAtom*>::const_iterator i;
+    static std::vector<SasAtom*>::const_iterator currentFrameIter;
 
     if(Base::changeable)
     {
@@ -404,17 +404,17 @@ namespace PstpFinder
         Base::bufferMutex.lock();
       }
       Base::frames = Base::chunks.front();
-      i = Base::frames.begin();
+      currentFrameIter = Base::frames.begin();
 
       Base::bufferCount--;
       Base::bufferMutex.unlock();
     }
-    else if(i == Base::frames.end())
+    else if(currentFrameIter == Base::frames.end())
     {
       Base::bufferMutex.lock();
 
-      for(i = Base::frames.begin(); i < Base::frames.end(); i++)
-        delete[] *i;
+      for(SasAtom* frame : Base::frames)
+        delete[] frame;
       Base::frames.clear();
 
       Base::chunks.pop_front();
@@ -437,7 +437,7 @@ namespace PstpFinder
       }
 
       Base::frames = Base::chunks.front();
-      i = Base::frames.begin();
+      currentFrameIter = Base::frames.begin();
 
       Base::analysisThread->wakeUp();
       Base::bufferMutex.unlock();
@@ -448,8 +448,8 @@ namespace PstpFinder
       sasAtom.clear();
       sasAtom.reserve(Base::nAtoms);
     } 
-    std::copy_n(*i, Base::nAtoms, std::begin(sasAtom));
-    ++i;
+    std::copy_n(*currentFrameIter, Base::nAtoms, std::begin(sasAtom));
+    ++currentFrameIter;
 
     return true;
   }
