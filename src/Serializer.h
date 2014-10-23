@@ -54,10 +54,10 @@ namespace PstpFinder
       struct Base : public Type, public Test {};
       template <typename T, T t>  class Helper{};
       template <typename U>
-      static no test(U*, Helper<void (Test::*)(), &U::serialize>* = 0);
+      static no test(U*, Helper<void (Test::*)(), &U::serialize>* = nullptr);
       static yes test(...);
    public:
-      static const bool value = sizeof(yes) == sizeof(test((Base*)(0)));
+      static const bool value = sizeof(yes) == sizeof(test(static_cast<Base*>(nullptr)));
   };
 
   template<typename Stream, typename = void>
@@ -90,7 +90,7 @@ namespace PstpFinder
       serializeData(Serializable serializable) const
       {
         std::array<char_type, sizeof(Serializable)> buffer;
-        char_type* pointer((char_type*)&serializable);
+        char_type* pointer(reinterpret_cast<char_type*>(&serializable));
 
         for(auto byte(std::begin(buffer)); byte < std::end(buffer);
             byte++, pointer++)
@@ -141,7 +141,7 @@ namespace PstpFinder
       {
         std::array<char_type, sizeof(Serializable)> buffer;
         stream.read(buffer.data(), sizeof(Serializable));
-        char_type* pointer((char_type*)&serializable);
+        char_type* pointer(reinterpret_cast<char_type*>(&serializable));
 
 #ifdef PSTPFINDER_BIG_ENDIAN // Default little endian
         reverse(std::begin(buffer), std::end(buffer));
