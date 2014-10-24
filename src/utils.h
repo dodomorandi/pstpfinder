@@ -27,8 +27,8 @@
 
 namespace PstpFinder
 {
-  #define base_stream(stream, T) stream<typename T::char_type, \
-                                      typename T::traits_type>
+  template<template<typename, typename> class Stream, class T>
+  using base_stream_to = Stream<typename T::char_type, typename T::traits_type>;
 
   template<typename T>
   using remove_all = typename std::remove_cv<

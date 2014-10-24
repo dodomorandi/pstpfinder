@@ -57,17 +57,8 @@ namespace PstpFinder
       std::function<void()> callbackClose;
       std::function<void()> callbackDestroy;
 
-      /*
-       * FIXME
-       * Can't use this... g++ 4.6.1 still doesn't support template aliases.
-       * Waiting for 4.7 on Ubuntu/Mint
-       *
-      template<typename Stream>
-        using base_stream = Stream<typename T::char_type,
-        typename T::traits_type>;
-       *
-       * For now the implementation have been done using a #define (see above)
-      */
+      template<template<typename, typename> class Stream>
+      using base_stream = base_stream_to<Stream, T>;
 
       MetaStream_Base() :
           T(), streamType(enumStreamType::STREAMTYPE_FIXED), valid(false)
@@ -227,8 +218,8 @@ namespace PstpFinder
       }
 
       MetaStream_Base&
-      operator <<(base_stream(std::basic_ostream, T)&(*pf)
-                  (base_stream(std::basic_ostream, T)&))
+      operator <<(base_stream<std::basic_ostream>&(*pf)
+                  (base_stream<std::basic_ostream>&))
       {
         return dumpStream(pf);
       }
@@ -418,22 +409,22 @@ namespace PstpFinder
       inline void
       assert_basic_istream() const
       {
-        static_assert(std::is_base_of<base_stream(std::basic_istream, T), T>::value,
+        static_assert(is_stream_base_of<std::basic_istream, T>::value,
                       "class derives from basic_istream");
       }
 
       inline void
       assert_basic_ostream() const
       {
-        static_assert(std::is_base_of<base_stream(std::basic_ostream, T), T>::value,
+        static_assert(is_stream_base_of<std::basic_ostream, T>::value,
                       "class derives from basic_ostream");
       }
 
       inline void
       assert_basic_stream() const
       {
-        static_assert(std::is_base_of<base_stream(std::basic_istream, T), T>::value or
-          std::is_base_of<base_stream(std::basic_ostream, T), T>::value,
+        static_assert(is_stream_base_of<std::basic_istream, T>::value or
+          is_stream_base_of<std::basic_ostream, T>::value,
           "class derives from basic_istream or basic_ostream");
       }
   };
@@ -441,8 +432,8 @@ namespace PstpFinder
   template<typename T>
   class MetaStream<T,
         typename std::enable_if<
-            std::is_base_of<base_stream(std::basic_istream, T), T>::value and
-    not std::is_base_of<base_stream(std::basic_ostream, T), T>::value>::type>
+            is_stream_base_of<std::basic_istream, T>::value and
+    not is_stream_base_of<std::basic_ostream, T>::value>::type>
     : public MetaStream_Base<T>
   {
     public:
@@ -498,8 +489,8 @@ namespace PstpFinder
   template<typename T>
   class MetaStream<T,
         typename std::enable_if<
-            not std::is_base_of<base_stream(std::basic_istream, T), T>::value and
-    std::is_base_of<base_stream(std::basic_ostream, T), T>::value>::type>
+            not is_stream_base_of<std::basic_istream, T>::value and
+    is_stream_base_of<std::basic_ostream, T>::value>::type>
     : public MetaStream_Base<T>
   {
     public:
@@ -564,8 +555,8 @@ namespace PstpFinder
   template<typename T>
   class MetaStream<T,
         typename std::enable_if<
-            std::is_base_of<base_stream(std::basic_istream, T),T>::value and
-          std::is_base_of<base_stream(std::basic_ostream, T), T>::value>::type>
+          is_stream_base_of<std::basic_istream,T>::value and
+          is_stream_base_of<std::basic_ostream, T>::value>::type>
     : public MetaStream_Base<T>
   {
     public:

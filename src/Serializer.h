@@ -221,8 +221,8 @@ namespace PstpFinder
   class Serializer<
       Stream,
       typename std::enable_if<
-          std::is_base_of<base_stream(std::basic_istream, Stream), Stream>::value and
-          not std::is_base_of<base_stream(std::basic_ostream, Stream), Stream>::value>
+          is_stream_base_of<std::basic_istream, Stream>::value and
+          not is_stream_base_of<std::basic_ostream, Stream>::value>
         ::type> : public SerializerHelper<Stream>
   {
     public:
@@ -271,8 +271,8 @@ namespace PstpFinder
   class Serializer<
       Stream,
       typename std::enable_if<
-          not std::is_base_of<base_stream(std::basic_istream, Stream), Stream>::value and
-          std::is_base_of<base_stream(std::basic_ostream, Stream), Stream>::value>
+          not is_stream_base_of<std::basic_istream, Stream>::value and
+          is_stream_base_of<std::basic_ostream, Stream>::value>
         ::type> : public SerializerHelper<Stream>
   {
     public:
@@ -322,8 +322,8 @@ namespace PstpFinder
   template<typename Stream>
   class Serializer<Stream,
       typename std::enable_if<
-          std::is_base_of<base_stream(std::basic_istream, Stream),Stream>::value and
-        std::is_base_of<base_stream(std::basic_ostream, Stream), Stream>::value>
+        is_stream_base_of<std::basic_istream, Stream>::value and
+        is_stream_base_of<std::basic_ostream, Stream>::value>
       ::type> : public SerializerHelper<Stream>
   {
     public:

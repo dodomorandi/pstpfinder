@@ -176,7 +176,7 @@ namespace PstpFinder
   {
     assertRegularType();
 
-    if(std::is_base_of<base_stream(std::basic_istream, T), T>::value)
+    if(is_stream_base_of<std::basic_istream, T>::value)
       sessionFile = std::unique_ptr<T>(new T(fileName,
                                         std::ios_base::in bitor std::ios_base::out bitor
                                         std::ios_base::binary));
@@ -197,7 +197,7 @@ namespace PstpFinder
   {
     assertRegularType();
 
-    if(std::is_base_of<base_stream(std::basic_istream, T), T>::value)
+    if(is_stream_base_of<std::basic_istream, T>::value)
       sessionFile = std::unique_ptr<T>(new T(fileName,
                                         std::ios_base::in bitor std::ios_base::out bitor
                                         std::ios_base::binary));
@@ -418,7 +418,7 @@ namespace PstpFinder
     {
       sessionFile->seekg(0, std::ios_base::end);
       metaSas.end = 0;
-      if(std::is_base_of<base_stream(std::basic_ostream, T), T>::value)
+      if(is_stream_base_of<std::basic_ostream, T>::value)
       {
         metaSas.stream = std::unique_ptr<stream_type>(
           new stream_type(sessionFileName,
@@ -462,7 +462,7 @@ namespace PstpFinder
     {
       sessionFile->seekg(0, std::ios_base::end);
       metaPdb.end = 0;
-      if(std::is_base_of<base_stream(std::basic_ostream, T), T>::value)
+      if(is_stream_base_of<std::basic_ostream, T>::value)
       {
         metaPdb.stream = std::unique_ptr<stream_type>(
           new stream_type(sessionFileName,
@@ -507,7 +507,7 @@ namespace PstpFinder
       {
         sessionFile->seekg(0, std::ios_base::end);
         metaPittpi.end = 0;
-        if(std::is_base_of<base_stream(std::basic_ostream, T), T>::value)
+        if(is_stream_base_of<std::basic_ostream, T>::value)
         {
           metaPittpi.stream = std::unique_ptr<stream_type>(
             new stream_type(sessionFileName,
@@ -624,8 +624,8 @@ namespace PstpFinder
   inline void
   Session_Base<T>::assertRegularType() const
   {
-    static_assert(std::is_base_of<base_stream(std::basic_istream, T), T>::value or
-                  std::is_base_of<base_stream(std::basic_ostream, T), T>::value,
+    static_assert(is_stream_base_of<std::basic_istream, T>::value or
+                  is_stream_base_of<std::basic_ostream, T>::value,
                   "T must have std::basic_istream or std::basic_ostream as base class");
   }
 
@@ -633,7 +633,7 @@ namespace PstpFinder
   inline void
   Session_Base<T>::assertBaseIStream() const
   {
-    static_assert(std::is_base_of<base_stream(std::basic_istream, T), T>::value,
+    static_assert(is_stream_base_of<std::basic_istream, T>::value,
                   "T must have std::basic_istream as base class");
   }
 
@@ -641,7 +641,7 @@ namespace PstpFinder
   inline void
   Session_Base<T>::assertBaseOStream() const
   {
-    static_assert(std::is_base_of<base_stream(std::basic_ostream, T), T>::value,
+    static_assert(is_stream_base_of<std::basic_ostream, T>::value,
                   "T must have std::basic_ostream as base class");
   }
 
@@ -649,8 +649,8 @@ namespace PstpFinder
   inline void
   Session_Base<T>::assertBaseIOStream() const
   {
-    static_assert(std::is_base_of<base_stream(std::basic_istream, T), T>::value and
-                  std::is_base_of<base_stream(std::basic_ostream, T), T>::value,
+    static_assert(is_stream_base_of<std::basic_istream, T>::value and
+                  is_stream_base_of<std::basic_ostream, T>::value,
                   "T must have std::basic_istream and std::basic_ostream as base class");
   }
 
@@ -743,8 +743,8 @@ namespace PstpFinder
 
   template<typename T>
   class Session<T, typename std::enable_if<
-          std::is_base_of<base_stream(std::basic_istream, T), T>::value and
-          not std::is_base_of<base_stream(std::basic_ostream, T), T>::value>::type>
+          is_stream_base_of<std::basic_istream, T>::value and
+          not is_stream_base_of<std::basic_ostream, T>::value>::type>
       : public Session_Base<T>
   {
     public:
@@ -761,8 +761,8 @@ namespace PstpFinder
 
   template<typename T>
   class Session<T, typename std::enable_if<
-          not std::is_base_of<base_stream(std::basic_istream, T), T>::value and
-          std::is_base_of<base_stream(std::basic_ostream, T), T>::value>::type>
+          not is_stream_base_of<std::basic_istream, T>::value and
+          is_stream_base_of<std::basic_ostream, T>::value>::type>
       : public Session_Base<T>
   {
     public:
@@ -794,8 +794,8 @@ namespace PstpFinder
 
   template<typename T>
   class Session<T, typename std::enable_if<
-          std::is_base_of<base_stream(std::basic_istream, T), T>::value and
-          std::is_base_of<base_stream(std::basic_ostream, T), T>::value>::type>
+          is_stream_base_of<std::basic_istream, T>::value and
+          is_stream_base_of<std::basic_ostream, T>::value>::type>
       : public Session_Base<T>
   {
     public:

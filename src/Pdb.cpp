@@ -63,10 +63,8 @@ Pdb<AtomType>::write(const std::string& filename) const
 
 template<typename AtomType>
 template<typename Stream>
-  typename std::enable_if<std::is_base_of<base_stream
-  (std::basic_istream, Stream), Stream>::value
-                     or std::is_base_of<base_stream
-                     (std::basic_ostream, Stream), Stream>::value>::type
+  typename std::enable_if<is_stream_base_of<std::basic_istream, Stream>::value
+                     or is_stream_base_of<std::basic_ostream, Stream>::value>::type
 Pdb<AtomType>::write(Stream& stream) const
 {
   assert(stream.is_open());

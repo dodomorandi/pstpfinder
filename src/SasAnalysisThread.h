@@ -174,8 +174,8 @@ namespace PstpFinder
 
   template<typename T>
   class SasAnalysisThread<T, typename std::enable_if<
-    std::is_base_of<base_stream(std::basic_istream, T), T>::value and
-    not std::is_base_of<base_stream(std::basic_ostream, T), T>::value>::type>
+    is_stream_base_of<std::basic_istream, T>::value and
+    not is_stream_base_of<std::basic_ostream, T>::value>::type>
     : public SasAnalysisThread_Base<T, SasAnalysis_Read<T>>
   {
     public:
@@ -192,7 +192,7 @@ namespace PstpFinder
 
   template<typename T>
   class SasAnalysisThread<T, typename std::enable_if<
-    std::is_base_of<base_stream(std::basic_ostream, T), T>::value>::type>
+    is_stream_base_of<std::basic_ostream, T>::value>::type>
     : public SasAnalysisThread_Base<T, SasAnalysis_Write<T>>
   {
     public:

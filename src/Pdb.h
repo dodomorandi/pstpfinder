@@ -65,10 +65,8 @@ namespace PstpFinder
 
       template<typename Stream>
       typename std::enable_if<
-          std::is_base_of<base_stream(std::basic_istream, Stream),
-          Stream>::value
-          or std::is_base_of<base_stream(std::basic_ostream, Stream),
-          Stream>::value>::type
+          is_stream_base_of<std::basic_istream, Stream>::value
+          or is_stream_base_of<std::basic_ostream, Stream>::value>::type
       write(Stream& stream) const;
       std::vector<Protein<AtomType>> proteins;
 

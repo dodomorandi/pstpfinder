@@ -151,9 +151,9 @@ namespace PstpFinder
   template<typename T>
   class SasAnalysis<T,
       typename std::enable_if<
-          std::is_base_of<base_stream(std::basic_istream, T), T>::value
-          and not std::is_base_of<base_stream(std::basic_ostream, T),
-          T>::value>::type> :
+          is_stream_base_of<std::basic_istream, T>::value
+          and not is_stream_base_of<std::basic_ostream, T>
+        ::value>::type> :
       public SasAnalysis_Read<T>
   {
     public:
@@ -170,8 +170,8 @@ namespace PstpFinder
   template<typename T>
   class SasAnalysis<T,
       typename std::enable_if<
-        not std::is_base_of<base_stream(std::basic_istream, T), T>::value and
-        std::is_base_of<base_stream(std::basic_ostream, T), T>::value>::type> :
+        not is_stream_base_of<std::basic_istream, T>::value and
+        is_stream_base_of<std::basic_ostream, T>::value>::type> :
       public SasAnalysis_Write<T>
   {
     public:
@@ -188,8 +188,8 @@ namespace PstpFinder
   template<typename T>
   class SasAnalysis<T,
       typename std::enable_if<
-      std::is_base_of<base_stream(std::basic_istream, T), T>::value and
-      std::is_base_of<base_stream(std::basic_ostream, T), T>::value>::type> :
+      is_stream_base_of<std::basic_istream, T>::value and
+      is_stream_base_of<std::basic_ostream, T>::value>::type> :
       public SasAnalysis_Write<T>
   {
     public:
