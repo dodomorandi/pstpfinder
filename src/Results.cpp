@@ -325,36 +325,30 @@ Results::drawResultsGraphExposeEvent(GdkEventExpose*) throw()
   context->restore();
 
   context->save();
+  const float graphHeight = height - 2. * graphBorder - graphOffsetStart
+                            - graphBottomBorder;
   {
     Cairo::TextExtents extents;
     context->rotate(-3.1415 / 2);
     context->get_text_extents("pocket disclosure time(ps)", extents);
     float labelYProportion = extents.width / extents.height;
-    const float graphHeight = height - graphBorder - graphOffsetStart
-                              - graphBottomBorder;
-    graphLabelYSize = graphHeight / labelYProportion;
 
     if(labelYMultiplier != 0)
     {
+      graphLabelYSize = graphHeight / labelYProportion;
       context->set_font_size(graphLabelYSize * labelYMultiplier);
       context->get_text_extents("0", extents);
-      graphHeaderHeight = extents.width * (ceil(log10(maxPocketLength)) / 2 + 1);
 
       graphLabelYSize = extents.height / labelYMultiplier * 2;
-    }
-    else
-    {
-      context->set_font_size(graphLabelYSize);
-      context->get_text_extents("pocket disclosure time(ps)", extents);
-      graphHeaderHeight = 0;
-      graphLabelYSize = extents.height * 2;
     }
 
     context->set_font_size(graphLabelYSize * (1. - labelYMultiplier));
     context->get_text_extents("pocket disclosure time(ps)", extents);
-    if(extents.width > graphHeight - graphHeaderHeight)
-      graphLabelYSize = (graphHeight - graphHeaderHeight)
-          / (1. - labelYMultiplier) / labelYProportion;
+    if(labelYMultiplier == 0 or extents.width > graphHeight)
+      graphLabelYSize = graphHeight / labelYProportion;
+
+    context->set_font_size(graphLabelYSize * (1. - labelYMultiplier));
+    context->get_text_extents("pocket disclosure time(ps)", extents);
 
     context->set_font_size(graphLabelYSize * labelYMultiplier);
     context->get_text_extents("000", extents);
@@ -376,14 +370,14 @@ Results::drawResultsGraphExposeEvent(GdkEventExpose*) throw()
   context->move_to(graphBorder + graphLeftBorder ,
                    height - graphBorder - graphBottomBorder);
   context->line_to(graphBorder + graphLeftBorder,
-                   graphBorder + graphHeaderHeight);
+                   graphBorder);
   context->stroke();
 
   // Pockets
   float columnModuleX = (float)(width - graphOffsetStart * 2 -
                         graphLeftBorder) / (residues.size() * 3 + 1);
   float columnModuleY = (float)(height - graphOffsetStart * 2
-                                - graphHeaderHeight - graphBottomBorder)
+                                - graphBottomBorder)
                         / maxPocketLength;
 
   bool foundSelection(false);
@@ -500,12 +494,14 @@ Results::drawResultsGraphExposeEvent(GdkEventExpose*) throw()
       context->set_source_rgb(0, 0, 0);
     context->get_text_extents("pocket disclosure time(ps)", extents);
 
-    int spaceBeforeLabelY = (height - graphHeaderHeight - graphBottomBorder
-                             - graphOffsetStart - graphBorder - extents.width)
+    int spaceBeforeLabelY = (height - graphBottomBorder
+                             - graphOffsetStart - 2 * graphBorder - extents.width)
                             / 2;
+    if(spaceBeforeLabelY < 0)
+        spaceBeforeLabelY = 0;
 
     context->move_to(
-        -graphHeaderHeight - graphBorder - extents.width - spaceBeforeLabelY,
+        - graphBorder - extents.width - spaceBeforeLabelY,
         graphBorder + extents.height);
     context->show_text("pocket disclosure time(ps)");
 
@@ -520,23 +516,28 @@ Results::drawResultsGraphExposeEvent(GdkEventExpose*) throw()
         graphBorder + graphLeftBorder - 3);
     context->show_text("0");
 
+    unsigned int lastPocket = (graphHeight -
+        numberWidth * log10(maxPocketLength + 1) / 2.) *
+        maxPocketLength / graphHeight;
+    unsigned graphHeightWithoutLastPocket = graphHeight -
+      numberWidth * log10(lastPocket + 1) / 2.;
 
-    unsigned int graphMaxVerticalStep = (float)(height
-      - graphOffsetStart * 2 - graphHeaderHeight - graphBottomBorder)
-      / (numberWidth * (log10(maxPocketLength + 1) + 2));
+    unsigned int graphMaxVerticalStep = graphHeightWithoutLastPocket 
+      / (numberWidth * (log10(lastPocket + 1) + 2));
     for(unsigned int i = 1; i <= graphMaxVerticalStep; i++)
     {
       stringstream pocketSizeStream;
       string pocketSize;
-      pocketSizeStream << (int)(maxPocketLength / graphMaxVerticalStep * i);
+      pocketSizeStream << static_cast<int>(lastPocket /
+          graphMaxVerticalStep * i);
       pocketSize = pocketSizeStream.str();
 
       context->get_text_extents(pocketSize, extents);
       context->move_to(- (height - graphOffsetStart
                           - graphBottomBorder)
-                       + (float)(height - graphOffsetStart * 2
-                                 - graphHeaderHeight - graphBottomBorder)
-                       / graphMaxVerticalStep * i - extents.width / 2,
+                       + static_cast<float>(graphHeightWithoutLastPocket)
+                       / graphMaxVerticalStep * i -
+                       extents.width / 2,
                        graphBorder + graphLeftBorder - 3);
       context->show_text(pocketSize);
     }
@@ -590,7 +591,7 @@ Results::drawResultsGraphMotionEvent(GdkEventMotion* event) throw()
   bool newSelection(false);
 
   if(event->x >= graphBorder and event->x < graphBorder + graphLeftBorder
-     and event->y >= graphHeaderHeight + graphBorder
+     and event->y >= graphBorder
      and event->y
          < height - graphOffsetStart - graphBottomBorder)
     graphModifier = enumModifier::LABEL_Y;
@@ -606,7 +607,6 @@ Results::drawResultsGraphMotionEvent(GdkEventMotion* event) throw()
                                    - graphLeftBorder)
                           / (residues.size() * 3 + 1);
     float columnModuleY = (float) (height - graphOffsetStart * 2
-                                   - graphHeaderHeight
                                    - graphBottomBorder)
                           / maxPocketLength;
     for(auto i = begin(residues); i != end(residues); i++)

@@ -110,7 +110,6 @@ namespace PstpFinder
       const int graphOffsetStart;
       int graphLeftBorder;
       int graphBottomBorder;
-      int graphHeaderHeight;
       enumModifier graphModifier;
 
       bool removeFromParent(GdkEventAny* event);
