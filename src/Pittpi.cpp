@@ -788,27 +788,35 @@ namespace PstpFinder
 
     pdb.write("/tmp/sadic_in.pdb");
 
-    PyObject* oSettings = py::callMethod(oSadicCmdline, "parse_command_line", "[ssss]", "--all-atoms", "-f", "pdb", "/tmp/sadic_in.pdb");
+    PyObject* oSettings = py::callMethod(oSadicCmdline, "parse_command_line",
+            "[ssss]", "--all-atoms", "-f", "pdb", "/tmp/sadic_in.pdb");
     PyObject* oOutput = py::callMethod(oSadicIos, "get_output", "O", oSettings);
     PyObject* oKeywords = Py_BuildValue("{s:O}", "settings", oSettings);
     PyObject* emptyTuple = PyTuple_New(0);
-    python_iterable iterModels {PyObject_Call(PyObject_GetAttrString(oSadicRunner, "iter_models"), emptyTuple, oKeywords)};
+    python_iterable iterModels {PyObject_Call(PyObject_GetAttrString(
+                oSadicRunner, "iter_models"), emptyTuple, oKeywords)};
     Py_DECREF(emptyTuple);
 
-    static const std::function<PyObject*(python_iterable&)> getFirst {[](python_iterable& iter){return *std::begin(iter);}};
-    std::future<PyObject*> firstModel = std::async(std::launch::async, getFirst, std::ref(iterModels));
-    while(firstModel.wait_for(std::chrono::milliseconds(80)) != std::future_status::ready)
+    static const std::function<PyObject*(python_iterable&)> getFirst {
+        [](python_iterable& iter){return *std::begin(iter);}};
+    std::future<PyObject*> firstModel = std::async(
+            std::launch::async, getFirst, std::ref(iterModels));
+    while(firstModel.wait_for(std::chrono::milliseconds(80)) != 
+            std::future_status::ready)
         setStatus(-1);
 
     PyObject* oViewers = PyTuple_GetItem(firstModel.get(), 1);
 
     Py_DECREF(py::callMethod(oOutput, "output", "O", oViewers));
     python_iterable viewers {oViewers};
-    std::future<PyObject*> firstViewer = std::async(std::launch::async, getFirst, std::ref(viewers));
-    while(firstViewer.wait_for(std::chrono::milliseconds(80)) != std::future_status::ready)
+    std::future<PyObject*> firstViewer = std::async(
+            std::launch::async, getFirst, std::ref(viewers));
+    while(firstViewer.wait_for(std::chrono::milliseconds(80)) != 
+            std::future_status::ready)
         setStatus(-1);
     
-    PyObject* oFilename = py::callMethod(oOutput, "mangle_file_name", "O", firstViewer.get());
+    PyObject* oFilename = py::callMethod(oOutput, "mangle_file_name", "O", 
+            firstViewer.get());
     sadicProtein = move(Pdb<SasPdbAtom>(py::toCString(oFilename)).proteins[0]);
 
     Py_DECREF(oOutput);
