@@ -793,12 +793,12 @@ namespace PstpFinder
     PyObject* oOutput = py::callMethod(oSadicIos, "get_output", "O", oSettings);
     PyObject* oKeywords = Py_BuildValue("{s:O}", "settings", oSettings);
     PyObject* emptyTuple = PyTuple_New(0);
-    python_iterable iterModels {PyObject_Call(PyObject_GetAttrString(
+    py::python_iterable iterModels {PyObject_Call(PyObject_GetAttrString(
                 oSadicRunner, "iter_models"), emptyTuple, oKeywords)};
     Py_DECREF(emptyTuple);
 
-    static const std::function<PyObject*(python_iterable&)> getFirst {
-        [](python_iterable& iter){return *std::begin(iter);}};
+    static const std::function<PyObject*(py::python_iterable&)> getFirst {
+        [](py::python_iterable& iter){return *std::begin(iter);}};
     std::future<PyObject*> firstModel = std::async(
             std::launch::async, getFirst, std::ref(iterModels));
     while(firstModel.wait_for(std::chrono::milliseconds(80)) != 
@@ -808,7 +808,7 @@ namespace PstpFinder
     PyObject* oViewers = PyTuple_GetItem(firstModel.get(), 1);
 
     Py_DECREF(py::callMethod(oOutput, "output", "O", oViewers));
-    python_iterable viewers {oViewers};
+    py::python_iterable viewers {oViewers};
     std::future<PyObject*> firstViewer = std::async(
             std::launch::async, getFirst, std::ref(viewers));
     while(firstViewer.wait_for(std::chrono::milliseconds(80)) != 

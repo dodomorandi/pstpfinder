@@ -24,6 +24,8 @@
 
 namespace PstpFinder
 {
+namespace py
+{
 python_iterator::python_iterator() : it(nullptr), item(nullptr)
 {}
 
@@ -158,6 +160,7 @@ python_iterable::end() noexcept
     return python_iterator();
 }
 
+} /* namespace py */
 } /* namespace PstpFinder */
 
 #endif /* HAVE_PYMOD_SADIC */

@@ -28,6 +28,9 @@
 
 namespace PstpFinder
 {
+namespace py
+{
+
 class python_iterator : public
     std::iterator<std::forward_iterator_tag, PyObject*>
 {
@@ -85,6 +88,7 @@ class python_iterable
     PyObject* obj;
 };
 
-}
+} /* namespace py */
+} /* namespace PstpFinder */ 
 
 #endif /* PYITER_H */
