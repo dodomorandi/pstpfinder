@@ -88,7 +88,7 @@ namespace PstpFinder
   {
     if(newAnalysis == 0)
     {
-      newAnalysis = new NewAnalysis(*this);
+      newAnalysis = new NewAnalysis();
       newAnalysis->set_position(WIN_POS_CENTER_ON_PARENT);
       newAnalysis->signal_unmap().connect(
           sigc::mem_fun(*this, &MainWindow::destroyNewAnalysis));
@@ -134,7 +134,7 @@ namespace PstpFinder
         if(exists(filename) and newAnalysis == 0)
         {
           hide();
-          newAnalysis = new NewAnalysis(*this);
+          newAnalysis = new NewAnalysis();
           newAnalysis->set_position(WIN_POS_CENTER_ON_PARENT);
           newAnalysis->signal_unmap().connect(
               sigc::mem_fun(*this, &MainWindow::destroyNewAnalysis));

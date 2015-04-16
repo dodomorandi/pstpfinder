@@ -42,13 +42,6 @@ namespace PstpFinder
     show_all();
   }
 
-  NewAnalysis::NewAnalysis(Window& parent)
-  {
-    set_transient_for(parent);
-    init();
-    show_all();
-  }
-
   void
   NewAnalysis::init()
   {
@@ -59,7 +52,7 @@ namespace PstpFinder
 
     set_title("PSTP-finder");
 
-    GtkmmWrapper<Gtk::FileFilter> trjFilter;
+    auto trjFilter = Gtk::FileFilter::create();
     trjFilter->set_name("Trajectory files");
     trjFilter->add_pattern("*.xtc");
     trjChooser.add_filter(trjFilter);
@@ -74,7 +67,7 @@ namespace PstpFinder
     hboxTrajectory.set_homogeneous(false);
     hboxTrajectory.set_spacing(10);
 
-    GtkmmWrapper<Gtk::FileFilter> tprFilter;
+    auto tprFilter = Gtk::FileFilter::create();
     tprFilter->set_name("Topology files");
     tprFilter->add_pattern("*.tpr");
     tprChooser.add_filter(tprFilter);
@@ -215,7 +208,7 @@ namespace PstpFinder
   }
 
   void
-  NewAnalysis::start_spin() throw()
+  NewAnalysis::start_spin()
   {
     if(spinnerWait.get_parent() == 0)
       vboxMain.pack_start(spinnerWait);
@@ -228,7 +221,7 @@ namespace PstpFinder
   }
 
   void
-  NewAnalysis::stop_spin() throw()
+  NewAnalysis::stop_spin()
   {
     spinnerWait.stop();
     spinnerWait.hide();
@@ -276,7 +269,7 @@ namespace PstpFinder
   }
 
   void
-  NewAnalysis::runAnalysis() throw()
+  NewAnalysis::runAnalysis()
   {
     Glib::ustring sessionFileName(entrySessionFile.get_text());
     if(sessionFileName.empty())
@@ -340,7 +333,7 @@ namespace PstpFinder
   }
 
   void
-  NewAnalysis::chooserTrajectoryClicked() throw()
+  NewAnalysis::chooserTrajectoryClicked()
   {
     if(not exists(trjChooser.get_filename()))
     {
@@ -357,7 +350,7 @@ namespace PstpFinder
   }
 
   void
-  NewAnalysis::threadTrajectoryClicked() throw()
+  NewAnalysis::threadTrajectoryClicked()
   {
     signal_start_spin();
 
@@ -370,7 +363,7 @@ namespace PstpFinder
   }
 
   void
-  NewAnalysis::update_limits() throw()
+  NewAnalysis::update_limits()
   {
     spinBegin.set_sensitive();
     spinEnd.set_sensitive();
@@ -396,7 +389,7 @@ namespace PstpFinder
   }
 
   void
-  NewAnalysis::buttonBrowseFileClicked() throw()
+  NewAnalysis::buttonBrowseFileClicked()
   {
     GtkmmWrapper<Gtk::FileFilter> filter;
     filter->add_pattern("*.csf");
@@ -424,7 +417,7 @@ namespace PstpFinder
   }
 
   void
-  NewAnalysis::buttonShowResultsClicked() throw()
+  NewAnalysis::buttonShowResultsClicked()
   {
     if(analysisStatus != enumAnalysisStatus::ANALYSIS_FINISHED)
       return;
@@ -534,7 +527,7 @@ namespace PstpFinder
   }
 
   bool
-  NewAnalysis::close_window(GdkEventAny* event) throw()
+  NewAnalysis::close_window(GdkEventAny* event)
   {
     if(not mainFrame.is_sensitive())
     {

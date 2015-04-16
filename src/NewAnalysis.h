@@ -49,7 +49,6 @@ namespace PstpFinder
       };
 
       NewAnalysis();
-      NewAnalysis(Gtk::Window& parent);
       void openSessionFile(const std::string& sessionFileName);
       void deleteResultsWindow(const Results& resultsWindow);
       Glib::Dispatcher signal_start_spin;
@@ -94,16 +93,16 @@ namespace PstpFinder
 #endif
 
       void init();
-      void runAnalysis() throw();
-      void chooserTrajectoryClicked() throw();
-      void threadTrajectoryClicked() throw();
-      void start_spin() throw();
-      void stop_spin() throw();
+      void runAnalysis();
+      void chooserTrajectoryClicked();
+      void threadTrajectoryClicked();
+      void start_spin();
+      void stop_spin();
       void checkParameters();
-      void buttonBrowseFileClicked() throw();
-      void buttonShowResultsClicked() throw();
-      void update_limits() throw();
-      bool close_window(GdkEventAny* event) throw();
+      void buttonBrowseFileClicked();
+      void buttonShowResultsClicked();
+      void update_limits();
+      bool close_window(GdkEventAny* event);
       void runPittpi(const std::string& SessionFileName, float radius,
                      float threshold);
       template<typename Session>
