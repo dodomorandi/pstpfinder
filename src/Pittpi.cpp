@@ -789,7 +789,8 @@ namespace PstpFinder
     pdb.write("/tmp/sadic_in.pdb");
 
     PyObject* oSettings = py::callMethod(oSadicCmdline, "parse_command_line",
-            "[ssss]", "--all-atoms", "-f", "pdb", "/tmp/sadic_in.pdb");
+            "[ssssss]", "--all-atoms", "-f", "pdb", "/tmp/sadic_in.pdb",
+            "-o", "/tmp/sadic_in.pdb");
     PyObject* oOutput = py::callMethod(oSadicIos, "get_output", "O", oSettings);
     PyObject* oKeywords = Py_BuildValue("{s:O}", "settings", oSettings);
     PyObject* emptyTuple = PyTuple_New(0);
