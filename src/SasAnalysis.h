@@ -446,7 +446,7 @@ namespace PstpFinder
     if(sasAtom.size() != Base::nAtoms)
     {
       sasAtom.clear();
-      sasAtom.reserve(Base::nAtoms);
+      sasAtom.resize(Base::nAtoms);
     } 
     std::copy_n(*currentFrameIter, Base::nAtoms, std::begin(sasAtom));
     ++currentFrameIter;
